@@ -49,6 +49,7 @@ test('title menu, real solo turns, previews, cooldowns, reload and victory', asy
   await page.getByRole('button', { name: /Reroll \(1\)/ }).click();
   await expect(page.getByRole('button', { name: /Reroll \(0\)/ })).toBeDisabled();
   await firstCard.click();
+  await page.locator('.draft-confirm').click();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Choose an action' })).toBeVisible();
   await page.locator('[data-action="blood-cleave"]').click();
@@ -56,6 +57,7 @@ test('title menu, real solo turns, previews, cooldowns, reload and victory', asy
   await page.locator('[data-execute="blood-cleave"]').click();
   await firstCard.waitFor();
   await firstCard.click();
+  await page.locator('.draft-confirm').click();
   await expect(page.locator('[data-action="blood-cleave"]')).toBeDisabled();
   await page.locator('[data-ui="atlas"]').click();
   await expect(page.getByRole('heading', { name: 'Reward Atlas' })).toBeVisible();
@@ -68,6 +70,7 @@ test('title menu, real solo turns, previews, cooldowns, reload and victory', asy
     if (await page.locator('.result').count()) break;
     if (await firstCard.count()) {
       await firstCard.click();
+      await page.locator('.draft-confirm').click();
       if (await page.getByRole('heading', { name: 'Replace a slot' }).count())
         await page.locator('[data-replace]').first().click();
     } else {
@@ -105,7 +108,7 @@ test('populated eight-seat Chaos state remains usable on a narrow phone', async 
   await restore(page, { state, viewerId });
   await expect(page.locator('.combatant')).toHaveCount(8);
   await expect(page.locator('.battle-heading')).toContainText('Age of Chaos');
-  await page.locator('.combatant[data-inspect="' + rival.id + '"]').click();
+  await page.locator('.fighter-info[data-inspect="' + rival.id + '"]').click();
   await expect(page.getByRole('dialog')).toContainText('Consumables · 1');
   await expect(page.getByRole('dialog')).not.toContainText('Second Breath');
   await page.getByRole('button', { name: 'Close dialog' }).click();
@@ -114,6 +117,7 @@ test('populated eight-seat Chaos state remains usable on a narrow phone', async 
   await expect(page.getByRole('dialog')).toContainText('Phoenix Heart');
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page.locator('.reward-card').first().click();
+  await page.locator('.draft-confirm').click();
   await page.locator('#target-select').selectOption(rival.id);
   await expect(page.locator('.preview')).toContainText('health damage');
   for (const width of [320, 390, 768, 1536]) {
@@ -128,6 +132,7 @@ test('an inventory replacement commits the chosen slot and a cancelled exit pres
   state = sandboxEdit(state, { type: 'grant', playerId: viewerId, rewardId: 'red-tonic' });
   state.offers = ['second-breath', 'heartwood', 'fang-shard'];
   await restore(page, { state, viewerId });
+  await page.locator('[data-draft-select="second-breath"]').click();
   await page.locator('[data-pick="second-breath"]').click();
   await page.getByRole('button', { name: 'Red Tonic' }).click();
   await page.getByRole('button', { name: 'Your inventory' }).click();

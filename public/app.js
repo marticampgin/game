@@ -19,6 +19,10 @@ let screen = 'menu',
   epoch = 0;
 let choice = 'attack',
   target = '',
+  selectedDraft = '',
+  actionPage = 0,
+  pinnedAction = null,
+  turnKey = '',
   lastLog = 0,
   pollFailed = false;
 function read(area, key) {
@@ -120,8 +124,8 @@ function startBattle(payload) {
     match.viewerId = payload.session.playerId;
     clearInvite();
   }
-  choice = 'attack';
-  target = '';
+  turnKey = '';
+  pinnedAction = null;
   busy = false;
   lastLog = 0;
   pollFailed = false;
@@ -135,10 +139,57 @@ function refreshBattle() {
   if (screen !== 'battle' || !match) return;
   const v = current();
   if (!v) return;
+  const key = v.globalTurn + '/' + v.activeId;
+  if (key !== turnKey) {
+    choice = 'attack';
+    target = '';
+    selectedDraft = '';
+    actionPage = 0;
+    turnKey = key;
+  }
+  if (!v.offers.includes(selectedDraft)) selectedDraft = '';
   const recent = lastLog ? v.log.filter((e) => e.id > lastLog) : [];
   if (recent.some((e) => e.type === 'damage')) chime('hit');
   lastLog = v.log.at(-1)?.id || 0;
-  app.innerHTML = battleHTML(v, match.viewerId, { action: choice, target, feedback: recent });
+  const focused = app.contains(document.activeElement) ? document.activeElement : null;
+  const identities = [
+    'data-draft-select',
+    'data-aim',
+    'data-action',
+    'data-recap-id',
+    'data-ui',
+    'data-inspect',
+    'id',
+  ];
+  const identity = identities.find((key) => focused?.hasAttribute(key));
+  const railScroll = app.querySelector('.turn-rail ol')?.scrollLeft || 0;
+  const chainScroll = app.querySelector('.recap-events')?.scrollTop || 0;
+  app.innerHTML = battleHTML(v, match.viewerId, {
+    action: choice,
+    actionPage,
+    target,
+    selectedDraft,
+    feedback: recent,
+    recap: { expanded: !!pinnedAction, actionId: pinnedAction?.id, pinnedAction },
+  });
+  app.querySelector('.turn-rail ol').scrollLeft = railScroll;
+  const chain = app.querySelector('.recap-events');
+  if (chain) chain.scrollTop = chainScroll;
+  if (identity) {
+    const selector = '[' + identity + '="' + CSS.escape(focused.getAttribute(identity)) + '"]';
+    (
+      app.querySelector(selector) ||
+      (identity === 'data-recap-id' && app.querySelector('[data-ui="toggle-recap"]'))
+    )?.focus?.({ preventScroll: true });
+  }
+  const actor = v.players.find((p) => p.id === v.activeId);
+  const phase = { acquire: 'choosing a reward', action: 'choosing an action' };
+  const announcement =
+    v.phase === 'finished'
+      ? 'Match complete.'
+      : (v.activeId === match.viewerId ? 'Your turn' : actor.name + ' is up') + ' · ' + phase[v.phase];
+  const live = document.querySelector('#battle-announcement');
+  if (live.textContent !== announcement) live.textContent = announcement;
   if (match.state)
     sessionStorage.setItem('rift-solo', JSON.stringify({ state: match.state, viewerId: match.viewerId }));
 }
@@ -208,9 +259,16 @@ async function command(cmd) {
       if (epoch !== start) return;
       if (next.revision >= match.view.revision) match.view = next;
     }
+    if (cmd.type === 'pick' || cmd.type === 'reroll') selectedDraft = '';
     if (cmd.type === 'pick') chime('reward');
     if (modal.open) modal.close();
     refreshBattle();
+    const focusNext = cmd.type === 'pick' ? '.turn-controls h2' : cmd.type === 'act' ? '.recap-toggle' : '';
+    if (focusNext) {
+      const node = app.querySelector(focusNext);
+      if (node?.tagName === 'H2') node.tabIndex = -1;
+      node?.focus({ preventScroll: true });
+    }
   } catch (e) {
     if (epoch === start) notice(e.message);
   } finally {
@@ -369,12 +427,33 @@ document.addEventListener('click', (event) => {
   const b = event.target.closest('button');
   if (!b || b.disabled) return;
   const d = b.dataset;
-  if (d.inspect && screen === 'battle') {
+  if (d.draftSelect && screen === 'battle') {
+    selectedDraft = d.draftSelect;
+    refreshBattle();
+    const review = app.querySelector('.draft-review');
+    if (innerWidth <= 760 && review?.getBoundingClientRect().bottom > innerHeight)
+      review.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  } else if (d.aim && screen === 'battle') {
+    target = d.aim;
+    refreshBattle();
+    const preview = app.querySelector('.target-panel');
+    if (innerWidth <= 760 && preview?.getBoundingClientRect().bottom > innerHeight)
+      preview.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  } else if (d.recapId && screen === 'battle') {
+    pinnedAction = current().recentActions.find((a) => String(a.id) === d.recapId) || pinnedAction;
+    refreshBattle();
+    app.querySelector('.recap-details h3')?.setAttribute('tabindex', '-1');
+    app.querySelector('.recap-details h3')?.focus({ preventScroll: true });
+  } else if (d.inspect && screen === 'battle') {
     const p = current().players.find((x) => x.id === d.inspect);
     dialog(buildHTML(p, p.id === match.viewerId));
   } else if (d.pick && screen === 'battle') {
     if (d.replace !== undefined) command({ type: 'pick', rewardId: d.pick, replaceIndex: Number(d.replace) });
     else pick(d.pick);
+  } else if (d.actionPage !== undefined && screen === 'battle') {
+    actionPage = Number(d.actionPage);
+    refreshBattle();
+    app.querySelector('.action-grid button:not(:disabled)')?.focus({ preventScroll: true });
   } else if (d.action && screen === 'battle') {
     choice = d.action;
     refreshBattle();
@@ -403,6 +482,24 @@ document.addEventListener('click', (event) => {
           ),
         );
         break;
+      case 'toggle-recap':
+        pinnedAction = pinnedAction ? null : current().lastAction;
+        refreshBattle();
+        break;
+      case 'event': {
+        const next = current().nextEvent;
+        if (next)
+          dialog(
+            '<h2>' +
+              esc(next.name) +
+              '</h2><p>Round ' +
+              next.round +
+              ' arena event</p><p>' +
+              esc(next.description) +
+              '</p>',
+          );
+        break;
+      }
       case 'history':
         dialog(historyHTML(current(), match.state?.seed));
         break;

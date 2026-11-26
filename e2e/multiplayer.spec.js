@@ -38,15 +38,16 @@ test('two browsers draft classes, reconnect and play each other through a privat
 
     await page.getByRole('button', { name: 'Start match' }).click();
     for (const client of [page, guest]) await expect(client.getByLabel('Battlefield')).toBeVisible();
-    await expect.poll(async () => (await page.locator('[data-pick]').count()) + (await guest.locator('[data-pick]').count())).toBe(3);
-    const [first, next] = (await page.locator('[data-pick]').count()) ? [page, guest] : [guest, page];
-    await expect(next.locator('[data-pick]')).toHaveCount(0);
-    await first.locator('[data-pick]').first().click();
+    await expect.poll(async () => (await page.locator('[data-draft-select]').count()) + (await guest.locator('[data-draft-select]').count())).toBe(3);
+    const [first, next] = (await page.locator('[data-draft-select]').count()) ? [page, guest] : [guest, page];
+    await expect(next.locator('[data-draft-select]')).toHaveCount(0);
+    await first.locator('[data-draft-select]').first().click();
+    await first.locator('.draft-confirm').click();
     await first.locator('[data-execute="attack"]').click();
     await expect(next.getByRole('heading', { name: 'Choose a reward' })).toBeVisible();
     await next.reload();
-    await expect(next.locator('[data-pick]')).toHaveCount(3);
-    await expect(first.locator('[data-pick]')).toHaveCount(0);
+    await expect(next.locator('[data-draft-select]')).toHaveCount(3);
+    await expect(first.locator('[data-draft-select]')).toHaveCount(0);
     expect(errors).toEqual([]);
   } finally {
     await guestContext.close();

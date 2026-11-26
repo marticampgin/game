@@ -21,9 +21,10 @@ Rooms support free class selection, random assignment, and a personal three-clas
 
 ## Inside the ring
 
-- **Draft** one reward each personal turn. Two slots favor independent discovery and one favors interactions with your build. Open the Reward Atlas to trace what a reward produces or consumes.
-- **Act** once. Attack any living rival, cast an ability, use equipment or a consumable, defend, or scavenge for another draft. Select an action and target to see the expected hit before committing.
-- **Inspect** contenders on the battlefield to see stats, statuses, equipment and artifacts. Rival consumable identities and unchosen draft options stay private. The battle log records damage, healing, item triggers and eliminations.
+- **Draft** one reward each personal turn. Two slots favor independent discovery and one favors interactions with your build. Select an offer to see its effect on your build, then take it or choose a slot to replace. Opening the Reward Atlas lets you trace what a reward produces or consumes.
+- **Act** once. Attack any living rival, cast an ability, use equipment or a consumable, defend, or scavenge for another draft. Select an action, then tap a rival or use the target menu to preview the result. In a duel the only living rival is selected for you. Press **Use** to commit.
+- **Inspect** contenders using the information button on each fighter to see stats, statuses, equipment and artifacts. Rival consumable identities and unchosen draft options stay private. The battle log records damage, healing, item triggers and eliminations.
+- **Review** the last action and see who acts next beneath the battlefield. Open **Effects** for damage, absorption, reactions and turn-start effects in the order they happened. The arrows step through the last six actions.
 - **Survive** the four ages. Arena events arrive every four rounds. Starting in round 31, escalating arena damage passes through armor and shields. A simultaneous final elimination can end in a draw.
 
 The first roster includes Guardian, Berserker, Chronomancer and Alchemist. The 46 rewards span stat shards, reusable abilities, passive artifacts, active items, consumables, chests and modifiers. As one example, Bastion Bash scales with armor, Molten Mail adds Burn to an armor-scaling hit, and Phoenix Heart heals the owner when their Burn ticks on a living rival.
