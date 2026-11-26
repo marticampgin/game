@@ -18,7 +18,9 @@ function entry(id, name, category, rarity, icon, description, produces, consumes
 const shard = (id, name, icon, description, ingredient, key, amount) =>
   entry(id, name, 'shard', 'common', icon, description, ingredient, '', { effects: [stat(key, amount)] });
 const ability = (id, name, rarity, icon, description, produces, consumes, cooldown, effects, details) =>
-  entry(id, name, 'ability', rarity, icon, description, produces, consumes, { target: 'enemy', cooldown, effects, ...details });
+  entry(id, name, 'ability', rarity, icon, description,
+    effects.some(effect => ['hit','consumeHit'].includes(effect.kind)) ? produces + ' ability' : produces,
+    consumes, { target: 'enemy', cooldown, effects, ...details });
 const artifact = (id, name, rarity, icon, description, produces, consumes, rules, details) =>
   entry(id, name, 'artifact', rarity, icon, description, produces, consumes, { rules, ...details });
 const potion = (id, name, rarity, icon, description, produces, consumes, effects, details) =>
@@ -76,10 +78,10 @@ export const REWARDS = byId([
 ]);
 
 export const CLASSES = byId([
-  {id:'guardian',name:'Guardian',description:'An armored sentinel who turns protection into pressure.',innate:'Ironbound: armor gains are increased by 1.', ability:'bastion-bash',color:'#82bfc5',stats:{maxHp:160,attack:7,armor:10,spellPower:4},favored:tags('armor shield armor-strike defend')},
-  {id:'berserker',name:'Berserker',description:'A relentless raider whose wounds sharpen every strike.',innate:'Bloodrush: gain 1 effective attack per 10% of health missing.', ability:'blood-cleave',color:'#eb8c71',stats:{maxHp:155,attack:9,armor:4,spellPower:3},favored:tags('attack bleed missing-health physical')},
-  {id:'chronomancer',name:'Chronomancer',description:'A star-reader who bends the rhythm of battle.',innate:'Second Hand: gain an additional action every fifth personal turn.', ability:'time-bolt',color:'#ae96ee',stats:{maxHp:145,attack:7,armor:5,spellPower:7},favored:tags('cooldown shock extra-action delayed spell')},
-  {id:'alchemist',name:'Alchemist',description:'A field apothecary who harvests power from volatile brews.',innate:'Distillation: every consumed item grants a random stat shard.', ability:'venom-flask',color:'#9ac47d',stats:{maxHp:150,attack:7,armor:5,spellPower:6},favored:tags('poison consumable regeneration spell')}
+  {id:'guardian',name:'Guardian',description:'An armored sentinel who turns protection into pressure.',innate:'Ironbound: armor gains are increased by 1.', ability:'bastion-bash',color:'#82bfc5',stats:{maxHp:520,attack:7,armor:10,spellPower:4},favored:tags('armor shield armor-strike defend')},
+  {id:'berserker',name:'Berserker',description:'A relentless raider whose wounds sharpen every strike.',innate:'Bloodrush: gain 1 effective attack per 10% of health missing.', ability:'blood-cleave',color:'#eb8c71',stats:{maxHp:500,attack:9,armor:4,spellPower:3},favored:tags('attack bleed missing-health physical')},
+  {id:'chronomancer',name:'Chronomancer',description:'A star-reader who bends the rhythm of battle.',innate:'Second Hand: gain an additional action every fifth personal turn.', ability:'time-bolt',color:'#ae96ee',stats:{maxHp:470,attack:7,armor:5,spellPower:7},favored:tags('cooldown shock extra-action delayed spell')},
+  {id:'alchemist',name:'Alchemist',description:'A field apothecary who harvests power from volatile brews.',innate:'Distillation: every consumed item grants a random stat shard.', ability:'venom-flask',color:'#9ac47d',stats:{maxHp:485,attack:7,armor:5,spellPower:6},favored:tags('poison consumable regeneration spell')}
 ]);
 
 export const STATUSES = byId([
