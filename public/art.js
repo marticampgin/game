@@ -1,17 +1,15 @@
-const icons = {
-  shield:'shield', axe:'axe', clock:'clock', flask:'flask', crystal:'crystal', fire:'fire',
-  sword:'sword', heart:'heart', ring:'ring', chest:'chest', frost:'frost', bolt:'bolt', leaf:'leaf',
-  dagger:'dagger', skull:'skull', feather:'feather', crown:'crown', lantern:'lantern', rune:'rune', coin:'coin'
-};
-const unique = {
-  'red-tonic':'tonic', 'blood-compass':'compass', 'clockmaker':'key', 'ward-lantern':'lantern',
-  'antidote':'antidote', 'menders-bell':'bell', 'vial-sash':'sash', 'molten-mail':'mail', 'golden-shell':'shell',
-  'briar-crown':'crown','widows-brew':'flask','phoenix-feather':'feather'
-};
-export const classArt = id => '/assets/' + (['guardian','berserker','chronomancer','alchemist'].includes(id) ? id : 'guardian') + '.png';
+import { CLASSES, REWARDS } from '../src/game/catalog.js';
+
+const genericIcons = new Set([
+  'shield', 'axe', 'clock', 'flask', 'crystal', 'fire', 'sword', 'heart', 'ring', 'chest',
+  'frost', 'bolt', 'leaf', 'dagger', 'skull', 'feather', 'crown', 'lantern', 'rune', 'coin',
+]);
+export const classArt = id => '/assets/' + (Object.hasOwn(CLASSES, id) ? id : 'guardian') + '.png';
 export function rewardIcon(reward) {
-  const icon = unique[reward?.id] || icons[reward?.icon] || 'crystal';
-  return '<img class="reward-art" src="/assets/i-' + icon + '.png" alt="" draggable="false">';
+  const src = Object.hasOwn(REWARDS, reward?.id)
+    ? '/assets/rewards/' + reward.id + '.png'
+    : '/assets/i-' + (genericIcons.has(reward?.icon) ? reward.icon : 'crystal') + '.png';
+  return '<img class="reward-art" src="' + src + '" alt="" draggable="false">';
 }
 
 const paths = {
