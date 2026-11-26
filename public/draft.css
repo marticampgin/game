@@ -167,4 +167,6 @@
   .draft-copy { padding: 7px 11px 5px }
   .draft-copy strong { font-size: 20px }
   .draft-readout { padding-inline: 11px; font-size: 14px }
+  .draft-review { display: grid; grid-template-columns: minmax(0, 1fr) fit-content(42%); column-gap: 10px }
+  .draft-review .draft-confirm { max-width: 100%; padding-inline: 12px }
 }

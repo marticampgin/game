@@ -98,3 +98,20 @@ test('an eight-contender mobile draft exposes copies and lets you cancel replace
   expect(items.filter(id => id === 'second-breath')).toHaveLength(2);
   expect(items).not.toContain('spark-bottle');
 });
+
+test('the third mobile offer reveals its confirmation within the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const payload = fixture(8);
+  payload.state.offers = ['second-breath', 'echo-rune', 'widows-brew'];
+  await openMatch(page, payload);
+  const third = page.getByRole('button', { name: 'Inspect Widow’s Brew' });
+  // Stop scrolling when the third card is just visible, as a touch player might.
+  await third.evaluate(node => node.scrollIntoView({ block: 'end' }));
+  await third.click();
+  const confirm = page.getByRole('button', { name: 'Take Widow’s Brew' });
+  await expect(confirm).toBeVisible();
+  await expect.poll(() => confirm.evaluate(node => {
+    const box = node.getBoundingClientRect();
+    return box.top >= 0 && box.bottom <= innerHeight + 1;
+  })).toBe(true);
+});
