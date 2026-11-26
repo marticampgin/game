@@ -20,7 +20,7 @@
 .rb-search input{padding-left:39px}.rb-tool input::placeholder{color:#c3acb9;opacity:1}
 .rb-atlas-body{display:grid;grid-template-columns:minmax(0,2.18fr) minmax(274px,.95fr);min-height:0}
 .rb-map-pane{display:flex;flex-direction:column;min-width:0;box-shadow:inset 0 0 0 1px #48353c}
-.rb-map{height:clamp(405px,calc(100svh - 207px),850px);min-height:0;position:relative;overflow:hidden;isolation:isolate;background:#18131e url('/assets/atlas-sky.webp') center / cover;touch-action:none;cursor:grab}
+.rb-map{height:clamp(405px,calc(100svh - 269px),850px);min-height:0;position:relative;overflow:hidden;isolation:isolate;background:#18131e url('/assets/atlas-sky.webp') center / cover;touch-action:none;cursor:grab}
 .rb-map::after,.rb-art-halo::after{content:'';position:absolute;inset:6px;border:1px solid #caa4793b;pointer-events:none}
 .rb-map.rb-dragging{cursor:grabbing}
 .rb-world{width:1140px;height:740px;position:absolute;inset:0 auto auto 0;transform-origin:top left;user-select:none}
@@ -42,7 +42,7 @@
 .rb-browse label{display:flex;gap:10px;align-items:center;min-width:0;color:#d4c1c8;font-size:14px;white-space:nowrap}
 .rb-browse select{height:33px;padding:3px 7px;max-width:185px;font-size:15px}
 .rb-browse button,.rb-map-empty button{font-size:14px}
-.rb-detail{background:radial-gradient(ellipse at 50% 10%,#38283a80,transparent 63%),#1f1823;border-left:3px double var(--rb-line);padding:clamp(15px,1.7vw,26px);min-width:0;overflow:auto;height:clamp(459px,calc(100svh - 153px),904px);scrollbar-color:#6d5361 #221a25}
+.rb-detail{background:radial-gradient(ellipse at 50% 10%,#38283a80,transparent 63%),#1f1823;border-left:3px double var(--rb-line);padding:clamp(15px,1.7vw,26px);min-width:0;overflow:auto;height:clamp(459px,calc(100svh - 215px),904px);scrollbar-color:#6d5361 #221a25}
 .rb-art-halo{margin:0 auto 12px;width:clamp(95px,9.7vw,150px);aspect-ratio:1;display:grid;place-items:center;position:relative;border:1px solid #a47a524b;border-radius:50%;background:repeating-conic-gradient(from 15deg,#c89b5b77 0 .4deg,transparent .4deg 15deg);box-shadow:0 0 0 6px #8d674128}
 .rb-art-halo::after{border-radius:50%;inset:6px;border-color:#a9855f55}
 .rb-art-halo>div{width:80%;height:80%;display:grid;place-items:center;background:radial-gradient(circle,#493341,#281f2c 68%);border-radius:50%;padding:12%}
@@ -60,7 +60,7 @@
 @media(max-width:800px){
   .rb-filters{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.rb-search{grid-column:1/-1}
   .rb-tool-head{min-height:67px}.rb-atlas-body{grid-template-columns:minmax(0,1.8fr) minmax(235px,1fr)}
-  .rb-detail{padding:16px}.rb-map{height:clamp(420px,calc(100svh - 239px),690px)}.rb-detail{height:clamp(474px,calc(100svh - 185px),744px)}
+  .rb-detail{padding:16px}.rb-map{height:clamp(420px,calc(100svh - 301px),690px)}.rb-detail{height:clamp(474px,calc(100svh - 247px),744px)}
 }
 @media(max-width:640px){
   .rb-tool-head{gap:4px;padding:12px 9px;grid-template-columns:63px 1fr 61px}.rb-tool-head h1{font-size:27px}.rb-tool-head h1::before,.rb-tool-head h1::after{display:none}
@@ -71,3 +71,37 @@
   .rb-detail .rb-art-halo{width:85px}.rb-browse{padding:7px 9px;min-height:48px}.rb-browse select{max-width:150px}.rb-browse label{gap:5px}
 }
 @media(prefers-reduced-motion:reduce){.rb-tool *{animation:none!important;transition:none!important}}
+.rb-lab-body{display:grid;grid-template-columns:minmax(260px,.74fr) minmax(0,1.7fr);min-height:620px}
+.rb-workbench,.rb-trial{padding:clamp(20px,2.4vw,38px)}
+.rb-workbench{background:linear-gradient(#211925ec,#211925f7),url('/assets/atlas-sky.webp') 18% center / cover;border-right:3px double var(--rb-line)}
+.rb-sandbox h2{font:600 clamp(24px,2.1vw,32px)/1.15 Georgia,serif;letter-spacing:-.02em;color:#efdbbd;margin:0 0 14px}
+.rb-workbench form{display:grid;gap:10px}.rb-workbench h2:not(:first-child){padding-top:24px;border-top:1px solid #745540;margin-top:23px}
+.rb-workbench label{display:grid;gap:4px;font-size:14px;color:#dec4c8}.rb-workbench input,.rb-workbench select{font-size:16px}
+.rb-edit-fields{display:grid;gap:9px}.rb-field-note{font-size:15px;color:var(--rb-muted);line-height:1.35;margin:0}
+.rb-workbench button,.rb-trial-actions button{font-size:15px;padding:8px 14px;background:#342533;border-color:#8b6950}
+.rb-workbench .rb-gold-button{color:#241820;background:#deb77e;border-color:#ebc99b;font-weight:600}.rb-workbench .rb-gold-button:hover{background:#f1ce99;color:#1d1420}
+.rb-feedback{color:#d9c293;min-height:1.45em;font-size:15px;margin:10px 0 0}.rb-feedback.rb-error{color:#ffada0}
+.rb-trial{min-width:0;background:#1b1521}
+.rb-trial-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.rb-trial-top h2{margin:0 0 3px}.rb-phase{color:#d0b0b8;font-size:15px}.rb-trial-actions{display:flex;gap:7px;flex-wrap:wrap}
+.rb-contenders{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rb-tool .rb-combatant{position:relative;text-align:left;display:flex;align-items:center;gap:10px;overflow:hidden;min-height:122px;padding:8px 14px 8px 4px;border:1px solid #59434b;background:linear-gradient(120deg,#352533cc,#241b25db),url('/assets/atlas-sky.webp') center / cover}
+.rb-tool .rb-combatant[aria-pressed=true]{border-color:#ce9b61;box-shadow:inset 0 -3px 0 -1px #c29763}
+.rb-tool .rb-combatant:hover{border-color:#ddbf8b}
+.rb-combatant>img{width:clamp(62px,6vw,88px);height:100px;object-fit:contain;image-rendering:pixelated;flex:0 0 auto}
+.rb-combatant-info{min-width:0;flex:1;display:block}.rb-combatant-info small{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:#cbb6c5}
+.rb-combatant-info strong{display:block;font:600 clamp(18px,1.6vw,24px)/1.2 Georgia,serif;color:var(--role-color);margin:4px 0}.rb-combatant-info>span{display:block;font-size:14px;color:#efd8c1}
+.rb-hp{height:4px;margin-top:5px;background:#49383d}.rb-hp i{height:100%;display:block;background:var(--role-color)}
+.rb-build{margin-top:22px}.rb-attribute-list,.rb-inventory{margin:0;color:#e3d0cc}.rb-attribute-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 16px}
+.rb-attribute-list>div,.rb-inventory>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:4px 0;border-bottom:1px solid #45323e}
+.rb-attribute-list dt,.rb-inventory dt,.rb-loadout>strong{color:#c3aebb;font-size:15px;font-weight:400}.rb-attribute-list dd,.rb-inventory dd{margin:0;font-size:15px}.rb-attribute-list dd{color:#f0d59c;font-variant-numeric:tabular-nums}
+.rb-loadout{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}.rb-loadout>div{display:flex;gap:6px;flex-wrap:wrap}.rb-slot{display:inline-flex;align-items:center;gap:5px;border:1px solid #684c49;background:#251a27;padding:3px 6px;font-size:14px;color:#ead4b3}.rb-slot .reward-art{width:25px;height:25px;object-fit:contain;image-rendering:pixelated}.rb-slot small{font-size:12px;color:#bdaaab}
+.rb-inventory{margin-top:8px}.rb-inventory dd{text-align:right;overflow-wrap:anywhere}
+.rb-history{margin-top:22px}.rb-history ol{padding:0;margin:0;list-style:none;max-height:240px;overflow:auto;scrollbar-color:#6d5361 #221a25}
+.rb-history li{padding:4px 0;display:flex;gap:12px;font-size:15px;color:#d3c0cf}.rb-history li>span{font-size:12px;color:#d3a46f;min-width:22px;padding-top:2px;font-variant-numeric:tabular-nums}
+@media(max-width:920px){.rb-lab-body{grid-template-columns:minmax(224px,.7fr) minmax(0,1.3fr)}.rb-tool .rb-combatant{display:block;padding:8px 12px}.rb-combatant>img{height:63px;width:65px;float:right}.rb-attribute-list{grid-template-columns:repeat(2,minmax(0,1fr))}.rb-workbench,.rb-trial{padding:18px}}
+@media(max-width:640px){.rb-lab-body{display:flex;flex-direction:column}.rb-workbench{border-right:0;border-bottom:3px double var(--rb-line)}.rb-workbench,.rb-trial{padding:16px}
+  .rb-workbench form{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.rb-workbench form>button,.rb-edit-fields{grid-column:1/-1}.rb-workbench h2:not(:first-child){margin-top:16px;padding-top:16px}.rb-edit-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.rb-edit-fields>label:only-of-type,.rb-edit-fields .rb-field-note{grid-column:1/-1}
+  .rb-trial-actions{margin-left:auto}.rb-tool .rb-combatant{min-height:108px;padding:6px 9px}.rb-combatant>img{height:52px;width:48px}.rb-combatant-info small{font-size:10px}
+  .rb-trial-top{gap:8px}.rb-feedback:empty{min-height:0}.rb-contenders{gap:7px}.rb-trial-actions button{font-size:14px;padding:6px 9px}.rb-sandbox .rb-tool-head h1{font-size:24px}
+}
