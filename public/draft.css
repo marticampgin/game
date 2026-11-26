@@ -1,0 +1,170 @@
+.loot-draft {
+  container: reward-draft / inline-size;
+  --draft-line: #58445f;
+  --draft-selected: #e9bd78;
+  --draft-text: #ecdeef;
+}
+
+.draft-heading {
+  align-items: center;
+  gap: 12px;
+}
+
+.draft-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(7px, 1vw, 14px);
+}
+
+.loot-draft .draft-card {
+  --rarity: #c6b5c8;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  min-height: 0;
+  animation: none;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--rarity) 50%, #1c1724);
+  border-top: 2px solid var(--rarity);
+  background: linear-gradient(145deg, #302332, #211925 72%);
+  text-align: left;
+}
+.loot-draft .draft-card.uncommon { --rarity: #a8d19b }
+.loot-draft .draft-card.rare { --rarity: #9bc5ee }
+.loot-draft .draft-card.epic { --rarity: #d0a6ee }
+.loot-draft .draft-card.legendary { --rarity: #efc076 }
+
+.loot-draft .draft-card:hover,
+.loot-draft .draft-card:focus-visible {
+  border-color: var(--rarity);
+  background: #302536;
+  transform: none;
+}
+
+.loot-draft .draft-card[aria-pressed=true] {
+  border-color: var(--draft-selected);
+  box-shadow: inset 0 0 0 1px #bc915344, 0 0 0 1px #d2a669;
+  background: linear-gradient(145deg, #382c31, #29202c 72%);
+}
+
+.draft-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: clamp(59px, 8vh, 84px);
+  background: #251d30 url('/assets/reliquary.webp') center 56% / cover no-repeat;
+  border-bottom: 1px solid var(--draft-line);
+}
+
+.draft-art .reward-art {
+  width: clamp(42px, 6.6vh, 62px);
+  height: clamp(42px, 6.6vh, 62px);
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 3px #100a1c);
+}
+
+.draft-select-mark {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  background: #1a1422;
+  border: 1px solid #a48eac;
+  box-shadow: 0 1px 2px #17101c;
+}
+
+[aria-pressed=true] .draft-select-mark {
+  color: #261b25;
+  background: var(--draft-selected);
+  border-color: #ffdd9c;
+}
+
+.draft-select-mark svg { width: 12px; height: 12px; stroke-width: 3 }
+.draft-copy { display: grid; align-content: start; gap: 3px; min-width: 0; padding: 10px 13px 9px }
+.draft-meta { color: var(--rarity); font: 500 12px/1.2 var(--pixel); text-transform: capitalize }
+.draft-meta span { opacity: .75; margin-inline: 1px }
+.draft-copy strong { font: 600 clamp(18px, 1.45vw, 22px)/1.07 var(--pixel); color: var(--ivory) }
+.draft-rule { color: var(--draft-text); font: 15px/1.26 var(--body) }
+.draft-readout {
+  display: block;
+  min-width: 0;
+  padding: 5px 13px 6px;
+  color: #e9cf9f;
+  font: 500 14px/1.25 var(--body);
+  background: #1b171f;
+  border-top: 1px solid #4a364b;
+  overflow-wrap: anywhere;
+}
+
+.draft-review {
+  grid-column: 1 / -1;
+  order: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--draft-selected);
+  background: #241d29;
+}
+
+.draft-prompt { color: #cbbbcf; border-color: var(--draft-line); font: 15px/1.3 var(--body) }
+.draft-review-copy { min-width: 0 }
+.draft-selected-label { display: inline-flex; align-items: center; gap: 4px; color: var(--draft-selected); font: 500 13px var(--pixel) }
+.draft-selected-label svg { width: 13px; height: 13px }
+.draft-review h3 { display: inline; margin-left: 8px; font: 600 19px/1.25 var(--pixel); overflow-wrap: anywhere }
+.draft-facts { display: grid; gap: 2px; padding: 0; margin: 4px 0 0; list-style: none; color: var(--draft-text); font: 15px/1.3 var(--body) }
+.draft-glossary { margin-top: 4px; color: #cfb7e0; font: 14px/1.35 var(--body) }
+.draft-glossary summary { width: fit-content; max-width: 100%; cursor: pointer; text-decoration: underline; text-underline-offset: 2px }
+.draft-glossary dl { margin: 6px 0 0; padding-left: 9px; border-left: 1px solid var(--draft-line) }
+.draft-glossary dt { display: inline; color: var(--ivory); font-weight: 600 }
+.draft-glossary dd { display: inline; margin-left: 6px; color: #d2c4d8 }
+.draft-confirm { min-height: 41px; flex: 0 0 auto; max-width: 45%; white-space: normal }
+.draft-confirm:disabled { border-color: #594960; background: #332b38; color: #c7b7c7; opacity: .7 }
+
+@container reward-draft (max-width: 660px) {
+  .draft-options { grid-template-columns: minmax(0, 1fr); gap: 6px }
+  .loot-draft .draft-card {
+    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
+    border-top-width: 1px;
+    border-left: 2px solid var(--rarity);
+  }
+  .draft-art {
+    grid-row: 1 / 3;
+    height: 100%;
+    min-height: 65px;
+    padding: 6px 3px 12px;
+    border: 0;
+    border-right: 1px solid var(--draft-line);
+    background-position: center 57%;
+  }
+  .draft-art .reward-art { width: 41px; height: 41px }
+  .draft-select-mark { right: 3px; bottom: 3px; top: auto; width: 12px; height: 12px }
+  .draft-select-mark svg { width: 10px; height: 10px }
+  .draft-copy { gap: 2px; padding: 6px 9px 4px }
+  .draft-meta { font-size: 11px }
+  .draft-rule { font-size: 14px; line-height: 1.22 }
+  .draft-readout { padding: 3px 9px 4px; font-size: 13px }
+  .draft-review { order: 0; flex-wrap: wrap; gap: 7px; padding: 8px 10px }
+  .draft-review .draft-confirm { min-height: 42px; max-width: 100%; margin-left: auto }
+  .draft-review h3 { font-size: 18px }
+  .draft-facts, .draft-prompt { font-size: 14px }
+  .draft-glossary summary { padding-block: 4px }
+}
+
+@container reward-draft (min-width: 440px) and (max-width: 660px) {
+  .loot-draft .draft-card { grid-template-columns: 74px minmax(0, 1fr) }
+  .draft-art .reward-art { width: 48px; height: 48px }
+  .draft-copy { padding: 7px 11px 5px }
+  .draft-copy strong { font-size: 20px }
+  .draft-readout { padding-inline: 11px; font-size: 14px }
+}
