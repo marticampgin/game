@@ -118,6 +118,10 @@ body[data-screen='battle'] {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+.turn-rail li em {
+  color: #c4afca;
+  font: 12px var(--body);
+}
 .turn-rail li:nth-child(n + 3) span {
   display: none;
 }
@@ -470,10 +474,12 @@ body[data-screen='battle'] {
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-  margin: 6px 0 -4px;
+  flex: none;
+  margin-left: auto;
 }
 .action-pages span {
-  margin-right: auto;
+  max-width: 78px;
+  text-align: right;
   font: 13px var(--body);
   color: var(--muted);
 }
@@ -627,7 +633,7 @@ body[data-screen='battle'] {
     font-size: 13px;
   }
   .turn-rail li span {
-    max-width: 53px;
+    max-width: 78px;
   }
   .turn-rail li img {
     width: 18px;
@@ -645,6 +651,9 @@ body[data-screen='battle'] {
     grid-template-areas: 'field' 'resolution' 'controls';
     grid-template-rows: auto;
     gap: 7px;
+  }
+  .turn-layout.choosing-action {
+    grid-template-areas: 'field' 'controls' 'resolution';
   }
   .turn-layout:not(:has(.turn-recap)) {
     grid-template-areas: 'field' 'controls';
@@ -720,7 +729,7 @@ body[data-screen='battle'] {
     flex: none;
     margin: 0 3px;
   }
-  .compact-seats .fighter-panel {
+  .compact-seats .combatant .fighter-panel {
     min-width: 0;
     flex: 1;
     margin-right: 26px;
@@ -751,7 +760,7 @@ body[data-screen='battle'] {
     padding: 0 1px;
     background: #312327;
     color: #ffcf81;
-    font: 11px var(--pixel);
+    font: 10px var(--pixel);
   }
   .compact-seats .fighter-status {
     margin: 0;
@@ -760,8 +769,6 @@ body[data-screen='battle'] {
   .compact-seats .fighter-info {
     top: 50%;
     transform: translateY(-50%);
-  }
-  .compact-seats .fighter-info {
     width: 30px;
     height: 40px;
     bottom: 1px;
@@ -776,6 +783,13 @@ body[data-screen='battle'] {
   .watch h2,
   .result h2 {
     font-size: 24px;
+  }
+  .action-pages {
+    gap: 3px;
+  }
+  .action-pages span {
+    max-width: 56px;
+    font-size: 12px;
   }
   .command-emblem {
     width: 29px;

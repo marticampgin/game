@@ -54,13 +54,13 @@ function combatant(p, view, viewerId, selection, feedback) {
   const action = targetable ? 'aim' : 'inspect';
   const caption = targetable ? 'Target ' : 'View ';
   return `<article class="combatant ${active ? 'acting' : ''} ${marked ? 'marked' : ''} ${p.alive ? '' : 'fallen'}" data-seat="${esc(p.id)}">
-    <button class="fighter-main" data-${action}="${esc(p.id)}" aria-label="${caption}${esc(p.name)}" ${targetable ? 'aria-pressed="' + !!marked + '"' : ''}>
+    <button class="fighter-main" data-${action}="${esc(p.id)}" aria-label="${caption}${esc(p.name)}" aria-describedby="vitals-${esc(p.id)}" ${targetable ? 'aria-pressed="' + !!marked + '"' : ''}>
       <span class="fighter-art ${reaction ? 'effect-' + reaction : ''}"><img src="${classArt(p.classId)}" alt="" draggable="false">${effect ? '<b class="fighter-impact" aria-hidden="true">' + esc(effect) + '</b>' : ''}</span>
-      <span class="fighter-panel"><span class="fighter-title">${esc(p.name)}</span><span class="fighter-detail">${esc(CLASSES[p.classId].name)}${mine ? ' · You' : ''}</span>
+      <span class="fighter-panel" id="vitals-${esc(p.id)}"><span class="fighter-title">${esc(p.name)}</span><span class="fighter-detail">${esc(CLASSES[p.classId].name)}${mine ? ' · You' : ''}</span>
         <span class="vital-bar" aria-hidden="true"><i style="width:${hp}%"></i></span>
         <span class="fighter-hp">${p.alive ? p.hp + '/' + p.maxHp + ' HP' : 'Eliminated'}${p.shield ? ' <b>◆ ' + p.shield + '</b>' : ''}</span>
-        ${firstStatus ? '<span class="fighter-status" title="' + esc(statusText) + '">' + esc(STATUSES[firstStatus[0]]?.name || firstStatus[0]) + ' ×' + firstStatus[1] + (statuses.length > 1 ? ' · +' + (statuses.length - 1) : '') + '</span>' : ''}
-      </span>${state ? '<span class="fighter-state">' + state + '</span><span class="fighter-token" aria-hidden="true">' + (active ? '◆' : marked ? '◎' : mine ? 'You' : '×') + '</span>' : ''}
+        ${firstStatus ? '<span class="fighter-status" title="' + esc(statusText) + '">' + esc(STATUSES[firstStatus[0]]?.name || firstStatus[0]) + ' ×' + firstStatus[1] + (statuses.length > 1 ? ' · +' + (statuses.length - 1) + ' more' : '') + '</span>' : ''}
+      </span>${state ? '<span class="fighter-state">' + state + '</span><span class="fighter-token" aria-hidden="true">' + (active ? (mine ? 'You' : 'Acting') : marked ? 'Target' : mine ? 'You' : 'Out') + '</span>' : ''}
     </button>
     <button class="fighter-info" data-inspect="${esc(p.id)}" title="Inspect ${esc(p.name + (statusText ? ' · ' + statusText : ''))}" aria-label="Inspect ${esc(p.name)}">
       <span class="info-icon" aria-hidden="true">i</span>
@@ -77,18 +77,18 @@ function turnRail(view, viewerId) {
         const p = view.players.find((p) => p.id === id);
         const when = end ? '' : i === 0 ? 'Acting' : i === 1 ? 'Up next' : 'Turn ' + (i + 1);
         return `<li><button data-inspect="${esc(id)}" aria-label="${esc([when, p.name].filter(Boolean).join(' · '))}" title="${esc([when, p.name].filter(Boolean).join(' · '))}">
-        <img src="${classArt(p.classId)}" alt=""><span>${id === viewerId ? 'You' : esc(p.name)}</span></button></li>`;
+        <img src="${classArt(p.classId)}" alt=""><span>${!end && i === 1 ? '<em>Next</em> ' : ''}${id === viewerId ? 'You' : esc(p.name)}</span></button></li>`;
       })
       .join(
         '',
       )}</ol>${view.nextEvent && !end ? `<button class="event-chip" data-ui="event" aria-label="Round ${view.nextEvent.round} event · ${esc(view.nextEvent.name)}" title="${esc(view.nextEvent.description)}"><img src="/assets/i-rune.png" alt=""><span>Round ${view.nextEvent.round} event<strong>${esc(view.nextEvent.name)}</strong></span></button>` : ''}</section>`;
 }
 
-function actionDock(view, player, selection, page) {
+function actionDock(view, player, selection, { actionPage, acquiredReward }) {
   const { actions, action, rivals, target } = selection;
   if (!action) return '<h2>No action available</h2>';
   const pages = Math.ceil(actions.length / 6);
-  const shownPage = Math.min(page || 0, pages - 1);
+  const shownPage = Math.min(actionPage || 0, pages - 1);
   const signature = player.abilities[0]?.id;
   const quick = ['attack', signature, 'defend', 'scavenge'];
   const ordered =
@@ -102,8 +102,14 @@ function actionDock(view, player, selection, page) {
   const preview = target
     ? previewAction(view, player.id, action.id, target.id).text
     : 'Choose a living rival to preview this action.';
-  return `<div class="dock-heading"><div><small>Your turn${view.remainingActions > 1 ? ' · ' + view.remainingActions + ' actions left' : ''}</small><h2>Choose an action</h2></div>
-    <img class="command-emblem" src="/assets/i-sword.png" alt=""></div>
+  return `<div class="dock-heading"><div><small>Your turn${view.remainingActions > 1 ? ' · ' + view.remainingActions + ' actions left' : ''}${acquiredReward ? ' · Took ' + esc(acquiredReward) : ''}</small><h2>Choose an action</h2></div>
+    ${
+      pages > 1
+        ? `<nav class="action-pages" aria-label="Action pages"><span>Actions ${shownPage * 6 + 1}–${Math.min((shownPage + 1) * 6, actions.length)} of ${actions.length}</span>
+      <button aria-label="Previous actions" data-action-page="${shownPage - 1}" ${shownPage === 0 ? 'disabled' : ''}>${glyph('back')}</button>
+      <button aria-label="More actions" data-action-page="${shownPage + 1}" ${shownPage === pages - 1 ? 'disabled' : ''}>${glyph('right')}</button></nav>`
+        : '<img class="command-emblem" src="/assets/i-sword.png" alt="">'
+    }</div>
     <div class="action-grid" role="group" aria-label="Available actions">${visible
       .map(
         (a) =>
@@ -112,13 +118,6 @@ function actionDock(view, player, selection, page) {
         <span>${esc(a.name)}${a.disabled ? '<small>' + esc(a.cooldown ? 'Cooldown · ' + a.cooldown : a.reason) + '</small>' : ''}</span></button>`,
       )
       .join('')}</div>
-    ${
-      pages > 1
-        ? `<nav class="action-pages" aria-label="Action pages"><span>Actions ${shownPage * 6 + 1}–${Math.min((shownPage + 1) * 6, actions.length)} of ${actions.length}</span>
-      <button aria-label="Previous actions" data-action-page="${shownPage - 1}" ${shownPage === 0 ? 'disabled' : ''}>${glyph('back')}</button>
-      <button aria-label="More actions" data-action-page="${shownPage + 1}" ${shownPage === pages - 1 ? 'disabled' : ''}>${glyph('right')}</button></nav>`
-        : ''
-    }
     <div class="target-panel"><div class="aim-line">${
       action.target === 'enemy'
         ? `<label for="target-select">Target</label><select id="target-select">${target ? '' : '<option value="" selected>Choose a rival</option>'}${rivals.map((p) => '<option value="' + esc(p.id) + '" ' + (p.id === target?.id ? 'selected' : '') + '>' + esc(p.name) + '</option>').join('')}</select>`
@@ -157,17 +156,18 @@ export function battleHTML(view, viewerId, ui) {
       ? waiting(view, player, active)
       : view.phase === 'acquire'
         ? draftHTML(view, player, ui.selectedDraft)
-        : actionDock(view, player, selection, ui.actionPage);
+        : actionDock(view, player, selection, ui);
   const living = players.filter((p) => p.alive).length;
+  const controls = `<section class="turn-controls" aria-label="Turn controls">${dock}</section>`;
+  const recap = `<div class="turn-resolution">${resolutionHTML(view, viewerId, ui.recap)}</div>`;
   return `<div class="battle-shell"><header class="battle-heading"><div><small>Round ${view.round} <span>◆</span> ${esc(view.age)}</small><h1>The Shattered Ring</h1></div>
       <nav class="battle-tools" aria-label="Match tools">${tool('build', 'Your inventory', 'book')}${tool('history', 'Battle log', 'scroll')}${tool('atlas', 'Atlas', 'dice')}</nav></header>
     ${turnRail(view, viewerId)}
-    <div class="turn-layout"><div class="turn-field"><section class="turn-board ${players.length > 2 ? 'compact-seats' : ''} ${players.length > 4 ? 'many-seats' : ''}" aria-label="Battlefield">
+    <div class="turn-layout ${selection ? 'choosing-action' : ''}"><div class="turn-field"><section class="turn-board ${players.length > 2 ? 'compact-seats' : ''} ${players.length > 4 ? 'many-seats' : ''}" aria-label="Battlefield">
       <div class="arena-label"><span>${glyph('swords')} Battlefield</span><small>${living} / ${players.length} standing</small></div>
       <div class="seat-grid" style="--columns:${Math.min(players.length, 4)}">${players.map((p) => combatant(p, view, viewerId, selection, ui.feedback)).join('')}</div>
       </section></div>
-      <section class="turn-controls" aria-label="Turn controls">${dock}</section>
-      <div class="turn-resolution">${resolutionHTML(view, viewerId, ui.recap)}</div>
+      ${selection ? controls + recap : recap + controls}
     </div><footer class="battle-bottom">${tool('leave', end ? 'Main menu' : 'Leave match', 'back')}</footer></div>`;
 }
 

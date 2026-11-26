@@ -47,7 +47,7 @@ test('one ordered public recap captures damage, shield break, revival, hidden wa
   }
 });
 
-test('draft picks, rerolls and reconnects preserve the last resolved action; missed polls keep six distinct recaps',()=>{
+test('draft picks, rerolls and reconnects preserve the last resolved action; missed polls keep eight distinct recaps',()=>{
   let s=use(choose(opening(),'iron-shard'),'defend');
   const previous=recent(s);
   s=applyCommand(s,s.activeId,{type:'reroll'});
@@ -61,7 +61,7 @@ test('draft picks, rerolls and reconnects preserve the last resolved action; mis
     s=use(s,'defend');
   }
   const view=viewMatch(s,'g');
-  assert.deepEqual(view.recentActions.map(r=>r.id),[4,5,6,7,8,9]);
+  assert.deepEqual(view.recentActions.map(r=>r.id),[2,3,4,5,6,7,8,9]);
   assert.strictEqual(view.recentActions.at(-1),view.lastAction);
   view.lastAction.events.length=0;
   assert.ok(recent(s).events.length);

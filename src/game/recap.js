@@ -1,4 +1,5 @@
-const historyLimit = 6;
+// Keep a complete circuit of an eight-seat table between ordinary turns.
+const historyLimit = 8;
 const eventLimit = 32;
 const recording = new WeakMap();
 const outcomes = new Set(['action','damage','heal','shield','stat','status','synergy','elimination','revival','event','reward','victory','timing','cooldown']);

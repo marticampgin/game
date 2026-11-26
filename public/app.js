@@ -20,6 +20,7 @@ let screen = 'menu',
 let choice = 'attack',
   target = '',
   selectedDraft = '',
+  acquiredReward = '',
   actionPage = 0,
   pinnedAction = null,
   turnKey = '',
@@ -144,6 +145,7 @@ function refreshBattle() {
     choice = 'attack';
     target = '';
     selectedDraft = '';
+    acquiredReward = '';
     actionPage = 0;
     turnKey = key;
   }
@@ -157,6 +159,9 @@ function refreshBattle() {
     'data-aim',
     'data-action',
     'data-recap-id',
+    'data-pick',
+    'data-execute',
+    'data-action-page',
     'data-ui',
     'data-inspect',
     'id',
@@ -169,6 +174,7 @@ function refreshBattle() {
     actionPage,
     target,
     selectedDraft,
+    acquiredReward,
     feedback: recent,
     recap: { expanded: !!pinnedAction, actionId: pinnedAction?.id, pinnedAction },
   });
@@ -184,10 +190,20 @@ function refreshBattle() {
   }
   const actor = v.players.find((p) => p.id === v.activeId);
   const phase = { acquire: 'choosing a reward', action: 'choosing an action' };
-  const announcement =
+  const handoff =
     v.phase === 'finished'
       ? 'Match complete.'
       : (v.activeId === match.viewerId ? 'Your turn' : actor.name + ' is up') + ' · ' + phase[v.phase];
+  const resolved = v.lastAction;
+  const announcement = resolved
+    ? resolved.actorName +
+      ' used ' +
+      resolved.actionName +
+      '. ' +
+      (app.querySelector('.recap-outcome p')?.textContent || '') +
+      '. ' +
+      handoff
+    : handoff;
   const live = document.querySelector('#battle-announcement');
   if (live.textContent !== announcement) live.textContent = announcement;
   if (match.state)
@@ -260,7 +276,10 @@ async function command(cmd) {
       if (next.revision >= match.view.revision) match.view = next;
     }
     if (cmd.type === 'pick' || cmd.type === 'reroll') selectedDraft = '';
-    if (cmd.type === 'pick') chime('reward');
+    if (cmd.type === 'pick') {
+      acquiredReward = REWARDS[cmd.rewardId].name;
+      chime('reward');
+    }
     if (modal.open) modal.close();
     refreshBattle();
     const focusNext = cmd.type === 'pick' ? '.turn-controls h2' : cmd.type === 'act' ? '.recap-toggle' : '';
@@ -268,6 +287,10 @@ async function command(cmd) {
       const node = app.querySelector(focusNext);
       if (node?.tagName === 'H2') node.tabIndex = -1;
       node?.focus({ preventScroll: true });
+      if (innerWidth <= 760) {
+        const region = cmd.type === 'act' ? app.querySelector('.recap-strip') : node;
+        region?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+      }
     }
   } catch (e) {
     if (epoch === start) notice(e.message);

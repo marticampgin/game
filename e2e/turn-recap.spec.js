@@ -75,7 +75,7 @@ test('two human clients see the same resolved hit, browse prior actions and keep
     await recap(actingPage).getByRole('button',{name:'Effects'}).click();
     const pinned = await recap(actingPage).locator('.recap-details').getAttribute('data-shown-action-id');
     let next = await roomRequest(request,room,undefined,actor);
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 10; i++) {
       const seat = next.game.activeId === actor.playerId ? actor : other;
       if (next.game.phase === 'acquire') next = await pickOpeningReward(request,room,seat);
       next = await roomRequest(request,room + '/command',{revision:next.revision,command:{type:'act',actionId:'defend'}},seat);
