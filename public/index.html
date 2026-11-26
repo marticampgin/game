@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#14101e">
+  <meta name="description" content="Riftbound is a turn-based multiplayer pixel art arena. Draft rewards, discover combinations and fight to be the last contender standing.">
+  <title>Riftbound · Roguelike Battle Arena</title>
+  <link rel="icon" href="/assets/rift.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/pixel.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/lobby.css">
+  <link rel="stylesheet" href="/atlas.css">
+</head>
+<body>
+  <header class="topbar">
+    <button id="brand" aria-label="Riftbound main menu"><img src="/assets/rift.svg" alt=""><span>RIFTBOUND</span></button>
+    <div class="utilities"><button id="sound" class="icon-button" aria-label="Enable sound" title="Enable sound"></button><span class="divider"></span><button id="settings" class="icon-button" aria-label="Settings and rules" title="Settings and rules"></button></div>
+  </header>
+  <main id="app"></main>
+  <dialog id="dialog"><div id="dialog-content"></div></dialog>
+  <div id="notice" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
