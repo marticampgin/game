@@ -64,8 +64,10 @@ for (const seats of [2, 8]) {
         await expect(page.locator('.dock-heading')).toContainText('Took Iron Shard');
         const confirm = page.locator('.confirm-action');
         await expect(page.locator('.action-pages')).toContainText('1–6 of 11');
-        if (seats === 8) await expect(confirm).toBeDisabled();
-        else await expect(confirm).toHaveAttribute('data-target', rival.id);
+        if (seats === 8) {
+          await expect(confirm).toBeDisabled();
+          await expect(page.locator('.action-description')).toContainText('Strike a rival');
+        } else await expect(confirm).toHaveAttribute('data-target', rival.id);
         await page.getByRole('button', { name: 'More actions' }).click();
         await expect(page.locator('.action-pages')).toContainText('7–11 of 11');
         await page.locator('[data-action="ward-lantern"]').click();

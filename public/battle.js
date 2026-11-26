@@ -123,7 +123,7 @@ function actionDock(view, player, selection, { actionPage, acquiredReward }) {
         ? `<label for="target-select">Target</label><select id="target-select">${target ? '' : '<option value="" selected>Choose a rival</option>'}${rivals.map((p) => '<option value="' + esc(p.id) + '" ' + (p.id === target?.id ? 'selected' : '') + '>' + esc(p.name) + '</option>').join('')}</select>`
         : '<span>Target</span><strong>Yourself</strong>'
     }</div>
-      ${target && preview !== action.description ? '<p class="action-description">' + esc(action.description) + '</p>' : ''}
+      ${preview !== action.description ? '<p class="action-description">' + esc(action.description) + '</p>' : ''}
       <p class="preview" aria-live="polite">${esc(preview)}</p>
       <button class="primary confirm-action" data-execute="${esc(action.id)}" data-target="${esc(target?.id)}" ${target ? '' : 'disabled'}>Use ${esc(action.name)} ${glyph('right')}</button>
     </div>`;

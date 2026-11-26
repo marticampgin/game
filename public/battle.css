@@ -338,6 +338,9 @@ body[data-screen='battle'] {
   background: none;
   color: #d9c2e2;
 }
+.combatant:has(.fighter-status) .fighter-info {
+  bottom: 49px;
+}
 .info-icon {
   font:
     bold 12px/15px Georgia,
@@ -696,6 +699,9 @@ body[data-screen='battle'] {
     right: 0;
     width: 34px;
     height: 34px;
+  }
+  .combatant:has(.fighter-status) .fighter-info {
+    bottom: 33px;
   }
   .fighter-state {
     top: 4px;

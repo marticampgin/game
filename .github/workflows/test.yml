@@ -16,8 +16,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
+      - run: npm run test:turn:webkit
       - run: npm run simulate -- 12 4 ci
       - uses: actions/upload-artifact@v6
         if: failure()

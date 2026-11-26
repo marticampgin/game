@@ -37,14 +37,15 @@ The **Sandbox** uses the match engine directly. Load a seeded encounter, grant r
 
 ```sh
 npm test
-npx playwright install chromium
+npx playwright install chromium webkit
 npm run test:e2e
+npm run test:turn:webkit
 npm run simulate -- 80 4 watchfire
 ```
 
 The simulation arguments are match count, seat count and seed prefix. The report includes round counts, first eliminations, class wins and draws. In the initial 80-match four-player `watchfire` batch, the median match lasted 36 rounds and the median first elimination occurred in round 23. The observed range was 24–47 rounds. The 25–40 minute human match length remains a playtest target.
 
-GitHub Actions runs the rules and server tests, Chromium browser flows and seeded matches on each push and pull request. Playwright starts the server automatically and retains screenshots and traces for failed tests.
+GitHub Actions runs the rules and server tests, Chromium browser flows, WebKit turn tests and seeded matches on each push and pull request. Playwright starts the server automatically and retains screenshots and traces for failed tests.
 
 ## Develop
 
