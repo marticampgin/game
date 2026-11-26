@@ -70,6 +70,7 @@ export function resonance(player, reward) {
   return Number(reward.produces.some(tag => consumed.has(tag))) +
     Number(reward.consumes.some(tag => produced.has(tag)));
 }
+export const armorPromotionChance = armor => Math.min(0.35,Math.floor(armor / 20) * 0.05);
 
 export function drawOffers(state, player) {
   const result = [];
@@ -79,7 +80,7 @@ export function drawOffers(state, player) {
     const left = candidates.filter(r => !result.includes(r.id));
     let tier = weighted(state, RARITIES, rarityWeights(config,state.round));
     if (player.artifacts.some(id => REWARDS[id].armorFortune) &&
-        random(state) < Math.min(0.35, Math.floor(player.armor / 20) * 0.05)) {
+        random(state) < armorPromotionChance(player.armor)) {
       tier = RARITIES[Math.min(RARITIES.length - 1, RARITIES.indexOf(tier) + 1)];
     }
     const sameRarity = left.filter(r => r.rarity === tier);

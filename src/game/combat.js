@@ -1,16 +1,23 @@
 import { REWARDS, STATUSES } from './catalog.js';
 import { eligible, modifiedSlot, sample } from './draft.js';
+import { captureOutcome } from './recap.js';
 
 export const findPlayer = (state,id) => state.players.find(p => p.id === id);
 const shards = Object.values(REWARDS).filter(r => r.category === 'shard' && r.id !== 'fortune-chip');
 const eventBudget = new WeakMap();
 const statLabels = {armor:'armor',attack:'attack',spellPower:'spell power',maxHp:'maximum health',regen:'regeneration',rerolls:'reroll'};
+export const statGain = (p,key,amount) => amount + Number(key === 'armor' && p.classId === 'guardian' && amount > 0);
+export const receivedHealing = (p,amount) => Math.round(amount * (1 - Math.min(0.8,(p.statuses.curse || 0) * 0.2)));
+export const defendShield = p => 6 + Math.floor(p.armor / 2);
+export const castCooldown = (reward,slot) => Math.max(1,reward.cooldown - Number(slot?.modifiers.includes('accelerate') || false));
+export const echoDamage = raw => Math.round(raw * 0.4);
 export function record(state,type,text,details={}) {
   const entry = {id:++state.logSequence,round:state.round,type,text};
   for (const [key,value] of Object.entries(details)) {
     if (value !== undefined) entry[key] = value;
   }
   state.log.push(entry);
+  captureOutcome(state,entry);
   if (state.log.length > state.config.logLimit) state.log.shift();
 }
 export function capacity(state,player,kind) {
@@ -21,7 +28,7 @@ export function currentAttack(player) {
   const bonus = player.classId === 'berserker' ? Math.floor(10 * (player.maxHp - player.hp) / player.maxHp) : 0;
   return player.attack + bonus;
 }
-const scaled = (p, base, scale, factor=1) => Math.round((base || 0) + (scale ? (scale === 'attack' ? currentAttack(p) : p[scale]) * factor : 0));
+export const scaled = (p, base, scale, factor=1) => Math.round((base || 0) + (scale ? (scale === 'attack' ? currentAttack(p) : p[scale]) * factor : 0));
 const modifierFactor = (slot) => (slot?.modifiers.includes('amplify') ? 1.4 : 1) * (slot?.modifiers.includes('accelerate') ? 0.85 : 1);
 export function rawHit(player,target,effect,slot) {
   const value = effect.kind === 'consumeHit' ? effect.base + effect.factor * (target.statuses[effect.key] || 0)
@@ -61,7 +68,7 @@ export function trigger(state,player,event,context={}) {
 }
 export function restore(state,p,amount,label) {
   if (!p?.alive || amount <= 0) return;
-  const net = Math.round(amount * (1 - Math.min(0.8,(p.statuses.curse || 0) * 0.2)));
+  const net = receivedHealing(p,amount);
   const healed = Math.min(p.maxHp - p.hp,net);
   p.hp += healed;
   if (healed) record(state,'heal',p.name + ' recovered ' + healed + ' health from ' + label + '.', {targetId:p.id,amount:healed});
@@ -101,7 +108,7 @@ function addStatus(state,p,target,key,amount,label) {
   trigger(state,p,'applyStatus',{key,target});
 }
 export function addStat(state,p,key,amount,label) {
-  if (key === 'armor' && p.classId === 'guardian' && amount > 0) amount++;
+  amount = statGain(p,key,amount);
   p[key] += amount;
   record(state,'stat',p.name + ' gained ' + amount + ' ' + statLabels[key] + ' from ' + label + '.',{targetId:p.id,amount});
   if (key === 'maxHp') restore(state,p,amount,label);
@@ -136,7 +143,8 @@ export function deal(state,source,target,raw,label,flags={}) {
   target.shield -= shieldDamage;
   target.hp -= healthDamage;
   const split = shieldDamage ? ' (' + shieldDamage + ' to shield)' : '';
-  record(state,'damage',label + ' dealt ' + damage + ' to ' + target.name + split + '.',{actorId:source?.id,targetId:target.id,amount:damage,shieldDamage,healthDamage});
+  record(state,'damage',label + ' dealt ' + damage + ' to ' + target.name + split + '.',{actorId:source?.id,targetId:target.id,amount:damage,shieldDamage,healthDamage,
+    shieldBroken:shieldDamage > 0 && target.shield === 0});
   if (target.hp <= 0) {
     if (!react(state,target,'lethal')) {
       target.alive = false;
@@ -156,7 +164,10 @@ export function deal(state,source,target,raw,label,flags={}) {
 function removeStatus(state,p,target,key) {
   const count = target.statuses[key] || 0;
   setStatus(target,key,0);
-  if (count) trigger(state,p,'consumedStatus',{amount:count,key,target});
+  if (count) {
+    record(state,'status',p.name + ' consumed ' + count + ' ' + STATUSES[key].name + ' from ' + target.name + '.',{actorId:p.id,targetId:target.id,amount:count});
+    trigger(state,p,'consumedStatus',{amount:count,key,target});
+  }
   return count;
 }
 export function grantReward(state,p,id,replaceIndex) {
@@ -190,7 +201,7 @@ export function executeEffects(state,p,target,effects,context={}) {
         const raw = rawHit(p,target,e,slot);
         if (e.kind === 'consumeHit') removeStatus(state,p,target,e.key);
         deal(state,p,target,raw,label,{trueDamage:e.trueDamage,direct:true,flavor:e.flavor});
-        if (slot?.modifiers.includes('echo') && target.alive) state.delayed.push({source:p.id,target:target.id,raw:Math.round(raw * 0.4),due:state.globalTurn + 1,label:label + ' echo',trueDamage:Boolean(e.trueDamage)});
+        if (slot?.modifiers.includes('echo') && target.alive) state.delayed.push({source:p.id,target:target.id,raw:echoDamage(raw),due:state.globalTurn + 1,label:label + ' echo',trueDamage:Boolean(e.trueDamage)});
         break;
       }
       case 'heal': restore(state,p,scaled(p,e.amount,e.scale,e.factor),label); break;
@@ -219,17 +230,25 @@ export function executeEffects(state,p,target,effects,context={}) {
         break;
       }
       case 'cooldown':
-        for (const a of p.abilities) a.cooldown = Math.max(0,a.cooldown - e.amount);
+        for (const a of p.abilities) {
+          const previous = a.cooldown;
+          a.cooldown = Math.max(0,a.cooldown - e.amount);
+          if (a.cooldown < previous) {
+            record(state,'cooldown',label + ' advanced ' + p.name + '’s ' + REWARDS[a.id].name + ' cooldown from ' + previous + ' to ' + a.cooldown + '.',{targetId:p.id,amount:previous-a.cooldown});
+          }
+        }
         break;
       case 'extraAction':
         if (!p.usedBorrowedTime && p.id === state.activeId && state.phase === 'action') {
           p.usedBorrowedTime = true;
           state.remainingActions++;
+          record(state,'timing',p.name + ' gained an extra action from ' + label + '.',{actorId:p.id});
         }
         break;
       case 'extraTurn':
         p.extraTurnRound = state.round;
         state.extraTurnId = p.id;
+        record(state,'timing',p.name + ' gained an extra full turn from ' + label + '.',{actorId:p.id});
         break;
       default: throw Error('Unknown effect: ' + e.kind);
     }

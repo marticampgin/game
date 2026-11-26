@@ -1,10 +1,12 @@
 import { CLASSES, DEFAULT_CONFIG, EVENTS, REWARDS, STATUSES } from './catalog.js';
 import { drawOffers, eligible, sample, seedNumber, shuffled } from './draft.js';
-import { assessHit, capacity, deal, executeEffects, findPlayer, grantReward, rawHit, record, restore, setStatus, spendConsumable, tickStatus, trigger } from './combat.js';
+import { assessHit, capacity, castCooldown, deal, defendShield, executeEffects, findPlayer, grantReward, rawHit, record, restore, setStatus, spendConsumable, tickStatus, trigger } from './combat.js';
+import { beginRecap, finishRecap, markBoundary, publicEvent, publicRecap, resumeRecap } from './recap.js';
 
 export { CLASSES, DEFAULT_CONFIG, EVENTS, RARITIES, REWARDS, STATUSES } from './catalog.js';
 export { rarityWeights, resonance, eligible } from './draft.js';
 export { currentAttack } from './combat.js';
+export { previewReward } from './reward-preview.js';
 
 const ageNames = ['Age of Discovery','Age of Conflict','Age of Ascension','Age of Chaos'];
 const standard = {
@@ -51,7 +53,7 @@ export function createMatch({seed,players,config}={}) {
   seed ??= globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
   const state = {version:1,seed:String(seed),rng:seedNumber(seed),config:configuration(config),players:players.map(makePlayer),
     round:1,age:ageNames[0],globalTurn:0,globalAction:0,phase:'acquire',activeId:null,winnerId:null,offers:[],
-    remainingActions:1,extraTurnId:null,bonusDraft:false,order:[],queue:[],delayed:[],log:[],logSequence:0,nextEvent:null};
+    remainingActions:1,extraTurnId:null,bonusDraft:false,order:[],queue:[],delayed:[],log:[],logSequence:0,nextEvent:null,recentActions:[]};
   state.order = shuffled(state,state.players.map(p => p.id));
   state.queue = [...state.order];
   announceEvent(state);
@@ -79,6 +81,7 @@ function arenaEvent(state,id) {
 }
 function beginRound(state) {
   state.round++;
+  markBoundary(state,'round');
   state.age = ageAt(state);
   if (state.nextEvent.round <= state.round) {
     arenaEvent(state,state.nextEvent.id);
@@ -106,6 +109,7 @@ function startNextTurn(state) {
     const p = findPlayer(state,id);
     if (!p?.alive) continue;
     state.activeId = id;
+    markBoundary(state,'turn',id);
     state.globalTurn++;
     p.personalTurn++;
     p.usedBorrowedTime = false;
@@ -177,7 +181,7 @@ export function previewAction(state,playerId,actionId,targetId) {
     if (status) text += ' · ' + status.amount * (status.key === 'burn' && p.artifacts.includes('phoenix-feather') ? 2 : 1) + ' ' + STATUSES[status.key].name;
     return {...hit,text};
   }
-  if (actionId === 'defend') return {text:'Gain ' + (6 + Math.floor(p.armor / 2)) + ' shield.'};
+  if (actionId === 'defend') return {text:'Gain ' + defendShield(p) + ' shield.'};
   return {text:def.description};
 }
 function act(state,p,command) {
@@ -189,21 +193,39 @@ function act(state,p,command) {
   requireValue(target?.alive && (def.target !== 'enemy' || target !== p),'Select a living rival.');
   state.globalAction++;
   record(state,'action',p.name + ' used ' + def.name + (target === p ? '.' : ' on ' + target.name + '.'),{actorId:p.id,targetId:target.id});
-  if (p.statuses.freeze) setStatus(p,'freeze',0);
+  const announcement = state.log.at(-1);
+  beginRecap(state,p,def,target);
+  if (p.statuses.freeze) {
+    setStatus(p,'freeze',0);
+    record(state,'status',p.name + ' thawed.',{targetId:p.id});
+  }
   if (def.target === 'enemy') tickStatus(state,p,'bleed');
-  if (!p.alive || !target.alive) { finishAction(state,p); return; }
+  if (!p.alive || !target.alive) {
+    // Bleed can cancel an attempted throw before spending the private item.
+    // Its identity must stay out of the public command header and timeline.
+    if (def.category === 'consumable') {
+      const recap = state.recentActions.at(-1);
+      recap.actionId = 'interrupted';
+      recap.actionName = 'Interrupted action';
+      announcement.text = p.name + ' attempted an action on ' + target.name + '.';
+    }
+    record(state,'timing',p.name + '’s action was interrupted.',{actorId:p.id,targetId:target.id});
+    finishAction(state,p);
+    return;
+  }
   if (def.id === 'scavenge') {
     state.offers = drawOffers(state,p);
     state.bonusDraft = true;
     state.phase = 'acquire';
+    record(state,'timing',p.name + ' opened an additional reward draft.',{actorId:p.id});
     return;
   }
   if (def.id === 'defend') {
-    executeEffects(state,p,p,[{kind:'shield',amount:6 + Math.floor(p.armor / 2)}],{label:'Defend'});
+    executeEffects(state,p,p,[{kind:'shield',amount:defendShield(p)}],{label:'Defend'});
     trigger(state,p,'defend');
   } else {
     const slot = p.abilities.find(a => a.id === def.id);
-    if (slot) slot.cooldown = Math.max(1,def.cooldown - Number(slot.modifiers.includes('accelerate')));
+    if (slot) slot.cooldown = castCooldown(def,slot);
     if (def.category === 'consumable') spendConsumable(state,p,def.id);
     executeEffects(state,p,target,def.effects,{label:def.name,slot});
   }
@@ -227,12 +249,14 @@ export function applyCommand(previous,playerId,command) {
       record(state,'reward',p.name + ' rerolled the draft.',{actorId:p.id});
     } else {
       requireValue(command.type === 'pick' && state.offers.includes(command.rewardId),'Choose one of the offered rewards.');
+      if (state.bonusDraft && state.recentActions?.at(-1)?.actionId === 'scavenge') resumeRecap(state);
       grantReward(state,p,command.rewardId,command.replaceIndex);
       state.offers = [];
       if (state.bonusDraft) finishAction(state,p);
       else state.phase = 'action';
     }
   }
+  finishRecap(state);
   return state;
 }
 
@@ -250,15 +274,9 @@ export function viewMatch(state,viewerId=null) {
     ...(p.id === viewerId ? {consumables:p.consumables,extraTurnRound:p.extraTurnRound} : {})
   }));
   const upcoming = phase === 'finished' ? [] : [activeId,state.extraTurnId,...state.queue,...order].filter(id => id && findPlayer(state,id)?.alive);
-  const history = log.map(e => {
-    const entry = {id:e.id,round:e.round,type:e.type,text:e.text};
-    for (const key of ['actorId','targetId','amount','shieldDamage','healthDamage']) {
-      if (e[key] !== undefined) entry[key] = e[key];
-    }
-    return entry;
-  });
+  const recentActions = (state.recentActions || []).map(publicRecap);
   return structuredClone({round,age,phase,activeId,winnerId,globalTurn,globalAction,remainingActions,bonusDraft,order,upcoming,players,
-    log:history,nextEvent,config:{abilitySlots:state.config.abilitySlots,consumableSlots:state.config.consumableSlots,
+    log:log.map(publicEvent),recentActions,lastAction:recentActions.at(-1) || null,nextEvent,config:{abilitySlots:state.config.abilitySlots,consumableSlots:state.config.consumableSlots,
       armorConstant:state.config.armorConstant,rounding:state.config.rounding},offers:viewerId && viewerId === activeId ? state.offers : []});
 }
 
