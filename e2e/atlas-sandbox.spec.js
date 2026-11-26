@@ -84,3 +84,24 @@ test('sandbox applies live edits, reproduces builds and carries them into battle
   await expect(page.getByRole('dialog')).toContainText('Phoenix Heart');
   expect(errors).toEqual([]);
 });
+
+for (const width of [320, 390]) {
+  test('mobile atlas opens with its active region and reward visible at ' + width + 'px', async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Reward Atlas', exact: true }).click();
+    const map = page.getByRole('region', { name: /Constellation map/ });
+    const region = map.getByRole('button', { name: 'Focus Bulwark constellation' });
+    const node = map.locator('[aria-pressed=true]');
+    await expect(node).toHaveAccessibleName('Bastion Bash');
+    await expect.poll(async () => {
+      const [viewport, title, selection, controls] = await Promise.all([
+        map.boundingBox(), region.boundingBox(), node.boundingBox(), map.locator('.rb-map-controls').boundingBox(),
+      ]);
+      if (!viewport || !title || !selection || !controls) return false;
+      return title.y >= controls.y + controls.height && [title, selection].every(box =>
+        box.x >= viewport.x && box.y >= viewport.y && box.x + box.width <= viewport.x + viewport.width &&
+        box.y + box.height <= viewport.y + viewport.height);
+    }).toBe(true);
+  });
+}

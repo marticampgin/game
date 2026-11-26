@@ -98,9 +98,25 @@ export function mountAtlas(host, { onClose } = {}) {
   function overview() {
     center({ x: MAP_WIDTH / 2, y: MAP_HEIGHT / 2 }, fitScale());
   }
+  function focusReward(id, scale) {
+    const point = graph.points.get(id);
+    center(point, scale);
+    if (map.clientWidth >= 480) return;
+    const frame = map.getBoundingClientRect();
+    const title = get(`[data-region="${point.region.id}"]`).getBoundingClientRect();
+    const dot = get(`[data-node="${id}"]`).getBoundingClientRect();
+    // Keep the focused constellation's title below the zoom toolbar while
+    // retaining the whole selected reward when they sit far apart.
+    const toolbarBottom = get('.rb-map-controls').getBoundingClientRect().bottom;
+    const shiftY = Math.min(Math.max(0, toolbarBottom + 6 - title.top), frame.bottom - dot.bottom - 8);
+    const shiftX = Math.max(0, frame.left + 8 - title.left) - Math.max(0, title.right - frame.right + 8);
+    x += Math.max(frame.left + 8 - dot.left, Math.min(shiftX, frame.right - dot.right - 8));
+    y += Math.max(0, shiftY);
+    transform();
+  }
   function frameVisible() {
     if (selected && (map.clientWidth < 480 || visible.length === 1)) {
-      center(graph.points.get(selected), Math.max(.97, fitScale() * 1.35));
+      focusReward(selected, Math.max(.97, fitScale() * 1.35));
     } else overview();
   }
   function zoomAt(amount, cx = map.clientWidth / 2, cy = map.clientHeight / 2) {
@@ -160,7 +176,7 @@ export function mountAtlas(host, { onClose } = {}) {
     }
     selected = id;
     paint();
-    if (focusMap) center(graph.points.get(id), Math.max(.95, fitScale() * 1.35));
+    if (focusMap) focusReward(id, Math.max(.95, fitScale() * 1.35));
   }
   function showHover(button) {
     const reward = REWARDS[button.dataset.node];
