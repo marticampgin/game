@@ -113,15 +113,15 @@ export function addStat(state,p,key,amount,label) {
   record(state,'stat',p.name + ' gained ' + amount + ' ' + statLabels[key] + ' from ' + label + '.',{targetId:p.id,amount});
   if (key === 'maxHp') restore(state,p,amount,label);
 }
-function usedConsumable(state,p) {
-  if (p.classId === 'alchemist') executeEffects(state,p,p,[{kind:'shards',amount:1}],{label:'Distillation'});
+function usedConsumable(state,p,shard) {
+  if (shard) executeEffects(state,p,p,shard.effects,{label:'Distillation / ' + shard.name});
   trigger(state,p,'usedConsumable');
 }
 export function spendConsumable(state,p,id) {
   const i = p.consumables.indexOf(id);
   if (i < 0) throw Error('That consumable is unavailable.');
   p.consumables.splice(i,1);
-  usedConsumable(state,p);
+  usedConsumable(state,p,p.classId === 'alchemist' ? sample(state,shards) : null);
 }
 function react(state,target,key) {
   const id = target.consumables.find(id => REWARDS[id].reaction === key);
@@ -253,6 +253,65 @@ export function executeEffects(state,p,target,effects,context={}) {
       default: throw Error('Unknown effect: ' + e.kind);
     }
   }
+}
+
+export function resolveDefend(state,p) {
+  executeEffects(state,p,p,[{kind:'shield',amount:defendShield(p)}],{label:'Defend'});
+  trigger(state,p,'defend');
+}
+
+// Forecast one self-targeted support action through the same effect handlers
+// as combat. The isolated subject has no next-turn ticks, rivals or live RNG.
+function supportOutcome(player,reward,effects,shard) {
+  const p = structuredClone({...player,sources:{}});
+  const state = {activeId:p.id,phase:'action',round:0,logSequence:0,log:[],config:{logLimit:64},remainingActions:1};
+  if (reward.category === 'consumable') {
+    p.consumables.splice(p.consumables.indexOf(reward.id),1);
+    usedConsumable(state,p,shard);
+  }
+  // Only attribute the action's own restoration to it. A shard can change
+  // health or maximum health before the consumable runs, especially under Curse.
+  const {hp,attack,shield,regen} = p;
+  if (reward.id === 'defend') resolveDefend(state,p);
+  else executeEffects(state,p,p,effects,{label:reward.name});
+  return {
+    healing:p.hp-hp,
+    shield:p.shield-shield,
+    regeneration:p.regen-regen,
+    attack:p.attack-attack,
+    cleansed:Object.fromEntries(Object.entries(player.statuses).filter(([key]) => !p.statuses[key]))
+  };
+}
+
+export function previewSelfSupport(player,reward) {
+  if (reward.target !== 'self' || reward.reaction) return null;
+  const defending = reward.id === 'defend';
+  const effects = reward.effects || [];
+  const healing = effects.some(e => e.kind === 'heal' || e.kind === 'purify');
+  if (!defending && !healing && !effects.some(e => e.kind === 'shield')) return null;
+  const distills = player.classId === 'alchemist' && reward.category === 'consumable';
+  const options = distills ? shards : [null];
+  const outcomes = options.map(shard => supportOutcome(player,reward,effects,shard));
+  const [first] = outcomes;
+  const possibleHealing = [...new Set(outcomes.map(o=>o.healing))].sort((a,b)=>a-b);
+  const parts = [];
+  const cleansed = Object.entries(first.cleansed);
+  if (cleansed.length) parts.push('Cleanse ' + cleansed.map(([key,n]) => n + ' ' + STATUSES[key].name).join(', '));
+  else if (effects.some(e => e.kind === 'cleanse' || e.kind === 'purify')) parts.push('No active stacks to cleanse');
+  if (first.shield) parts.push('Gain ' + first.shield + ' shield (' + (player.shield + first.shield) + ' total)');
+  if (healing || possibleHealing.some(n => n > 0)) {
+    const full = possibleHealing.length === 1 && first.healing === 0 && player.hp === player.maxHp;
+    parts.push('Recover ' + possibleHealing.join(' or ') + ' health' + (full ? ' (already at full health)' : ''));
+  }
+  if (first.regeneration) parts.push('Gain ' + first.regeneration + ' regeneration');
+  if (player.artifacts.includes('glass-orchard') && outcomes.some(o => o.attack === 1)) {
+    parts.push(outcomes.every(o => o.attack === 1) ? 'Glass Orchard grants 1 attack' : 'Glass Orchard may grant 1 attack');
+  }
+  if (distills) parts.push('Distillation draws a stat shard first');
+  return {
+    text:parts.join(' · '),shieldGain:first.shield,possibleHealing,cleansed:first.cleansed,
+    ...(possibleHealing.length === 1 ? {healing:first.healing} : {})
+  };
 }
 
 export function tickStatus(state,p,key) {

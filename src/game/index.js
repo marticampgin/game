@@ -1,6 +1,6 @@
 import { CLASSES, DEFAULT_CONFIG, EVENTS, REWARDS, STATUSES } from './catalog.js';
 import { drawOffers, eligible, sample, seedNumber, shuffled } from './draft.js';
-import { assessHit, capacity, castCooldown, deal, defendShield, executeEffects, findPlayer, grantReward, rawHit, record, restore, setStatus, spendConsumable, tickStatus, trigger } from './combat.js';
+import { assessHit, capacity, castCooldown, deal, executeEffects, findPlayer, grantReward, previewSelfSupport, rawHit, record, resolveDefend, restore, setStatus, spendConsumable, tickStatus } from './combat.js';
 import { beginRecap, finishRecap, markBoundary, publicEvent, publicRecap, resumeRecap } from './recap.js';
 
 export { CLASSES, DEFAULT_CONFIG, EVENTS, RARITIES, REWARDS, STATUSES } from './catalog.js';
@@ -181,8 +181,7 @@ export function previewAction(state,playerId,actionId,targetId) {
     if (status) text += ' · ' + status.amount * (status.key === 'burn' && p.artifacts.includes('phoenix-feather') ? 2 : 1) + ' ' + STATUSES[status.key].name;
     return {...hit,text};
   }
-  if (actionId === 'defend') return {text:'Gain ' + defendShield(p) + ' shield.'};
-  return {text:def.description};
+  return previewSelfSupport(p,def) || {text:def.description};
 }
 function act(state,p,command) {
   const def = actionDefinition(p,command.actionId);
@@ -221,8 +220,7 @@ function act(state,p,command) {
     return;
   }
   if (def.id === 'defend') {
-    executeEffects(state,p,p,[{kind:'shield',amount:defendShield(p)}],{label:'Defend'});
-    trigger(state,p,'defend');
+    resolveDefend(state,p);
   } else {
     const slot = p.abilities.find(a => a.id === def.id);
     if (slot) slot.cooldown = castCooldown(def,slot);
