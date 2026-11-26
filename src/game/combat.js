@@ -6,7 +6,11 @@ const shards = Object.values(REWARDS).filter(r => r.category === 'shard' && r.id
 const eventBudget = new WeakMap();
 const statLabels = {armor:'armor',attack:'attack',spellPower:'spell power',maxHp:'maximum health',regen:'regeneration',rerolls:'reroll'};
 export function record(state,type,text,details={}) {
-  state.log.push({id:++state.logSequence, round:state.round, type, text, ...details});
+  const entry = {id:++state.logSequence,round:state.round,type,text};
+  for (const [key,value] of Object.entries(details)) {
+    if (value !== undefined) entry[key] = value;
+  }
+  state.log.push(entry);
   if (state.log.length > state.config.logLimit) state.log.shift();
 }
 export function capacity(state,player,kind) {
@@ -75,7 +79,10 @@ function addStatus(state,p,target,key,amount,label) {
   if (!target.alive) return;
   if (key === 'burn') amount *= p?.artifacts.reduce((n,id) => n * (REWARDS[id].burnMultiplier || 1),1) ?? 1;
   const current = target.statuses[key] || 0;
-  if (key === 'freeze' && current) return;
+  if (key === 'freeze') {
+    if (current) return;
+    amount = 1;
+  }
   setStatus(target,key,current + amount);
   if (key === 'doom' && !target.doomClock) target.doomClock = 2;
   // Keep periodic stacks attributed to their individual appliers, oldest first.
@@ -136,7 +143,10 @@ export function deal(state,source,target,raw,label,flags={}) {
       record(state,'elimination',target.name + ' fell to ' + label + '.',{actorId:source?.id,targetId:target.id});
       if (source?.alive && source !== target) restore(state,source,Math.ceil(source.maxHp * state.config.killHeal),'elimination');
     }
-  } else if (healthDamage && target.hp <= target.maxHp * 0.35) react(state,target,'wounded');
+  }
+  // Surviving via Second Breath also qualifies for a threshold reaction. Resolve
+  // it after revival and its associated consumable effects determine current HP.
+  if (target.alive && healthDamage && target.hp <= target.maxHp * 0.35) react(state,target,'wounded');
   if (flags.direct && source && source !== target) {
     trigger(state,source,'hit',{key:flags.flavor,target});
     trigger(state,target,'struck',{target:source});

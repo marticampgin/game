@@ -55,7 +55,7 @@ export const REWARDS = byId([
   artifact('borrowed-time','Borrowed Time','legendary','clock','Consuming 3 or more status stacks grants another action, once per personal turn.','extra-action','status-consumed',[rule('consumedStatus',[{kind:'extraAction'}],'three')]),
   artifact('golden-shell','Golden Shell','epic','shield','Every 20 armor grants a 5% chance to promote the rarity of each drawn reward by one tier (up to 35%).','fortune','armor',[],{armorFortune:true}),
   artifact('vial-sash','Vial Sash','uncommon','flask','Double your consumable slots.','capacity','consumable',[],{consumableCapacity:2}),
-  artifact('briar-crown','Briar Crown','rare','crown','When a rival hits you directly, retaliate for 3 armor-piercing damage.','retaliation','physical arcane',[rule('struck',[{kind:'retaliate',amount:3}])]),
+  artifact('briar-crown','Briar Crown','rare','crown','After surviving a rival’s direct hit, retaliate for 3 armor-piercing damage.','retaliation','physical arcane',[rule('struck',[{kind:'retaliate',amount:3}])]),
   artifact('fortress-oath','Fortress Oath','epic','shield','Guardian exclusive. Defend also heals you for 25% of your armor.','healing','armor defend',[rule('defend',[{kind:'heal',scale:'armor',factor:0.25}])],{exclusive:'guardian'}),
   artifact('red-wake','Red Wake','epic','axe','Berserker exclusive. Direct hits while below half health apply 3 Bleed.','bleed','missing-health physical',[rule('hit',[status('bleed',3)],'wounded')],{exclusive:'berserker'}),
   artifact('clockmaker','Clockmaker’s Key','epic','clock','Chronomancer exclusive. Defending advances all your cooldowns by 2.','cooldown','defend',[rule('defend',[{kind:'cooldown',amount:2}])],{exclusive:'chronomancer'}),

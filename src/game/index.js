@@ -1,5 +1,5 @@
 import { CLASSES, DEFAULT_CONFIG, EVENTS, REWARDS, STATUSES } from './catalog.js';
-import { drawOffers, sample, seedNumber, shuffled } from './draft.js';
+import { drawOffers, eligible, sample, seedNumber, shuffled } from './draft.js';
 import { assessHit, capacity, deal, executeEffects, findPlayer, grantReward, rawHit, record, restore, setStatus, spendConsumable, tickStatus, trigger } from './combat.js';
 
 export { CLASSES, DEFAULT_CONFIG, EVENTS, RARITIES, REWARDS, STATUSES } from './catalog.js';
@@ -48,7 +48,7 @@ function announceEvent(state) {
 export function createMatch({seed,players,config}={}) {
   requireValue(Array.isArray(players) && players.length >= 2 && players.length <= 8,'A match needs 2–8 contenders.');
   requireValue(new Set(players.map(p => p.id)).size === players.length,'Each contender needs a unique ID.');
-  seed ??= globalThis.crypto.randomUUID();
+  seed ??= globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
   const state = {version:1,seed:String(seed),rng:seedNumber(seed),config:configuration(config),players:players.map(makePlayer),
     round:1,age:ageNames[0],globalTurn:0,globalAction:0,phase:'acquire',activeId:null,winnerId:null,offers:[],
     remainingActions:1,extraTurnId:null,bonusDraft:false,order:[],queue:[],delayed:[],log:[],logSequence:0,nextEvent:null};
@@ -238,14 +238,27 @@ export function applyCommand(previous,playerId,command) {
 
 export function viewMatch(state,viewerId=null) {
   const {round,age,phase,activeId,winnerId,globalTurn,globalAction,remainingActions,bonusDraft,order,log,nextEvent} = state;
-  const players = state.players.map(p => {
-    const {consumables,sources,usedBorrowedTime,...publicPlayer} = p;
-    return {...publicPlayer,consumableCount:consumables.length,abilityCapacity:capacity(state,p,'abilities'),consumableCapacity:capacity(state,p,'consumables'),
-      ...(p.id === viewerId ? {consumables} : {})};
+  // Construct the wire contract explicitly. New bookkeeping or private mechanics
+  // added to an engine player must never become public merely by being present.
+  const players = state.players.map(p => ({
+    id:p.id,name:p.name,classId:p.classId,bot:p.bot,alive:p.alive,hp:p.hp,maxHp:p.maxHp,
+    attack:p.attack,armor:p.armor,spellPower:p.spellPower,shield:p.shield,regen:p.regen,rerolls:p.rerolls,
+    statuses:p.statuses,abilities:p.abilities.map(({id,cooldown,modifiers}) => ({id,cooldown,modifiers})),
+    artifacts:p.artifacts,personalTurn:p.personalTurn,
+    ...(p.doomClock ? {doomClock:p.doomClock} : {}),
+    consumableCount:p.consumables.length,abilityCapacity:capacity(state,p,'abilities'),consumableCapacity:capacity(state,p,'consumables'),
+    ...(p.id === viewerId ? {consumables:p.consumables,extraTurnRound:p.extraTurnRound} : {})
+  }));
+  const upcoming = phase === 'finished' ? [] : [activeId,state.extraTurnId,...state.queue,...order].filter(id => id && findPlayer(state,id)?.alive);
+  const history = log.map(e => {
+    const entry = {id:e.id,round:e.round,type:e.type,text:e.text};
+    for (const key of ['actorId','targetId','amount','shieldDamage','healthDamage']) {
+      if (e[key] !== undefined) entry[key] = e[key];
+    }
+    return entry;
   });
-  const upcoming = [activeId,state.extraTurnId,...state.queue,...order].filter(id => id && findPlayer(state,id)?.alive);
   return structuredClone({round,age,phase,activeId,winnerId,globalTurn,globalAction,remainingActions,bonusDraft,order,upcoming,players,
-    log,nextEvent,config:{abilitySlots:state.config.abilitySlots,consumableSlots:state.config.consumableSlots,
+    log:history,nextEvent,config:{abilitySlots:state.config.abilitySlots,consumableSlots:state.config.consumableSlots,
       armorConstant:state.config.armorConstant,rounding:state.config.rounding},offers:viewerId && viewerId === activeId ? state.offers : []});
 }
 
@@ -284,7 +297,12 @@ export function sandboxEdit(previous,edit) {
     }
     default: throw Error('Unknown sandbox operation.');
   }
-  if (state.phase === 'acquire') state.offers = drawOffers(state,findPlayer(state,state.activeId));
+  if (state.phase === 'acquire') {
+    const drafter = findPlayer(state,state.activeId);
+    if (edit.type === 'round' || state.offers.some(id => !eligible(drafter,REWARDS[id]))) {
+      state.offers = drawOffers(state,drafter);
+    }
+  }
   record(state,'sandbox','Sandbox applied ' + edit.type + (p ? ' to ' + p.name : '') + '.');
   return state;
 }
@@ -335,6 +353,7 @@ export function botCommand(state) {
 }
 
 export function replayMatch(options,commands) {
+  requireValue(options?.seed != null,'Replay requires the original match seed.');
   return commands.reduce((state,command) => applyCommand(state,state.activeId,command),createMatch(options));
 }
 
