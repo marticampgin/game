@@ -20,7 +20,9 @@ test('every catalog reward points to a distinct transparent PNG illustration', a
     const png = await readFile(new URL(file, directory));
     assert.deepEqual(png.subarray(0, 8), pngHeader, file);
     assert.equal(png[25], 6, file + ' must carry an RGBA color channel');
-    assert.ok(png.readUInt32BE(16) >= 24 && png.readUInt32BE(20) >= 24, file);
+    const width = png.readUInt32BE(16), height = png.readUInt32BE(20);
+    assert.ok(width >= 24, file);
+    assert.equal(width, height, file + ' must fit the square reward slot');
     const fingerprint = createHash('sha256').update(png).digest('hex');
     assert.ok(!fingerprints.has(fingerprint), file + ' duplicates another reward illustration');
     fingerprints.add(fingerprint);
