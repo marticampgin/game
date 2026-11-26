@@ -211,6 +211,31 @@ test('bot-filled rooms advance on the server while the human is away', async () 
   assert.equal(view.game.phase, 'acquire');
 });
 
+test('two authenticated players can finish a complete duel over HTTP and reconnect to its outcome', async () => {
+  const host = await create({ capacity: 2, fillBots: false });
+  const guest = await join(host);
+  let view = await interact(host, 'start', {});
+  let commands = 0;
+  while (view.game.phase !== 'finished' && commands < 600) {
+    const acting = view.game.activeId === host.playerId ? host : guest;
+    const opponent = acting === host ? guest : host;
+    if (view.playerId !== acting.playerId) view = await interact(acting);
+    const command = view.game.phase === 'acquire'
+      ? { type: 'pick', rewardId: view.game.offers.includes('fang-shard') ? 'fang-shard' : view.game.offers[0], replaceIndex: 0 }
+      : { type: 'act', actionId: 'attack', targetId: opponent.playerId };
+    view = await interact(acting, 'command', { revision: view.revision, command });
+    commands++;
+  }
+  assert.equal(view.game.phase, 'finished');
+  const again = await interact(guest);
+  assert.equal(again.game.winnerId, view.game.winnerId);
+  assert.ok(view.game.players.filter(p => p.alive).length <= 1);
+  assert.deepEqual(again.game.log, view.game.log);
+  await interact(host, 'command', { revision: again.revision, command: { type: 'reroll' } }, 409);
+  await interact(host, 'leave', {});
+  await interact(guest, 'leave', {});
+});
+
 test('serves browser modules with the correct content type and rejects unknown paths', async () => {
   const module = await fetch(base + '/src/game/index.js', { method: 'HEAD' });
   assert.equal(module.status, 200);
