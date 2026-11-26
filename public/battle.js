@@ -146,9 +146,11 @@ export function buildHTML(p, own) {
       : '<p>Only the owner can see these items.</p>'
   }`;
 }
-export function historyHTML(v) {
+export function historyHTML(v, soloSeed) {
   return (
-    '<h2>Battle log</h2><ol class="history">' +
+    '<h2>Battle log</h2>' +
+    (soloSeed === undefined ? '' : '<p>Solo seed · ' + esc(soloSeed) + '</p>') +
+    '<ol class="history">' +
     v.log
       .slice()
       .reverse()

@@ -404,7 +404,7 @@ document.addEventListener('click', (event) => {
         );
         break;
       case 'history':
-        dialog(historyHTML(current()));
+        dialog(historyHTML(current(), match.state?.seed));
         break;
       case 'reroll':
         command({ type: 'reroll' });

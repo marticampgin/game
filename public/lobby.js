@@ -62,9 +62,10 @@ function settings(model) {
     ['draft','Three-class draft']],model.mode) + '</select></label>';
   const code = '<label>Room code<input name="code" required minlength="6" maxlength="6" autocapitalize="characters" spellcheck="false" autocomplete="off" placeholder="ABCDEF" value="' + esc(model.code) + '"></label>';
   const bots = '<label class="lobby-check"><input type="checkbox" name="fillBots"' + (model.fillBots ? ' checked' : '') + '>Fill empty seats with bots</label>';
+  const seed = '<label>Match seed (optional)<input name="seed" maxlength="64" placeholder="Random" value="' + esc(model.seed) + '"></label>';
   const modeHint = model.mode === 'draft' ? 'Choose from three classes once the room opens.' :
     model.mode === 'random' ? 'Your class is assigned when the room opens.' : '';
-  return '<div class="lobby-fields">' + name + (joining ? code : capacity) + (isHost ? selection + bots : '') + '</div>' +
+  return '<div class="lobby-fields">' + name + (joining ? code : capacity) + (isHost ? selection + bots : '') + (model.tab === 'solo' ? seed : '') + '</div>' +
     (isHost ? '<p class="lobby-mode-hint" role="status">' + modeHint + '</p>' : '');
 }
 
@@ -81,7 +82,7 @@ function roster(view) {
 
 function lobbyController(host, callbacks, initialSession, initialView) {
   const model = { tab: callbacks.initialCode ? 'join' : 'solo', name:'Wanderer', selected:classes[0].id, capacity:4,
-    mode:'free', fillBots:true, code:String(callbacks.initialCode || '').toUpperCase(), showSettings:false };
+    mode:'free', fillBots:true, seed:'', code:String(callbacks.initialCode || '').toUpperCase(), showSettings:false };
   let session = initialSession, view = initialView;
   let disposed = false, busy = false, polling = false, timer;
   let connectionError = '', formError = '';
@@ -154,7 +155,7 @@ function lobbyController(host, callbacks, initialSession, initialView) {
 
   function input(event) {
     const { name, type, value, checked } = event.target;
-    if (!['name','code','capacity','mode','fillBots'].includes(name)) return;
+    if (!['name','code','capacity','mode','fillBots','seed'].includes(name)) return;
     model[name] = type === 'checkbox' ? checked : name === 'capacity' ? Number(value) : name === 'code' ? value.trim().toUpperCase() : value;
     if (name === 'code') event.target.value = model.code;
     if (name === 'capacity') {
@@ -192,7 +193,8 @@ function lobbyController(host, callbacks, initialSession, initialView) {
         const rivals = classes.filter(c => c.id !== model.selected).concat(CLASSES[model.selected]);
         const players = [{ id:'p1', name:model.name.trim(), classId:model.selected, bot:false }];
         for (let i = 0; i < model.capacity - 1; i++) players.push({ id:'p' + (i+2), name:botNames[i], classId:rivals[i % rivals.length].id, bot:true });
-        const state = createMatch({seed:crypto.getRandomValues(new Uint32Array(1))[0],players});
+        const seed = model.seed.trim() || crypto.getRandomValues(new Uint32Array(1))[0];
+        const state = createMatch({seed,players});
         cleanup();
         return callbacks.onMatch({state,viewerId:players[0].id});
       }

@@ -40,6 +40,9 @@ test('title menu, real solo turns, previews, cooldowns, reload and victory', asy
   await page.getByRole('button', { name: 'Berserker', exact: true }).click();
   await page.getByRole('button', { name: /Match setup/ }).click();
   await page.getByLabel('Contenders').selectOption('2');
+  // This opening contains no cooldown modifiers. Other seeds can legitimately
+  // make Blood Cleave ready again before the next personal action.
+  await page.getByLabel('Match seed (optional)').fill('cooldown-duel');
   await page.getByRole('button', { name: 'Start match' }).click();
   const firstCard = page.locator('.reward-card').first();
   await expect(firstCard).toBeVisible();
@@ -80,6 +83,7 @@ test('title menu, real solo turns, previews, cooldowns, reload and victory', asy
   }
   await expect(page.locator('.result')).toContainText('Match complete');
   await page.locator('.result [data-ui="history"]').click();
+  await expect(page.getByRole('dialog')).toContainText('Solo seed · cooldown-duel');
   await expect(page.locator('.history')).toContainText(/last contender standing|match is a draw/);
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page.getByRole('button', { name: 'Play again' }).click();

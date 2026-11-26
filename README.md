@@ -13,7 +13,7 @@ npm ci
 npm start
 ```
 
-Open [the local game](http://localhost:4173). Choose **Enter the arena**. In **Solo**, pick a class and start immediately, or open **Match setup** to change your name and the number of contenders.
+Open [the local game](http://localhost:4173). Choose **Enter the arena**. In **Solo**, pick a class and start immediately, or open **Match setup** to change your name and the number of contenders. The battle log shows the solo seed. Enter it in Match setup to reproduce the opening with the same lineup.
 
 To play with friends, open the server through an address everyone can reach. For a local network, use the host computer’s LAN address and port 4173. Choose **Host room**, then **Copy invite**. Friends can also open the game, select **Join room**, and enter the six-character code. The server listens on all interfaces by default. `HOST` and `PORT` override the bind address and port. Internet play needs a reachable Node server.
 
