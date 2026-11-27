@@ -54,7 +54,8 @@ export function registerFighterSkin(classId, id, skin, motions, footwork, ambien
   if (!Object.hasOwn(CLASSES, classId) || !isSkinId(id) || !descriptor?.sheet) {
     throw new Error('A skin needs a known class, a simple ID and a standing sheet.');
   }
-  const entry = { classId, id };
+  const displayName = typeof descriptor.name === 'string' ? descriptor.name.trim() : '';
+  const entry = { classId, id, name: displayName || id.replaceAll('-', ' ').replace(/(^| )\w/g, c => c.toUpperCase()) };
   for (const field of bitmapFields) {
     const url = descriptor[field];
     if (url === undefined) continue;
@@ -74,6 +75,10 @@ for (const { id } of Object.values(CLASSES)) {
   registerFighterSkin(id, 'founder', descriptor);
 }
 for (const skin of layout.skins) registerFighterSkin(skin.classId, skin.id, skin);
+
+export function fighterSkins(classId) {
+  return [...skins.values()].filter(skin => skin.classId === classId);
+}
 
 export function resolveFighterSkin(classId, skinId = 'founder') {
   const role = Object.hasOwn(CLASSES, classId) ? classId : 'guardian';

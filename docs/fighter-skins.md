@@ -78,6 +78,7 @@ The runtime and atlas builder read the frame layout, artistic defaults and skin 
 {
   "classId": "guardian",
   "id": "dawn-order",
+  "name": "Dawn Order",
   "sheet": "/assets/skins/dawn/standing.png",
   "motions": "/assets/skins/dawn/motions.webp",
   "footwork": "/assets/skins/dawn/footwork.webp",
@@ -94,7 +95,7 @@ The runtime and atlas builder read the frame layout, artistic defaults and skin 
 }
 ```
 
-Only the class, ID and standing sheet are required. The turn rail and command deck use the portrait. Inspection uses the full model. Omitted portraits and models use the class art. Optional anchor pairs are pixel coordinates from the top left of the right-facing cel. Use a `healthy`, `wounded` or `critical` object when a painted pose moves the mouth, grip or cache. In the example a wounded fighter keeps the usual hand position. The critical fighter lowers both hand and mouth. Each missing point falls back to the skin’s shared point, then the class’s band or shared point, then the default humanoid for that band. Class artists can supply the same `anchors` object in their founder entry. The renderer handles facing and display scale. Pack authors can also call `registerFighterSkin(classId, id, descriptor)` during startup. The older positional call for standing, motion, footwork and ambient sheets remains supported.
+Only the class, ID and standing sheet are required. The turn rail and command deck use the portrait. Inspection uses the full model. Omitted portraits and models use the class art. Optional anchor pairs are pixel coordinates from the top left of the right-facing cel. Use a `healthy`, `wounded` or `critical` object when a painted pose moves the mouth, grip or cache. In the example a wounded fighter keeps the usual hand position. The critical fighter lowers both hand and mouth. Each missing point falls back to the skin’s shared point, then the class’s band or shared point, then the default humanoid for that band. Class artists can supply the same `anchors` object in their founder entry. Measure the hand at the center of the belt grip and the mouth where the bottle neck should touch the lips. A held item stops halfway between these points. Place the ground anchor at the center of the cache’s base beside the forward boot. The renderer handles facing and display scale. Pack authors can also call `registerFighterSkin(classId, id, descriptor)` during startup. The older positional call for standing, motion, footwork and ambient sheets remains supported.
 
 For a new class, define its stats and signature `ability` in [catalog.js](../src/game/catalog.js). Add one entry in the manifest’s `founders` object for its weapon, emblem, display title and available layers. Supply `/assets/skins/<class>-founder.png` and `/assets/skins/<class>-<layer>.webp` for each declared layer, plus `/assets/portrait-<class>.webp` and `/assets/<class>.png`. A class with only standing art can start with an empty layer list. Weapon choices include hammer, saber, dagger, focus and sickle; a new weapon uses the standard swing until it needs a distinct movement.
 
@@ -106,7 +107,9 @@ python scripts/check-fighter-skins.py --class-id guardian --skin dawn-order
 node --test tests/animation-grammar.test.js
 ```
 
-Pass the optional `skinId` in the original match roster. The match saves the ID, projects it to the other seats and retains it for replays. Clients missing a registration display the class founder, as do older saves without a selection.
+Open the desktop lobby and select the class. When it has alternate registrations, the **Skin** menu previews the selected portrait and model. Choose a costume before starting a solo match or creating/joining a free-choice room. In a draft or randomly assigned room, the menu follows the assigned class in the waiting lobby. Guests and hosts can change their own costume until the host starts. Set `name` in the manifest to control the display label. The default capitalizes words in the skin ID.
+
+For a match created in code, pass the optional `skinId` in the original roster. The match saves the ID, projects it to the other seats and retains it for replays. Clients missing a registration display the class founder, as do older saves without a selection.
 
 ```js
 const players = [

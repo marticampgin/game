@@ -114,10 +114,12 @@
 .lobby-controls .lobby-primary:disabled { filter: grayscale(.6); opacity: .6; }
 .lobby-fields { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 16px; margin-bottom: 14px; }
 .lobby-fields > label { display: grid; gap: 4px; color: #d4bfdc; font-size: 14px; }
-.lobby-fields input:not([type=checkbox]), .lobby-fields select {
+.lobby-skin { display: flex; align-items: center; gap: 7px; color: var(--l-soft); font-size: 14px; }
+.lobby-fields input:not([type=checkbox]), .lobby-fields select, .lobby-skin select {
   width: 100%; min-height: 40px; border: 1px solid #72597e; border-radius: 2px;
   padding: 6px 10px; background: #211a2b; color: var(--l-cream); font-size: 16px;
 }
+.lobby-skin select { min-width: 7em; max-width: 14em; min-height: 36px; }
 .lobby-fields input[name=code] { letter-spacing: .13em; }
 .lobby-fields .lobby-check { display: flex; align-items: center; min-height: 40px; color: #e4d8e8; gap: 7px; }
 .lobby-check input { width: 17px; height: 17px; accent-color: #935bb3; margin: 0; }

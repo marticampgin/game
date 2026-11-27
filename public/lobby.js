@@ -1,5 +1,5 @@
 import { CLASSES, REWARDS, createMatch } from '/src/game/index.js';
-import { fighterKit, fighterPortrait } from './fighter-kit.js';
+import { fighterKit, fighterPortrait, fighterSkins } from './fighter-kit.js';
 import { classArt, esc, glyph, rewardIcon } from './art.js';
 
 const classes = Object.values(CLASSES);
@@ -24,15 +24,15 @@ export function roomRequest(session, operation = '', body) {
   return jsonRequest('/api/rooms/' + encodeURIComponent(session.code) + (operation && '/' + operation), session.token, body);
 }
 
-function classGallery(picked, allowed, locked) {
+function classGallery(picked, allowed, locked, skinId) {
   return '<div class="lobby-classes" aria-label="Character classes">' + classes.filter(c => allowed.includes(c.id)).map(c =>
     '<button type="button" class="lobby-class" data-lobby-class="' + c.id + '" aria-pressed="' + (c.id === picked) +
-    '" aria-label="' + c.name + '"' + (locked ? ' disabled' : '') + '><img class="class-portrait" src="' + fighterPortrait({classId:c.id}) +
+    '" aria-label="' + c.name + '"' + (locked ? ' disabled' : '') + '><img class="class-portrait" src="' + fighterPortrait({classId:c.id,skinId:c.id === picked ? skinId : undefined}) +
     '" alt=""><span class="class-plaque">' + rewardIcon({ icon: fighterKit(c.id).emblem }) + c.name + '</span></button>'
   ).join('') + '</div>';
 }
 
-function classDetail(picked) {
+function classDetail(picked, skinId) {
   const c = CLASSES[picked], ability = REWARDS[c.ability];
   const separator = c.innate.indexOf(': ');
   const innateName = separator < 0 ? 'Innate' : c.innate.slice(0, separator);
@@ -40,7 +40,7 @@ function classDetail(picked) {
   const stats = [['Health', c.stats.maxHp, 'heart'], ['Attack', c.stats.attack, 'sword'],
     ['Armor', c.stats.armor, 'shield'], ['Spell power', c.stats.spellPower, 'crystal']];
   return '<section class="lobby-detail" aria-label="Selected class details">' +
-    '<div class="lobby-identity"><h2>' + c.name + '</h2><p>' + esc(fighterKit(c.id).title || c.name) + '</p><img src="' + classArt(c.id) + '" alt=""></div>' +
+    '<div class="lobby-identity"><h2>' + c.name + '</h2><p>' + esc(fighterKit(c.id).title || c.name) + '</p><img src="' + classArt({classId:c.id,skinId}) + '" alt=""></div>' +
     '<div class="lobby-skills"><p>' + esc(c.description) + '</p><div>' + rewardIcon({ icon: fighterKit(c.id).emblem }) +
     '<p><strong>' + esc(innateName) + '</strong><span>' + esc(innateEffect.charAt(0).toUpperCase() + innateEffect.slice(1)) + '</span></p></div>' +
     '<div>' + rewardIcon(ability) + '<p><strong>' + esc(ability.name) + '</strong><span>' + esc(ability.description) + '</span></p></div></div>' +
@@ -50,7 +50,14 @@ function classDetail(picked) {
 
 function options(values, selected) {
   return values.map(([value,label]) => '<option value="' + value + '"' + (value === selected ? ' selected' : '') +
-    '>' + label + '</option>').join('');
+    '>' + esc(label) + '</option>').join('');
+}
+
+function skinPicker(classId, selected, busy) {
+  const choices = fighterSkins(classId);
+  if (choices.length < 2) return '';
+  return '<label class="lobby-skin">Skin<select name="skinId"' + (busy ? ' disabled' : '') + '>' +
+    options(choices.map(skin => [skin.id, skin.name]), selected || 'founder') + '</select></label>';
 }
 
 function settings(model) {
@@ -80,7 +87,7 @@ function roster(view) {
 }
 
 function lobbyController(host, callbacks, initialSession, initialView) {
-  const model = { tab: callbacks.initialCode ? 'join' : 'solo', name:'Wanderer', selected:classes[0].id, capacity:4,
+  const model = { tab: callbacks.initialCode ? 'join' : 'solo', name:'Wanderer', selected:classes[0].id, skinId:undefined, capacity:4,
     mode:'free', fillBots:true, seed:'', code:String(callbacks.initialCode || '').toUpperCase(), showSettings:false };
   let session = initialSession, view = initialView;
   let disposed = false, busy = false, polling = false, timer;
@@ -104,7 +111,9 @@ function lobbyController(host, callbacks, initialSession, initialView) {
       cleanup();
       callbacks.onMatch({ session, view });
     } else {
-      model.selected = view.room.seats.find(s => s.id === session.playerId).classId;
+      const ownSeat = view.room.seats.find(s => s.id === session.playerId);
+      model.selected = ownSeat.classId;
+      model.skinId = ownSeat.skinId;
       render();
     }
   }
@@ -135,6 +144,8 @@ function lobbyController(host, callbacks, initialSession, initialView) {
     const label = waiting ? 'Start match' : { solo:'Start match',host:'Create room',join:'Join room' }[model.tab];
     const open = model.tab !== 'solo' || model.showSettings;
     const feedback = formError || connectionError;
+    const canPickSkin = waiting || model.tab !== 'host' || model.mode === 'free';
+    const previewSkin = canPickSkin ? model.skinId : undefined;
     const nav = waiting ? '' : '<nav class="lobby-tabs" aria-label="Play mode">' +
       [['solo','Solo'],['host','Host room'],['join','Join room']].map(([id,name]) =>
         '<button type="button" data-lobby-tab="' + id + '" aria-pressed="' + (model.tab === id) + '">' + name + '</button>').join('') + '</nav>';
@@ -143,17 +154,29 @@ function lobbyController(host, callbacks, initialSession, initialView) {
       (busy ? 'Please wait…' : label) + glyph('right') + '</button>';
     host.innerHTML = '<div class="lobby-screen"><div class="lobby-wrap"><header class="lobby-heading"><h1>' +
       (waiting ? 'Room lobby' : 'Enter the arena') + '</h1>' + nav + '</header>' + (waiting ? roster(view) : '') +
-      classGallery(activeClass, allowed, locked || busy) + classDetail(activeClass) + '<form class="lobby-controls">' +
+      classGallery(activeClass, allowed, locked || busy, previewSkin) + classDetail(activeClass, previewSkin) + '<form class="lobby-controls">' +
       (!waiting && open ? settings(model) : '') + '<div class="lobby-bottom"><button type="button" data-lobby="back" class="lobby-back"' + (busy ? ' disabled' : '') + '>' +
       glyph('back') + (waiting ? 'Leave room' : 'Main menu') + '</button>' +
       (!waiting && model.tab === 'solo' ? '<button type="button" class="lobby-setup" data-lobby="setup" aria-expanded="' +
         open + '">' + glyph('settings') + 'Match setup<span> · ' + model.capacity + ' contenders</span></button>' : '') +
-      action + '</div>' + (waiting && isHost && !canStart ? '<p class="lobby-wait">Invite another contender to start.</p>' : '') +
+      (canPickSkin ? skinPicker(activeClass, model.skinId, busy) : '') + action + '</div>' + (waiting && isHost && !canStart ? '<p class="lobby-wait">Invite another contender to start.</p>' : '') +
       '<p class="lobby-error" role="status">' + esc(feedback) + '</p></form></div></div>';
   }
 
-  function input(event) {
+  async function input(event) {
     const { name, type, value, checked } = event.target;
+    if (name === 'skinId') {
+      if (event.type !== 'change' || busy) return;
+      const previous = model.skinId;
+      model.skinId = value === 'founder' ? undefined : value;
+      if (session) await perform(async () => {
+        try { update(await roomRequest(session, 'class', { classId:model.selected, skinId:value })); }
+        catch (error) { model.skinId = previous; throw error; }
+      });
+      else render();
+      host.querySelector('[name="skinId"]')?.focus({preventScroll:true});
+      return;
+    }
     if (!['name','code','capacity','mode','fillBots','seed'].includes(name)) return;
     model[name] = type === 'checkbox' ? checked : name === 'capacity' ? Number(value) : name === 'code' ? value.trim().toUpperCase() : value;
     if (name === 'code') event.target.value = model.code;
@@ -193,9 +216,11 @@ function lobbyController(host, callbacks, initialSession, initialView) {
         catch { /* A stale preference falls back to the room's normal pace. */ }
         return update(await roomRequest(session, 'start', { fastBots }));
       }
+      const fighter = { classId:model.selected };
+      if (model.skinId && (model.tab !== 'host' || model.mode === 'free')) fighter.skinId = model.skinId;
       if (model.tab === 'solo') {
         const rivals = classes.filter(c => c.id !== model.selected).concat(CLASSES[model.selected]);
-        const players = [{ id:'p1', name:model.name.trim(), classId:model.selected, bot:false }];
+        const players = [{ id:'p1', name:model.name.trim(), ...fighter, bot:false }];
         for (let i = 0; i < model.capacity - 1; i++) players.push({ id:'p' + (i+2), name:botNames[i], classId:rivals[i % rivals.length].id, bot:true });
         const seed = model.seed.trim() || crypto.getRandomValues(new Uint32Array(1))[0];
         const state = createMatch({seed,players});
@@ -204,7 +229,7 @@ function lobbyController(host, callbacks, initialSession, initialView) {
       }
       const joining = model.tab === 'join';
       const path = '/api/rooms' + (joining ? '/' + encodeURIComponent(model.code) + '/join' : '');
-      const next = await jsonRequest(path, null, { name:model.name.trim(), classId:model.selected,
+      const next = await jsonRequest(path, null, { name:model.name.trim(), ...fighter,
         capacity:model.capacity, mode:model.mode, fillBots:model.fillBots });
       const credentials = { code:next.code, token:next.token, playerId:next.playerId };
       if (disposed) { await roomRequest(credentials, 'leave', {}); return; }
@@ -225,8 +250,9 @@ function lobbyController(host, callbacks, initialSession, initialView) {
       render();
       host.querySelector('[data-lobby-tab="' + lobbyTab + '"]')?.focus({preventScroll:true});
     } else if (lobbyClass) {
+      if (model.selected === lobbyClass) return;
       if (session) await perform(async () => update(await roomRequest(session, 'class', {classId:lobbyClass})));
-      else { model.selected = lobbyClass; render(); }
+      else { model.selected = lobbyClass; model.skinId = undefined; render(); }
       host.querySelector('[data-lobby-class="' + lobbyClass + '"]')?.focus({preventScroll:true});
     } else if (lobby === 'setup') {
       model.showSettings = !model.showSettings;

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CLASSES, REWARDS } from '../src/game/catalog.js';
 import { actorClip, effectRows, missiles, motionScore, rewardMotion } from '../public/combat-motion.js';
-import { fighterAnchors, fighterLayout, fighterModel, fighterPortrait, registerFighterSkin, resolveFighterSkin } from '../public/fighter-kit.js';
+import { fighterAnchors, fighterLayout, fighterModel, fighterPortrait, fighterSkins, registerFighterSkin, resolveFighterSkin } from '../public/fighter-kit.js';
 import { fighterSpriteHTML } from '../public/animation.js';
 
 test('new rewards use their category, icon, target and effects to select a gesture', () => {
@@ -66,6 +66,9 @@ test('an installed skin owns its portrait, model, consumable cels and attachment
   registerFighterSkin(player.classId, player.skinId, skin);
   anchors.mouth[0] = 0;
   const actual = resolveFighterSkin(player.classId, player.skinId);
+  assert.equal(actual.name, 'Harvest Order');
+  assert.ok(fighterSkins('guardian').includes(actual));
+  assert.ok(!fighterSkins('alchemist').some(s => s.id === player.skinId));
   assert.deepEqual(actual.anchors.mouth, [112, 38]);
   assert.equal(fighterPortrait(player), skin.portrait);
   assert.equal(fighterModel(player), skin.model);
