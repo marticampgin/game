@@ -12,6 +12,15 @@ export function rewardIcon(reward) {
   return '<img class="reward-art" src="' + src + '" alt="" draggable="false">';
 }
 
+const basicActions = new Set(['attack', 'defend', 'scavenge']);
+
+export function actionIcon(id) {
+  if (basicActions.has(id)) {
+    return '<img class="reward-art" src="/assets/commands/' + id + '.png" alt="" draggable="false">';
+  }
+  return rewardIcon(REWARDS[id] || { icon: 'rune' });
+}
+
 const paths = {
   right:'<path d="m9 5 7 7-7 7"/>', back:'<path d="m15 5-7 7 7 7"/>',
   sound:'<path d="M3 9h4l5-5v16l-5-5H3zM16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',

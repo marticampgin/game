@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { classArt, rewardIcon } from '../public/art.js';
+import { actionIcon, classArt, rewardIcon } from '../public/art.js';
 import { CLASSES, REWARDS } from '../src/game/catalog.js';
 
 const assets = new URL('../public/assets/', import.meta.url);
@@ -41,6 +41,13 @@ test('classes, lobby statistics, menu entries and basic battle commands retain t
     const file = 'i-' + key + '.png';
     assert.deepEqual((await readFile(new URL(file, assets))).subarray(0, 8), pngHeader);
   }
+  for (const id of ['attack', 'defend', 'scavenge']) {
+    const file = 'commands/' + id + '.png';
+    assert.ok(actionIcon(id).includes('src="/assets/' + file + '"'));
+    assert.deepEqual((await readFile(new URL(file, assets))).subarray(0, 8), pngHeader);
+  }
+  for (const id of Object.keys(REWARDS)) assert.equal(actionIcon(id), rewardIcon(REWARDS[id]));
+  assert.ok(actionIcon('interrupted').includes('src="/assets/i-rune.png"'));
   assert.ok(rewardIcon({ icon: 'shield' }).includes('src="/assets/i-shield.png"'));
   assert.ok(rewardIcon(undefined).includes('src="/assets/i-crystal.png"'));
 });

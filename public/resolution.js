@@ -1,6 +1,5 @@
-import { esc, glyph, rewardIcon } from './art.js';
+import { actionIcon, esc, glyph, rewardIcon } from './art.js';
 
-const actionIcons = { attack: 'sword', defend: 'shield', scavenge: 'chest' };
 const eventIcons = {
   damage: 'sword', heal: 'heart', shield: 'shield', revival: 'feather', elimination: 'skull',
   victory: 'crown', synergy: 'ring', reward: 'chest', status: 'flask', stat: 'crystal',
@@ -147,7 +146,7 @@ export function resolutionHTML(view, viewerId, { expanded = false, actionId, pin
   if (!latest) return '';
   let actions = view.recentActions?.length ? view.recentActions : [latest];
   if (expanded && pinnedAction && !actions.some(a => a.id === pinnedAction.id)) actions = [pinnedAction, ...actions];
-  const icon = rewardIcon({id: latest.actionId, icon: actionIcons[latest.actionId] || 'rune'});
+  const icon = actionIcon(latest.actionId);
   return '<section class="turn-recap" aria-label="Last action"><div class="recap-strip">' +
     '<div class="recap-action-art">' + icon + '</div><div class="recap-outcome">' +
     '<div class="recap-who"><span class="recap-label">Last action</span> ' + moveSentence(latest) + '</div>' +

@@ -1,8 +1,7 @@
-import { CLASSES, previewAction, REWARDS } from '/src/game/index.js';
-import { esc, glyph, rewardIcon } from './art.js';
+import { CLASSES, previewAction } from '/src/game/index.js';
+import { actionIcon, esc, glyph } from './art.js';
 
 const PAGE_SIZE = 6;
-const paintings = new Set(['attack', 'defend', 'scavenge', 'bastion-bash', 'blood-cleave', 'time-bolt', 'venom-flask', 'ward-lantern']);
 
 function portrait(player) {
   return `<img src="/assets/portrait-${CLASSES[player.classId].id}.webp" alt="" draggable="false">`;
@@ -18,13 +17,10 @@ function playerStation(player) {
 }
 
 function actionButton(option, chosenId) {
-  const image = paintings.has(option.id)
-    ? `<img class="command-painting" src="/assets/commands/${option.id}.webp" alt="" draggable="false">`
-    : rewardIcon(REWARDS[option.id]);
   const reason = option.cooldown ? 'Cooldown · ' + option.cooldown : option.reason;
   return `<button type="button" class="action-choice" data-action="${esc(option.id)}"
       aria-pressed="${option.id === chosenId}" ${option.disabled ? 'disabled' : ''} title="${esc(option.reason || option.description)}">
-    <span class="command-icon">${image}</span><span class="command-name">${esc(option.name)}
+    <span class="command-icon">${actionIcon(option.id)}</span><span class="command-name">${esc(option.name)}
     ${option.disabled ? `<small>${esc(reason)}</small>` : ''}</span></button>`;
 }
 

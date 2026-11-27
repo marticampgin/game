@@ -58,7 +58,8 @@
 .command-deck .action-choice:disabled { opacity: .68; cursor: default }
 .command-deck .action-choice:disabled .command-icon { filter: grayscale(.78) }
 .command-icon {
-  --cut: 5px;
+  --cut: 6px;
+  isolation: isolate;
   position: relative; display: grid; grid-template: minmax(0,1fr) / minmax(0,1fr); place-items: center; width: 100%; height: clamp(44px, 4.75vw, 78px);
   padding: 2px; overflow: hidden;
   background: linear-gradient(145deg,#ddbb91,#7b5e53 40%,#c7a689 70%,#705242);
@@ -66,11 +67,19 @@
 }
 .command-icon::before {
   content: ''; position: absolute; inset: 2px; z-index: -1;
-  background: #2a202b url('/assets/reliquary.webp') center 54% / cover;
+  background:
+    linear-gradient(135deg, #c7a271 2px, transparent 2px) 3px 3px / 8px 8px no-repeat,
+    linear-gradient(315deg, #9c7a60 2px, transparent 2px) calc(100% - 3px) calc(100% - 3px) / 8px 8px no-repeat,
+    radial-gradient(ellipse at 52% 67%, var(--socket, #40313f), #211924 68%, #16131a);
+  box-shadow: inset 0 0 0 1px #17131a, inset 0 0 0 2px #58444b;
   clip-path: inherit;
 }
-.command-deck .action-choice img { height: 88%; width: 88%; padding: 0; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 2px 2px #150d15) }
-.command-deck .action-choice img.command-painting { width: 100%; height: 100%; min-height: 0; object-fit: cover; image-rendering: auto; filter: none; clip-path: inherit }
+.command-deck .action-choice img { width: 100%; height: 100%; min-height: 0; padding: 2px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 2px #130e18); }
+.action-choice:is([data-action="attack"],[data-action="blood-cleave"],[data-action="cinder-orb"]) { --socket: #683c38 }
+.action-choice:is([data-action="defend"],[data-action="whiteout"],[data-action="spark-bottle"]) { --socket: #373e5b }
+.action-choice:is([data-action="bastion-bash"],[data-action="ward-lantern"],[data-action="scavenge"]) { --socket: #594437 }
+.action-choice:is([data-action="venom-flask"],[data-action="reverse-polarity"]) { --socket: #354339 }
+.action-choice:is([data-action="time-bolt"],[data-action="grave-bell"]) { --socket: #4c365f }
 .command-deck .action-choice[aria-pressed=true] .command-icon { background: #ffd48c; padding: 3px }
 .command-deck .action-choice[aria-pressed=true] .command-icon::after { content: ''; position: absolute; inset: 3px; box-shadow: inset 0 0 9px #ffb84eaa; clip-path: inherit }
 .command-name { min-width: 0; color: inherit; font: 600 clamp(13px,1.1vw,20px)/1.12 var(--deck-serif); overflow-wrap: anywhere }
@@ -98,6 +107,24 @@
 .command-deck .confirm-action svg { display: none }
 .command-deck .confirm-action:disabled { opacity: .58 }
 .command-deck :is(button,select):focus-visible { outline: 2px solid #ffe3ad; outline-offset: 2px }
+@media (min-width: 761px) {
+  .command-deck { grid-template-columns: minmax(0,.79fr) minmax(0,1.54fr) minmax(0,1.3fr); }
+  .command-deck .action-grid { column-gap: clamp(5px,1vw,18px); }
+  .command-deck .action-choice { align-items: center; }
+  .command-icon { width: min(100%,clamp(72px,7.4vw,126px)); height: clamp(49px,4.85vw,84px); }
+  .command-deck .action-choice:hover:not(:disabled) .command-icon { background: linear-gradient(135deg,#f4d3a0,#ac876b 45%,#e6bd8d); }
+  .command-deck .action-choice[aria-pressed=true] .command-icon { background: linear-gradient(135deg,#fff2be,#eda64b 47%,#ffe0a1 83%,#a56636); }
+  .command-deck .action-choice[aria-pressed=true] .command-icon::after { box-shadow: inset 0 0 0 1px #ffd18e99, inset 0 0 16px #e9a44848; }
+  .command-deck .confirm-action {
+    display: grid; place-content: center;
+    border: 1px solid #b69abe; border-radius: 5px 2px;
+    color: #fff5e6; font-weight: 600;
+    background: linear-gradient(180deg,#9059a8,#71378c 48%,#562d73);
+    box-shadow: inset 0 0 0 2px #47244e, inset 0 0 0 3px #c38ecd, inset 0 -5px #58306e, 0 2px 0 #130e17;
+  }
+  .command-deck .confirm-action:hover:enabled { background: linear-gradient(180deg,#a766bc,#86489f 50%,#62317e); }
+  .command-deck .command-portrait img, .command-deck .command-target-art img { image-rendering: pixelated; }
+}
 @media (max-width: 1080px) {
   .command-deck { grid-template-columns: minmax(0,.7fr) minmax(0,1.45fr) minmax(250px,1.05fr); gap: 10px; padding: 9px 12px }
   .command-player-info > strong { font-size: 18px }
