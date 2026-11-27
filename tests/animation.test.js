@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {actionVisual,fighterSpriteHTML,healthBand,impactScale,preloadArenaSkins,registerFighterSkin,resolveFighterSkin} from '../public/animation.js';
+import {actorClip,motionScore} from '../public/combat-motion.js';
 import {publicEvent} from '../src/game/recap.js';
 import {applyCommand,botCommand,createMatch,replayMatch,viewMatch} from '../src/game/index.js';
 
@@ -97,4 +98,22 @@ test('public impact causes describe visible outcomes without exposing private it
   assert.deepEqual(publicEvent({...base,cause:'emergency-ward',hidden:'widows-brew'}),base);
   assert.deepEqual(publicEvent(base),base);
   assert.equal(publicEvent({...base,type:'reward',cause:'poison'}).cause,undefined);
+});
+
+test('each signature commits its actor pose to contact or release, with distinct timing and movement',()=>{
+  const tracks=['attack','bastion-bash','blood-cleave','hollow-needle','time-bolt','venom-flask','defend','scavenge'];
+  const scores=tracks.map(id=>motionScore(id,'guardian'));
+  assert.equal(new Set(scores.map(move=>move.track)).size,tracks.length);
+  for (const move of scores) {
+    const times=move.path.map(([ms])=>ms);
+    assert.equal(times[0],0);
+    assert.ok(move.release<=move.contact && move.contact<times.at(-1));
+    assert.ok(times.every((value,i)=>i===0 || value>times[i-1]));
+  }
+  const bash=motionScore('bastion-bash','guardian'), swing=motionScore('attack','guardian');
+  assert.ok(bash.path.some(([ms,progress,shift,lift])=>ms>200 && !progress && shift<0 && lift<0));
+  assert.ok(swing.contact<bash.contact);
+  assert.equal(actorClip(bash,'bastion-bash','guardian'),'signature');
+  assert.equal(actorClip(bash,'bastion-bash','alchemist'),'attack');
+  assert.equal(actorClip(motionScore('venom-flask','guardian'),'venom-flask','guardian'),'cast');
 });

@@ -2,60 +2,263 @@
    Extending the transparent sheet beyond a fighter's footprint lets the
    weapon swing without moving their feet, nameplate or touch target. */
 .arena-sprite {
-  position:absolute; display:block; width:173.33334%; height:138.33334%;
-  top:-20%; left:-36.66667%; pointer-events:none;
-  --skin-band:0%; --idle-time:3.6s;
+  position: absolute;
+  display: block;
+  width: 173.33334%;
+  height: 138.33334%;
+  top: -20%;
+  left: -36.66667%;
+  pointer-events: none;
+  --skin-band: 0%;
+  --idle-time: 3.6s;
 }
-.arena-sprite[data-class="berserker"] { --idle-time:2.7s; }
-.arena-sprite[data-class="chronomancer"] { --idle-time:4.2s; }
-.arena-sprite[data-class="alchemist"] { --idle-time:3.1s; }
-.arena-sprite[data-tier="wounded"] { --skin-band:37.5%; }
-.arena-sprite[data-tier="critical"] { --skin-band:75%; }
+.arena-sprite[data-class='berserker'] {
+  --idle-time: 2.7s;
+}
+.arena-sprite[data-class='chronomancer'] {
+  --idle-time: 4.2s;
+}
+.arena-sprite[data-class='alchemist'] {
+  --idle-time: 3.1s;
+}
+.arena-sprite[data-tier='wounded'] {
+  --skin-band: 37.5%;
+}
+.arena-sprite[data-tier='critical'] {
+  --skin-band: 75%;
+}
 .arena-cel {
-  display:block; height:100%; width:100%; image-rendering:pixelated;
-  background-image:var(--skin); background-repeat:no-repeat; background-size:400% 900%;
-  background-position:var(--pose-x,0%) calc(var(--skin-band) + var(--pose-y,0%));
+  display: block;
+  height: 100%;
+  width: 100%;
+  image-rendering: pixelated;
+  background-image: var(--skin);
+  background-repeat: no-repeat;
+  background-size: 400% 900%;
+  background-position: var(--pose-x, 0%) calc(var(--skin-band) + var(--pose-y, 0%));
 }
-[data-facing="left"] .arena-cel { transform:scaleX(-1); }
-.arena-sprite[data-pose="idle"]:not([data-still]) > .arena-cel {
-  animation:arena-idle-frames var(--idle-time) steps(1,end) infinite;
-  animation-delay:var(--idle-delay);
+[data-facing='left'] .arena-cel {
+  transform: scaleX(-1);
+}
+.arena-sprite[data-pose='idle']:not([data-still]) > .arena-cel {
+  animation: arena-idle-frames var(--idle-time) steps(1, end) infinite;
+  animation-delay: var(--idle-delay);
 }
 @keyframes arena-idle-frames {
-  0%,100% {background-position-x:0%} 24% {background-position-x:33.333333%}
-  48% {background-position-x:0%} 72% {background-position-x:66.666667%} 82% {background-position-x:100%}
+  0%,
+  100% {
+    background-position-x: 0%;
+  }
+  24% {
+    background-position-x: 33.333333%;
+  }
+  48% {
+    background-position-x: 0%;
+  }
+  72% {
+    background-position-x: 66.666667%;
+  }
+  82% {
+    background-position-x: 100%;
+  }
 }
-.arena-sprite[data-pose="fallen"] { filter:saturate(.45) brightness(.83); }
-.arena-sprite[data-playing="hidden"] {visibility:hidden;}
+.arena-sprite[data-pose='fallen'] {
+  filter: saturate(0.45) brightness(0.83);
+}
+.arena-sprite[data-playing='hidden'] {
+  visibility: hidden;
+}
 .arena-fx {
-  position:absolute; inset:0; z-index:99; pointer-events:none; overflow:clip;
+  position: absolute;
+  inset: 0;
+  z-index: 99;
+  pointer-events: none;
+  overflow: clip;
   /* Isolate effects from stage flex/grid positioning and scrolling. */
-  display:block; contain:layout paint;
+  display: block;
+  contain: layout paint;
 }
-.arena-fx-actor,.arena-fx-burst,.arena-fx-missile,.arena-fx-label { position:absolute; display:block; pointer-events:none; }
-.arena-fx-actor { transform-origin:50% 100%; filter:drop-shadow(1px 3px 1px #22142899); }
-.arena-fx-burst,.arena-fx-missile {
-  background-repeat:no-repeat; image-rendering:pixelated;
-  filter:drop-shadow(0 1px 1px #1b1029af);
+.arena-fx-actor,
+.arena-fx-burst,
+.arena-fx-missile,
+.arena-fx-label {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+.arena-fx-actor {
+  transform-origin: 50% 100%;
+  filter: drop-shadow(1px 3px 1px #22142899);
+}
+.arena-fx-burst,
+.arena-fx-missile {
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 1px 1px #1b1029af);
 }
 .arena-fx-burst {
-  background-image:url('/assets/skins/arena-effects.png'); background-size:1600% 2000%;
-  background-position:0% var(--effect-row); animation:arena-effect-cels var(--effect-time,330ms) steps(15,end) forwards;
+  background-image: url('/assets/skins/arena-effects.png');
+  background-size: 1600% 2000%;
+  background-position: 0% var(--effect-row);
+  animation: arena-effect-cels var(--effect-time, 330ms) steps(15, end) forwards;
 }
 @keyframes arena-effect-cels {
-  from {background-position-x:0%}
-  to {background-position-x:100%}
+  from {
+    background-position-x: 0%;
+  }
+  to {
+    background-position-x: 100%;
+  }
 }
-.arena-fx-missile { background-image:url('/assets/skins/arena-projectiles.png'); background-size:600% 800%; background-position:var(--projectile-x) 0; animation:arena-projectile-cels .28s steps(7,end) infinite; }
-@keyframes arena-projectile-cels {to {background-position-y:100%;}}
+.arena-fx-missile {
+  background-image: url('/assets/skins/arena-projectiles.png');
+  background-size: 600% 800%;
+  background-position: var(--projectile-x) 0;
+  animation: arena-projectile-cels 0.28s steps(7, end) infinite;
+}
+@keyframes arena-projectile-cels {
+  to {
+    background-position-y: 100%;
+  }
+}
 .arena-fx-label {
-  transform:translate(-50%,-100%); white-space:nowrap; padding:1px 4px; background:#251b28d6;
-  border-radius:2px; color:#ffb7a2; text-shadow:0 1px #221124; font:700 clamp(10px,1.02vw,15px)/1.18 var(--body,sans-serif);
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
+  padding: 1px 4px;
+  background: #251b28d6;
+  border-radius: 2px;
+  color: #ffb7a2;
+  text-shadow: 0 1px #221124;
+  font: 700 clamp(10px, 1.02vw, 15px) / 1.18 var(--body, sans-serif);
 }
-.arena-fx-label[data-kind="shield"] {color:#a5e2ff;}
-.arena-fx-label[data-kind="heal"],.arena-fx-label[data-kind="revival"] {color:#aff1b2;}
-.arena-fx-burst.arena-fx-still {animation:none!important;background-position-x:60%;}
-body.reduce-motion .arena-sprite[data-pose="idle"] > .arena-cel {animation:none!important;}
-@media (prefers-reduced-motion:reduce) {
-  .arena-sprite[data-pose="idle"] > .arena-cel {animation:none!important;}
+.arena-fx-label[data-kind='shield'] {
+  color: #a5e2ff;
+}
+.arena-fx-label[data-kind='heal'],
+.arena-fx-label[data-kind='revival'] {
+  color: #aff1b2;
+}
+.arena-fx-burst.arena-fx-still {
+  animation: none !important;
+  background-position-x: 60%;
+}
+body.reduce-motion .arena-sprite[data-pose='idle'] > .arena-cel {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arena-sprite[data-pose='idle'] > .arena-cel {
+    animation: none !important;
+  }
+}
+
+/* A founder motion atlas carries twelve full-body drawings in each gesture.
+   The standing sheet also serves skins with no supplemental motion asset. */
+.arena-sprite {
+  transform-origin: 50% 86%;
+}
+.arena-sprite[data-motion-ready] {
+  --motion-band: 0%;
+}
+.arena-sprite[data-motion-ready][data-tier='wounded'] {
+  --motion-band: 35.714286%;
+}
+.arena-sprite[data-motion-ready][data-tier='critical'] {
+  --motion-band: 71.428571%;
+}
+.arena-sprite[data-motion-ready]:is([data-pose='idle'], [data-track]) > .arena-cel {
+  background-image: var(--motion-skin);
+  background-size: 1200% 1500%;
+  background-position: 0% calc(var(--motion-band) + var(--clip-row, 0%));
+}
+.arena-sprite[data-motion-ready][data-pose='idle']:not([data-still]) > .arena-cel {
+  animation: arena-illustrated-idle var(--idle-time) steps(12, end) infinite;
+  animation-delay: var(--idle-delay);
+}
+@keyframes arena-illustrated-idle {
+  from {
+    background-position-x: 0%;
+  }
+  to {
+    background-position-x: 109.090909%;
+  }
+}
+
+.combatant[data-travelling] .foot-ring {
+  opacity: 0;
+}
+.arena-fx-shadow {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 50%;
+  transform-origin: 50% 50%;
+  background: radial-gradient(ellipse closest-side, #231a2eae, #30243655 63%, transparent);
+}
+.arena-fx-actor {
+  z-index: 1;
+}
+.arena-fx-missile,
+.arena-fx-burst,
+.arena-fx-trail {
+  z-index: 2;
+}
+.arena-fx-burst {
+  transform-origin: center;
+}
+.arena-fx-prop {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  background: center / contain no-repeat;
+  image-rendering: pixelated;
+  transform-origin: 50% 84%;
+}
+.arena-fx-trail {
+  position: absolute;
+  background: #bacfc8;
+  pointer-events: none;
+}
+.arena-fx-trail[data-element='fire'] {
+  background: #f8bc73;
+}
+.arena-fx-label {
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+}
+.arena-fx-source {
+  color: #f0d7b0;
+  font: 500 0.77em/1.2 var(--body, sans-serif);
+}
+
+.arena-sprite[data-motion-ready][data-pose='idle']:not([data-still]) {
+  --idle-time: 1.65s;
+  animation: arena-breath var(--idle-time) ease-in-out infinite;
+  animation-delay: var(--idle-delay);
+}
+.arena-sprite[data-motion-ready][data-class='guardian'][data-pose='idle'] {
+  --idle-time: 1.92s;
+}
+.arena-sprite[data-motion-ready][data-class='berserker'][data-pose='idle'] {
+  --idle-time: 1.42s;
+}
+.arena-sprite[data-motion-ready][data-tier='critical'][data-pose='idle'] {
+  --idle-time: 1.73s;
+}
+@keyframes arena-breath {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  54% {
+    transform: scale(1.003, 0.992);
+  }
+}
+body.reduce-motion .arena-sprite[data-pose='idle'] {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arena-sprite[data-pose='idle'] {
+    animation: none !important;
+  }
 }
