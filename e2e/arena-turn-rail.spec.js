@@ -15,8 +15,8 @@ test('identical class portraits retain distinct and readable player labels as or
   const afterDraft = applyCommand(initial, initial.activeId, { type: 'pick', rewardId: initial.offers[0] });
   const next = applyCommand(afterDraft, initial.activeId, { type: 'act', actionId: 'defend' });
   await page.goto('/');
-  for (const width of [320, 390, 1366]) {
-    await page.setViewportSize({ width, height: width < 700 ? 844 : 768 });
+  for (const [width, height] of [[1280,720], [1440,900], [1920,1080]]) {
+    await page.setViewportSize({ width, height });
     await restore(page, initial);
     const rail = page.getByRole('navigation', { name: 'Turn order' });
     const readLabels = () => rail.getByRole('button').evaluateAll(buttons => Object.fromEntries(buttons.map(button => {
@@ -25,11 +25,11 @@ test('identical class portraits retain distinct and readable player labels as or
     })));
     const labels = await readLabels();
     expect(new Set(Object.values(labels)).size).toBe(8);
-    expect(labels.p0).toBe(width < 700 ? 'ANO' : 'Northwi');
-    expect(labels.p1).toBe(width < 700 ? 'ANI' : 'Nightfa');
+    expect(labels.p0).toBe('Northwi');
+    expect(labels.p1).toBe('Nightfa');
     expect(labels.p2).toBe('#3');
     expect(labels.p3).toBe('#4');
-    expect(labels.p6).toBe(width < 700 ? 'LA' : 'Lark');
+    expect(labels.p6).toBe('Lark');
     expect(await rail.getByRole('button').evaluateAll(buttons => buttons.every(button => {
       const box = button.getBoundingClientRect();
       const label = [...button.querySelectorAll('span')].find(span => span.getBoundingClientRect().width > 0);

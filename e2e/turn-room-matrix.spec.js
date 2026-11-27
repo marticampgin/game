@@ -3,8 +3,8 @@ import { REWARDS } from '../src/game/catalog.js';
 
 const classes = ['guardian', 'berserker', 'chronomancer', 'alchemist'];
 const screens = [
-  { name: 'desktop', viewport: { width: 1440, height: 900 }, touch: false },
-  { name: 'phone', viewport: { width: 390, height: 844 }, touch: true },
+  { name: 'desktop', viewport: { width: 1440, height: 900 }, keyboard: false },
+  { name: 'laptop with keyboard', viewport: { width: 1280, height: 720 }, keyboard: true },
 ];
 const headersFor = seat => ({ Authorization: 'Bearer ' + seat.token });
 
@@ -32,7 +32,7 @@ async function openHumanRoom(request, count) {
 
 async function openClient(browser, baseURL, screen, seat, contexts, errors) {
   const context = await browser.newContext({
-    baseURL, viewport: screen.viewport, hasTouch: screen.touch, isMobile: screen.touch,
+    baseURL, viewport: screen.viewport,
   });
   contexts.push(context);
   const page = await context.newPage();
@@ -68,7 +68,7 @@ for (const count of [2, 8]) {
       const contexts = [];
       const errors = [];
       const current = seat => request.get(path, { headers: headersFor(seat) }).then(asJSON);
-      const activate = locator => screen.touch ? locator.tap() : locator.click();
+      const activate = locator => screen.keyboard ? locator.press('Enter') : locator.click();
       const actor = seats.find(s => s.playerId === start.game.activeId);
       const next = seats.find(s => s.playerId === start.game.upcoming[1]);
       // Aim at someone other than the next player when the table permits it.

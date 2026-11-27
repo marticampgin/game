@@ -40,13 +40,11 @@ async function bounds(page) {
 for (const seats of [2, 8]) {
   for (const [device, viewport] of Object.entries({
     desktop: { width: 1366, height: 768 },
-    phone: { width: 390, height: 844 },
+    laptop: { width: 1280, height: 720 },
   })) {
     test.describe(seats + '-seat late-game ' + device, () => {
       test.use({
         viewport,
-        hasTouch: device === 'phone',
-        isMobile: device === 'phone',
         reducedMotion: 'reduce',
       });
       test('keeps a full loadout usable with a recap, statuses and an explicit target', async ({

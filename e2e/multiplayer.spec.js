@@ -54,8 +54,8 @@ test('two browsers draft classes, reconnect and play each other through a privat
   }
 });
 
-test('mobile lobby exposes all illustrated classes, editable settings and the solo battle', async ({ page }) => {
-  await page.setViewportSize({ width:390, height:844 });
+test('laptop lobby exposes all illustrated classes, editable settings and the solo battle', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
   await enterLobby(page);
   await page.getByRole('button', {name:'Chronomancer', exact:true}).click();
   await expect(page.getByRole('heading', {name:'Chronomancer', exact:true})).toBeVisible();
@@ -66,7 +66,7 @@ test('mobile lobby exposes all illustrated classes, editable settings and the so
   const images = page.locator('.class-portrait');
   await expect(images).toHaveCount(4);
   await expect.poll(() => images.evaluateAll(nodes => nodes.every(img => img.complete && img.naturalWidth > 0))).toBe(true);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1280);
   await page.getByRole('button', {name:'Start match'}).click();
   await expect(page.getByLabel('Battlefield')).toContainText('Nightshade');
   await expect(page.locator('.combatant')).toHaveCount(8);

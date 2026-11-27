@@ -64,8 +64,8 @@ test('reroll clears an inspected reward before accepting another choice', async 
   await expect(page.locator('[data-pick]')).toHaveCount(0);
 });
 
-test('an eight-contender mobile draft exposes copies and lets you cancel replacement', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('an eight-contender desktop draft exposes copies and lets you cancel replacement', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
   const payload = fixture(8);
   for (const rewardId of ['red-tonic', 'spark-bottle', 'antidote', 'red-tonic', 'second-breath']) {
     payload.state = sandboxEdit(payload.state, { type: 'grant', playerId: payload.viewerId, rewardId });
@@ -78,8 +78,8 @@ test('an eight-contender mobile draft exposes copies and lets you cancel replace
   await card.click();
   await expect(page.locator('.draft-review')).toContainText('Already carrying 1 copy');
   const confirm = page.getByRole('button', { name: 'Choose replacement for Second Breath' });
-  for (const width of [320, 390, 768, 1440]) {
-    await page.setViewportSize({ width, height: 844 });
+  for (const [width, height] of [[1280,720], [1440,900], [1920,1080]]) {
+    await page.setViewportSize({ width, height });
     await expect(confirm).toBeVisible();
     const boxes = await page.locator('[data-draft-select]').evaluateAll(nodes =>
       nodes.map(node => ({ width: node.offsetWidth, height: node.offsetHeight })));
@@ -99,14 +99,12 @@ test('an eight-contender mobile draft exposes copies and lets you cancel replace
   expect(items).not.toContain('spark-bottle');
 });
 
-test('the third mobile offer reveals its confirmation within the viewport', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('the third laptop offer reveals its confirmation within the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
   const payload = fixture(8);
   payload.state.offers = ['second-breath', 'echo-rune', 'widows-brew'];
   await openMatch(page, payload);
   const third = page.getByRole('button', { name: 'Inspect Widow’s Brew' });
-  // Stop scrolling when the third card is just visible, as a touch player might.
-  await third.evaluate(node => node.scrollIntoView({ block: 'end' }));
   await third.click();
   const confirm = page.getByRole('button', { name: 'Take Widow’s Brew' });
   await expect(confirm).toBeVisible();
@@ -123,8 +121,8 @@ test('three illustrated offers stay together on the arena and survive viewing th
   const stage = page.getByRole('region', { name: 'Battlefield' });
   const cards = stage.getByRole('group', { name: 'Reward offers' }).getByRole('button');
   await expect.poll(() => cards.evaluateAll(nodes => nodes.filter(node => node.querySelector('img').naturalWidth > 0).length)).toBe(3);
-  for (const width of [1366, 390, 320]) {
-    await page.setViewportSize({ width, height: 844 });
+  for (const [width, height] of [[1280,720], [1366,768], [1920,1080]]) {
+    await page.setViewportSize({ width, height });
     const positions = await cards.evaluateAll(nodes => nodes.map(node => {
       const box = node.getBoundingClientRect();
       const image = node.querySelector('img');

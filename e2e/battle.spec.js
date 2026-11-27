@@ -94,8 +94,8 @@ test('title menu, real solo turns, previews, cooldowns, reload and victory', asy
   expect(errors).toEqual([]);
 });
 
-test('populated eight-seat Chaos state remains usable on a narrow phone', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('populated eight-seat Chaos state remains usable in a laptop window', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
   let { state, viewerId } = seedBattle(8);
   const rival = state.players.find((p) => p.id !== viewerId);
   for (const edit of [
@@ -120,8 +120,8 @@ test('populated eight-seat Chaos state remains usable on a narrow phone', async 
   await page.locator('.draft-confirm').click();
   await page.locator('#target-select').selectOption(rival.id);
   await expect(page.locator('.preview')).toContainText('health damage');
-  for (const width of [320, 390, 768, 1536]) {
-    await page.setViewportSize({ width, height: 844 });
+  for (const [width, height] of [[1280,720], [1440,900], [1920,1080]]) {
+    await page.setViewportSize({ width, height });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
 });

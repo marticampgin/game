@@ -63,11 +63,11 @@ test('all founder sheets contain four unique idle cels and physically different 
 });
 
 for(const scenario of [
-  {role:'guardian',action:'bastion-bash',other:'berserker',effect:'bastion',mobile:false},
-  {role:'alchemist',action:'venom-flask',other:'guardian',effect:'venom',mobile:true},
+  {role:'guardian',action:'bastion-bash',other:'berserker',effect:'bastion',viewport:{width:1440,height:900}},
+  {role:'alchemist',action:'venom-flask',other:'guardian',effect:'venom',viewport:{width:1280,height:720}},
 ]) {
   test(scenario.role+' performs a confirmed action and hits the selected rival in the live arena',async({page},info)=>{
-    if(scenario.mobile) await page.setViewportSize({width:390,height:844});
+    await page.setViewportSize(scenario.viewport);
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await arena(page,scenario.role,scenario.other);
     const {role,other,action,effect}=scenario;

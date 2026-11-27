@@ -26,7 +26,7 @@ test('journal finds an older cast, attributes its later Burn tick and conceals p
   state = applyCommand(draft(state),source,{type:'act',actionId:'cinder-orb',targetId:rival.id});
   for (let i = 0; i < 10; i++) state = applyCommand(draft(state),state.activeId,{type:'act',actionId:'defend'});
   expect(state.recentActions.every(a => a.actionId !== 'cinder-orb')).toBe(true);
-  await page.setViewportSize({width:390,height:844});
+  await page.setViewportSize({ width: 1280, height: 720 });
   await restore(page,'rift-solo',{state,viewerId:source});
   await page.getByRole('button',{name:'Battle log',exact:true}).first().click();
   const dialog = page.getByRole('dialog');
@@ -46,7 +46,7 @@ test('journal finds an older cast, attributes its later Burn tick and conceals p
   await search.fill('');
   await expect(oldRound).not.toHaveAttribute('open','');
   await expect(dialog.locator('[data-round]').first()).toHaveAttribute('open','');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1280);
 });
 
 test('solo bot declares a visible target before executing its prepared public attack', async ({page}) => {

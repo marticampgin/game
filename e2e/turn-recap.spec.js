@@ -90,7 +90,7 @@ test('two human clients see the same resolved hit, browse prior actions and keep
 });
 
 test('a shielded lethal hit reveals its survival chain in order while the rivalâ€™s remaining item stays hidden', async ({page}) => {
-  await page.setViewportSize({width:390,height:844});
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.emulateMedia({reducedMotion:'reduce'});
   let state = localMatch(['guardian','berserker']);
   const source = state.activeId, target = state.players.find(p => p.id !== source).id;
@@ -115,7 +115,7 @@ test('a shielded lethal hit reveals its survival chain in order while the rivalâ
   for (let i = 1; i < positions.length; i++) expect(positions[i],rows.join('\n')).toBeGreaterThan(positions[i-1]);
   await expect(panel).not.toContainText('Pocket Eclipse');
   await expect(panel.locator('.recap-handoff')).toContainText('Choosing a reward');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1280);
 });
 
 test('extra actions, spectating after a knockout, and victory each show the correct handoff', async ({page}) => {

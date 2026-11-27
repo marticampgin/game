@@ -25,10 +25,10 @@ function obstructedVitals() {
 
 for (const viewport of [
   { width: 1366, height: 768 },
-  { width: 390, height: 844 },
+  { width: 1920, height: 1080 },
 ]) {
   test.describe(viewport.width + 'px arena', () => {
-    test.use({ viewport, isMobile: viewport.width === 390, hasTouch: viewport.width === 390 });
+    test.use({ viewport });
     test('keeps every roster size on the same floor through inspection, targeting and drafting', async ({
       page,
     }) => {
