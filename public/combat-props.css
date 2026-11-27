@@ -1,0 +1,26 @@
+.arena-sprite[data-consume-ready][data-track='consume'] > .arena-cel {
+  background-image: var(--consume-skin);
+  background-size: 1200% 300%;
+  background-position-y: 0%;
+}
+.arena-sprite[data-consume-ready][data-track='consume'][data-tier='wounded'] > .arena-cel {
+  background-position-y: 50%;
+}
+.arena-sprite[data-consume-ready][data-track='consume'][data-tier='critical'] > .arena-cel {
+  background-position-y: 100%;
+}
+.arena-fx-prop[data-prop] {
+  z-index: 2;
+}
+.arena-fx-prop[data-prop='cache'] {
+  transform-origin: center bottom;
+  filter: drop-shadow(1px 2px 0 #291c2fb0);
+}
+.arena-fx-prop[data-prop='bottle'] {
+  background-image: url('/assets/skins/held-bottles.png');
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  transform-origin: 50% 4%;
+}
+.arena-fx-prop[data-prop='bottle'][data-icon='tonic'] { background-position-x: 0%; }
+.arena-fx-prop[data-prop='bottle'][data-icon='antidote'] { background-position-x: 50%; }

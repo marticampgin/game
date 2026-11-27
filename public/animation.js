@@ -1,3 +1,4 @@
+import { stageCombatProps, useExposures } from './combat-props.js';
 import { statusCue, statusIcon } from './status-effects.js';
 import { combatTiming, directOutcome } from './combat-timing.js';
 import { fighterLayout, healthBand, resolveFighterSkin } from './fighter-kit.js';
@@ -94,6 +95,7 @@ export function preloadArenaSkins(players = []) {
     missileSheet,
     '/assets/skins/status-effects.png',
     '/assets/skins/status-icons.png',
+    '/assets/skins/held-bottles.png',
     ...players.flatMap((p) => {
       const skin = resolveFighterSkin(p.classId, p.skinId);
       return Object.keys(fighterLayout.layers).map(layer => skin[layer]).filter(Boolean);
@@ -181,14 +183,6 @@ function positioned(el, x, y, w, h) {
 
 const running = new WeakMap();
 
-const propIcons = {
-  'red-tonic': 'tonic',
-  antidote: 'antidote',
-  'widows-brew': 'flask',
-  'ward-lantern': 'lantern',
-  'menders-bell': 'bell',
-  'grave-bell': 'bell',
-};
 const causeNames = {
   'arena-fire': 'Arena fire',
   echo: 'Echo',
@@ -362,42 +356,13 @@ export function playArenaAction(arena, recap, options = {}) {
     const size = Math.max(34, Math.min(205, box.h * impactScale(amount) * emphasis));
     return imprint(kind, centerX(box), centerY(box), size, still ? 245 : full ? 370 : 305);
   }
-  function heldIcon(icon, fromMs, untilMs) {
-    at(fromMs, () => {
-      const obj = part(ghost, 'arena-fx-prop'),
-        size = start.h * 0.27;
-      obj.style.backgroundImage = 'url(/assets/i-' + icon + '.png)';
-      positioned(obj, start.w * (dir > 0 ? 0.7 : 0.3) - size / 2, start.h * 0.5 - size / 2, size, size);
-      const lift = score.track === 'sip' ? 0.22 : 0.13;
-      tween(
-        obj,
-        [
-          { opacity: 0, transform: translated(0, 0, 0.8) },
-          {
-            opacity: 1,
-            transform: translated(-dir * start.w * 0.05, -start.h * lift, 1, dir * -22),
-            offset: 0.5,
-          },
-          {
-            opacity: 1,
-            transform: translated(-dir * start.w * 0.1, -start.h * lift, 1, dir * -36),
-            offset: 0.76,
-          },
-          { opacity: 0, transform: translated(0, 0, 0.85) },
-        ],
-        untilMs - fromMs,
-      );
-      at(untilMs - fromMs, () => obj.remove());
-    });
-  }
-
   const clip = actorClip(score, action, role);
   const duration = score.path.at(-1)[0];
   const lead = score.family === 'cast' ? score.release : score.contact;
   const actorFrames = [0, 0.2, 0.37, 0.53, 0.67, 0.8, 0.91, 1].map((fraction) => fraction * lead);
   const recovery = score.family === 'melee' ? Math.min(225, (duration - lead) * 0.73) : duration - lead;
   for (const fraction of [0.14, 0.37, 0.68, 1]) actorFrames.push(lead + fraction * recovery);
-  function flipbook(element, track, frames) {
+  function flipbook(element, track, frames, exposures) {
     if (still) return false;
     if (track === 'consume' && !element.hasAttribute('data-consume-ready')) track = 'brace';
     const single = track === 'consume';
@@ -414,13 +379,16 @@ export function playArenaAction(arena, recap, options = {}) {
     atlas.style.backgroundPositionX = '0%';
     frames.slice(1).forEach((time, i) => {
       at(time, () => {
-        if (activeClips.get(element) === token) atlas.style.backgroundPositionX = ((i + 1) / (motionSheet.columns - 1)) * 100 + '%';
+        if (activeClips.get(element) !== token) return;
+        const column = exposures?.[i + 1] ?? i + 1;
+        atlas.style.backgroundPositionX = column / (motionSheet.columns - 1) * 100 + '%';
       });
     });
     return true;
   }
   function articulate() {
-    if (flipbook(art, clip, actorFrames)) return;
+    const exposures = clip === 'consume' && score.gesture === 'use' && art.hasAttribute('data-consume-ready') ? useExposures : undefined;
+    if (flipbook(art, clip, actorFrames, exposures)) return;
     const guard = score.track === 'bash' || score.track === 'brace' || clip === 'consume';
     const windup = guard
       ? 'guard'
@@ -590,44 +558,6 @@ export function playArenaAction(arena, recap, options = {}) {
     }
   }
 
-  function gatherCoins() {
-    const purse = part(scene, 'arena-fx-prop');
-    const size = start.h * 0.31;
-    const x = centerX(start) + dir * start.w * 0.44;
-    const y = start.y + start.h * 0.92;
-    positioned(purse, x - size / 2, y - size / 2, size, size);
-    purse.style.backgroundImage = 'url(/assets/i-chest.png)';
-    tween(
-      purse,
-      [
-        { opacity: 0, transform: 'scale(.72)' },
-        { opacity: 1, transform: 'scale(1)', offset: 0.22 },
-        { opacity: 1, transform: 'scale(1)', offset: 0.74 },
-        { opacity: 0, transform: 'scale(.78)' },
-      ],
-      660,
-    );
-    for (const delay of [0, 75, 130]) {
-      at(290 + delay, () => {
-        const coin = part(scene, 'arena-fx-prop');
-        const width = start.h * 0.145;
-        const dx = -dir * start.w * (0.31 + delay * 0.00085);
-        positioned(coin, x - width / 2, y - width / 2, width, width);
-        coin.style.backgroundImage = 'url(/assets/i-coin.png)';
-        tween(
-          coin,
-          [
-            { opacity: 0, transform: translated(0, 0, 0.65) },
-            { opacity: 1, transform: translated(dx * 0.15, -start.h * 0.35, 1), offset: 0.4 },
-            { opacity: 1, transform: translated(dx * 0.72, -start.h * 0.47, 0.95), offset: 0.78 },
-            { opacity: 0, transform: translated(dx, -start.h * 0.4, 0.5) },
-          ],
-          425,
-        );
-      });
-    }
-  }
-
   function stageCasting() {
     const hand = castPoint();
     if (score.move === 'eruption') {
@@ -671,10 +601,12 @@ export function playArenaAction(arena, recap, options = {}) {
       at(score.release, launch);
     }
   }
-  const timing = combatTiming(recap, still ? 40 : score.contact, still);
+  const effectsOnly = !!options.effectsOnly;
+  const timing = combatTiming(recap, effectsOnly ? 0 : still ? 40 : score.contact, still, effectsOnly);
   // On a slow display allow the weight shift, chamber, release and recovery to
   // each reach the screen. Fast bots retain their deliberately compressed score.
-  const keyDrawings = !still && speed <= 1 && art.hasAttribute('data-motion-ready')
+  const illustratedActor = art.hasAttribute('data-motion-ready') || (clip === 'consume' && art.hasAttribute('data-consume-ready'));
+  const keyDrawings = !effectsOnly && !still && speed <= 1 && illustratedActor
     ? [2, 4, 6, 7, 9, 10].map(index => timing.windup + actorFrames[index])
     : [];
   const paintPoints = [...new Set([
@@ -688,15 +620,16 @@ export function playArenaAction(arena, recap, options = {}) {
     if (!still) {
       moveActor();
       if (score.family === 'cast') stageCasting();
-      if (propIcons[action]) heldIcon(propIcons[action], 80, Math.min(duration - 45, score.contact + 180));
-      if (score.track === 'bash' && role !== 'guardian') heldIcon('shield', 65, score.contact + 165);
-      if (score.track === 'scavenge') gatherCoins();
+      stageCombatProps({ scene, ghost, box: start, anchors: resolveFighterSkin(role, art.dataset.skin).anchors,
+        role, tier: art.dataset.tier, clip, score, dir, frames: actorFrames, duration, at, tween });
       if (score.effect === 'eclipse')
         at(230, () => imprint('eclipse', centerX(start), centerY(start), start.h * 0.85, 560));
     }
   }
-  if (timing.windup) at(timing.windup, startMove);
-  else startMove();
+  if (!effectsOnly) {
+    if (timing.windup) at(timing.windup, startMove);
+    else startMove();
+  }
 
   const recoil = new Map();
   const reactions = new Map();
@@ -817,7 +750,7 @@ export function playArenaAction(arena, recap, options = {}) {
   }
   at(timing.contact, () => {
     scene.dataset.stage = 'impact';
-    if (!timing.primary) {
+    if (!effectsOnly && !timing.primary) {
       contactBurst(target, score.effect, 0);
       options.onCue?.({ action, role, effect: score.effect, event: null, first: true });
     }
@@ -830,7 +763,7 @@ export function playArenaAction(arena, recap, options = {}) {
     });
   });
   at(
-    Math.max(timing.windup + (still ? 360 : duration), timing.last + timing.tail),
+    Math.max(effectsOnly ? 0 : timing.windup + (still ? 360 : duration), timing.last + timing.tail),
     cancel,
   );
   document.addEventListener('visibilitychange', onVisibility);
