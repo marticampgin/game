@@ -1,0 +1,57 @@
+import { expect, test } from '@playwright/test';
+import { createMatch } from '../src/game/index.js';
+
+function ring(seats) {
+  const roles = ['guardian', 'berserker', 'chronomancer', 'alchemist'];
+  const players = Array.from({ length: seats }, (_, i) => ({
+    id: 'seat' + i,
+    name: 'Fighter ' + (i + 1),
+    classId: roles[i % 4],
+    bot: false,
+  }));
+  const state = createMatch({ seed: 'seat-layout', players });
+  state.offers = ['iron-shard', 'fang-shard', 'heartwood'];
+  return { state, viewerId: state.activeId };
+}
+
+for (const viewport of [
+  { width: 1366, height: 768 },
+  { width: 390, height: 844 },
+]) {
+  test.describe(viewport.width + 'px arena', () => {
+    test.use({ viewport, isMobile: viewport.width === 390, hasTouch: viewport.width === 390 });
+    test('keeps every roster size on the same floor through inspection, targeting and drafting', async ({
+      page,
+    }) => {
+      await page.goto('/');
+      for (const count of [2, 3, 4, 5, 6, 7, 8]) {
+        const save = ring(count);
+        await page.evaluate((s) => sessionStorage.setItem('rift-solo', JSON.stringify(s)), save);
+        await page.reload();
+        await expect(page.locator('.combatant')).toHaveCount(count);
+        // Every label and fighter must be on screen and above the reward shelf.
+        const placement = await page.evaluate(() => {
+          window.startingSprite = document.querySelector('.arena-sprite');
+          const shelf = document.querySelector('.draft-stage').getBoundingClientRect().top;
+          return [...document.querySelectorAll('.fighter-panel')].every((node) => {
+            const rect = node.getBoundingClientRect();
+            return rect.x >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= shelf;
+          });
+        });
+        expect(placement, 'draft obstructs a seat in a ' + count + '-player match').toBe(true);
+        await page.getByRole('button', { name: 'View arena', exact: true }).click();
+        await expect(page.locator('.draft-stage')).toHaveCount(0);
+        await page.getByRole('button', { name: 'Show rewards', exact: true }).click();
+        await page.locator('[data-draft-select="iron-shard"]').click();
+        await page.locator('[data-pick="iron-shard"]').click();
+        for (const p of save.state.players.filter((p) => p.id !== save.viewerId)) {
+          await page.locator('[data-aim="' + p.id + '"]').click();
+          await expect(page.locator('.confirm-action')).toHaveAttribute('data-target', p.id);
+        }
+        expect(
+          await page.evaluate(() => window.startingSprite === document.querySelector('.arena-sprite')),
+        ).toBe(true);
+      }
+    });
+  });
+}

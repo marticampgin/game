@@ -1,5 +1,9 @@
-import { applyCommand, botCommand, REWARDS, viewMatch } from '/src/game/index.js';
-import { battleHTML, buildHTML, historyHTML } from './battle.js';
+import { applyCommand, REWARDS, viewMatch } from '/src/game/index.js';
+import { renderArena } from './arena-render.js';
+import { battleHTML, buildHTML } from './battle.js';
+import { historyHTML, filterHistory, refreshHistory } from './history.js';
+import { planBotStep } from './pacing.js';
+import { playArenaAction, preloadArenaSkins } from './animation.js';
 import { glyph, esc } from './art.js';
 import { mountLobby, resumeLobby, roomRequest as request } from './lobby.js';
 
@@ -24,7 +28,11 @@ let choice = 'attack',
   actionPage = 0,
   pinnedAction = null,
   turnKey = '',
-  lastLog = 0,
+  shownView = null,
+  playback = null,
+  draftHidden = false,
+  pendingFocus = '',
+  planCache = null,
   pollFailed = false;
 function read(area, key) {
   try {
@@ -69,7 +77,41 @@ function chime(kind) {
     /* Audio may be unavailable in embedded browsers. */
   }
 }
+function impactSound(event) {
+  if (!pref.sound || !['damage', 'revival', 'heal', 'shield', 'elimination'].includes(event.type)) return;
+  try {
+    audio ??= new AudioContext();
+    const t = audio.currentTime;
+    const osc = audio.createOscillator(),
+      gain = audio.createGain();
+    const strike = event.type === 'damage' && event.healthDamage;
+    const weight = Math.min(1, (event.amount || 0) / 36);
+    osc.type = strike || event.type === 'elimination' ? 'triangle' : 'sine';
+    const frequencies = strike
+      ? [185 - 45 * weight, 50]
+      : event.type === 'revival' || event.type === 'heal'
+        ? [392, 659]
+        : event.type === 'elimination'
+          ? [140, 43]
+          : [670, 315];
+    osc.frequency.setValueAtTime(frequencies[0], t);
+    osc.frequency.exponentialRampToValueAtTime(frequencies[1], t + 0.15);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.045 + 0.045 * weight, t + 0.009);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+    osc.connect(gain).connect(audio.destination);
+    osc.start(t);
+    osc.stop(t + 0.25);
+  } catch {
+    /* Audio can be unavailable while a browser tab is suspended. */
+  }
+}
 function setScreen(next) {
+  const oldPlayback = playback;
+  playback = null;
+  oldPlayback?.cancel();
+  shownView = null;
+  pendingFocus = '';
   dispose?.();
   dispose = null;
   clearTimeout(timer);
@@ -83,7 +125,7 @@ function menu() {
   setScreen('menu');
   match = null;
   busy = false;
-  lastLog = 0;
+  shownView = null;
   app.innerHTML = `<section class="menu"><div class="menu-inner"><h1 class="menu-title"><img src="/assets/wordmark.png" alt="Riftbound"></h1>
   <div class="menu-sub"><span class="title-rule" aria-hidden="true"><i></i></span>A roguelike battle arena</div>
   <nav class="menu-nav" aria-label="Game menu">${[
@@ -127,8 +169,11 @@ function startBattle(payload) {
   }
   turnKey = '';
   pinnedAction = null;
+  draftHidden = false;
+  planCache = null;
+  preloadArenaSkins(current().players);
   busy = false;
-  lastLog = 0;
+  shownView = null;
   pollFailed = false;
   refreshBattle();
   schedule();
@@ -136,10 +181,90 @@ function startBattle(payload) {
 function current() {
   return match?.state ? viewMatch(match.state, match.viewerId) : match?.view?.game;
 }
+function localBotPlan() {
+  if (!match?.state) return null;
+  if (!planCache || planCache.state !== match.state || planCache.fast !== !!pref.fast)
+    planCache = {
+      state: match.state,
+      fast: !!pref.fast,
+      plan: planBotStep(match.state, { fast: !!pref.fast }),
+    };
+  return planCache.plan;
+}
+
 function refreshBattle() {
   if (screen !== 'battle' || !match) return;
   const v = current();
   if (!v) return;
+  if (match.state)
+    sessionStorage.setItem('rift-solo', JSON.stringify({ state: match.state, viewerId: match.viewerId }));
+  refreshHistory(contents, v);
+  if (playback) return;
+  const arena = app.querySelector('.arena-world');
+  const action = v.lastAction;
+  // A restored game or a client returning from a background tab starts at the
+  // authoritative state. Only animate when the before and after states are adjacent.
+  if (
+    arena &&
+    shownView &&
+    action &&
+    action.id === shownView.globalAction + 1 &&
+    !document.hidden &&
+    !pref.reduce &&
+    !matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    const old = shownView;
+    const shell = app.querySelector('.battle-shell');
+    shell.classList.add('resolving');
+    for (const region of shell.querySelectorAll('.turn-controls,.draft-stage,.fighter-main,.draft-handle'))
+      region.inert = true;
+    const callout = document.createElement('div');
+    callout.className = 'scene-callout';
+    callout.textContent = action.actorName + ' · ' + action.actionName;
+    arena.append(callout);
+    if (innerWidth <= 700 && arena.getBoundingClientRect().bottom < innerHeight / 2)
+      arena.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const hp = new Map(old.players.map((p) => [p.id, p.hp]));
+    const handle = playArenaAction(arena, action, {
+      speed:
+        old.players.find((p) => p.id === action.actorId)?.bot &&
+        (match.session ? match.view.room.fastBots : pref.fast)
+          ? 2.3
+          : 1,
+      onImpact(event) {
+        const p = old.players.find((p) => p.id === event.targetId);
+        if (!p) return;
+        let value = hp.get(p.id);
+        if (event.type === 'damage') value = Math.max(0, value - (event.healthDamage || 0));
+        else if (event.type === 'heal') value = Math.min(p.maxHp, value + event.amount);
+        else if (event.type === 'revival') value = event.amount;
+        else if (event.type === 'elimination') value = 0;
+        hp.set(p.id, value);
+        const seat = arena.querySelector('[data-seat="' + CSS.escape(p.id) + '"]');
+        if (seat) {
+          seat.querySelector('.vital-bar i').style.width = (100 * value) / p.maxHp + '%';
+          seat.querySelector('.fighter-hp').textContent = value + ' / ' + p.maxHp;
+        }
+        impactSound(event);
+      },
+    });
+    playback = handle;
+    handle.finished.finally(() => {
+      if (playback !== handle) return;
+      playback = null;
+      renderBattle(v);
+      // Polling can advance during a cinematic; only stage a subsequent action
+      // when its own starting positions and health have actually been shown.
+      if (current().globalAction !== v.globalAction || match.session) refreshBattle();
+      schedule();
+    });
+    return;
+  }
+  renderBattle(v);
+}
+
+function renderBattle(v) {
+  shownView = v;
   const key = v.globalTurn + '/' + v.activeId;
   if (key !== turnKey) {
     choice = 'attack';
@@ -147,12 +272,10 @@ function refreshBattle() {
     selectedDraft = '';
     acquiredReward = '';
     actionPage = 0;
+    draftHidden = false;
     turnKey = key;
   }
   if (!v.offers.includes(selectedDraft)) selectedDraft = '';
-  const recent = lastLog ? v.log.filter((e) => e.id > lastLog) : [];
-  if (recent.some((e) => e.type === 'damage')) chime('hit');
-  lastLog = v.log.at(-1)?.id || 0;
   const focused = app.contains(document.activeElement) ? document.activeElement : null;
   const identities = [
     'data-draft-select',
@@ -167,24 +290,31 @@ function refreshBattle() {
     'id',
   ];
   const identity = identities.find((key) => focused?.hasAttribute(key));
+  const focusSelector = identity
+    ? '[' + identity + '="' + CSS.escape(focused.getAttribute(identity)) + '"]'
+    : '';
   const railScroll = app.querySelector('.turn-rail ol')?.scrollLeft || 0;
   const chainScroll = app.querySelector('.recap-events')?.scrollTop || 0;
-  app.innerHTML = battleHTML(v, match.viewerId, {
-    action: choice,
-    actionPage,
-    target,
-    selectedDraft,
-    acquiredReward,
-    feedback: recent,
-    recap: { expanded: !!pinnedAction, actionId: pinnedAction?.id, pinnedAction },
-  });
+  renderArena(
+    app,
+    battleHTML(v, match.viewerId, {
+      action: choice,
+      actionPage,
+      target,
+      selectedDraft,
+      acquiredReward,
+      sound: !!pref.sound,
+      draftHidden,
+      botIntent: match.state ? localBotPlan()?.intent : v.botIntent,
+      recap: { expanded: !!pinnedAction, actionId: pinnedAction?.id, pinnedAction },
+    }),
+  );
   app.querySelector('.turn-rail ol').scrollLeft = railScroll;
   const chain = app.querySelector('.recap-events');
   if (chain) chain.scrollTop = chainScroll;
   if (identity) {
-    const selector = '[' + identity + '="' + CSS.escape(focused.getAttribute(identity)) + '"]';
     (
-      app.querySelector(selector) ||
+      app.querySelector(focusSelector) ||
       (identity === 'data-recap-id' && app.querySelector('[data-ui="toggle-recap"]'))
     )?.focus?.({ preventScroll: true });
   }
@@ -206,8 +336,12 @@ function refreshBattle() {
     : handoff;
   const live = document.querySelector('#battle-announcement');
   if (live.textContent !== announcement) live.textContent = announcement;
-  if (match.state)
-    sessionStorage.setItem('rift-solo', JSON.stringify({ state: match.state, viewerId: match.viewerId }));
+  if (pendingFocus) {
+    const node = app.querySelector(pendingFocus);
+    if (node?.tagName === 'H2') node.tabIndex = -1;
+    node?.focus({ preventScroll: true });
+    pendingFocus = '';
+  }
 }
 function schedule() {
   clearTimeout(timer);
@@ -216,21 +350,20 @@ function schedule() {
     timer = setTimeout(poll, 800);
     return;
   }
-  const p = match.state.players.find((p) => p.id === match.state.activeId);
-  if (p?.bot)
-    timer = setTimeout(
-      () => {
-        if (screen !== 'battle') return;
-        try {
-          match.state = applyCommand(match.state, p.id, botCommand(match.state));
-          refreshBattle();
-          schedule();
-        } catch (e) {
-          notice(e.message);
-        }
-      },
-      pref.fast ? 130 : 570,
-    );
+  if (playback) return;
+  const plan = localBotPlan();
+  if (!plan) return;
+  const before = match.state;
+  timer = setTimeout(() => {
+    if (screen !== 'battle' || match.state !== before) return;
+    try {
+      match.state = applyCommand(before, before.activeId, plan.command);
+      refreshBattle();
+      schedule();
+    } catch (e) {
+      notice(e.message);
+    }
+  }, plan.delayMs);
 }
 async function poll() {
   const start = epoch,
@@ -264,7 +397,7 @@ async function poll() {
   }
 }
 async function command(cmd) {
-  if (busy || screen !== 'battle') return;
+  if (busy || playback || screen !== 'battle') return;
   const start = epoch;
   busy = true;
   clearTimeout(timer);
@@ -281,17 +414,8 @@ async function command(cmd) {
       chime('reward');
     }
     if (modal.open) modal.close();
+    pendingFocus = cmd.type === 'pick' ? '.turn-controls h2' : cmd.type === 'act' ? '.recap-toggle' : '';
     refreshBattle();
-    const focusNext = cmd.type === 'pick' ? '.turn-controls h2' : cmd.type === 'act' ? '.recap-toggle' : '';
-    if (focusNext) {
-      const node = app.querySelector(focusNext);
-      if (node?.tagName === 'H2') node.tabIndex = -1;
-      node?.focus({ preventScroll: true });
-      if (innerWidth <= 760) {
-        const region = cmd.type === 'act' ? app.querySelector('.recap-strip') : node;
-        region?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
-      }
-    }
   } catch (e) {
     if (epoch === start) notice(e.message);
   } finally {
@@ -341,7 +465,7 @@ function dialog(html) {
 }
 function settings() {
   dialog(`<h2>Settings &amp; rules</h2><label class="setting-line">Sound effects<input type="checkbox" data-pref="sound" ${pref.sound ? 'checked' : ''}></label>
-  <label class="setting-line">Faster solo opponents<input type="checkbox" data-pref="fast" ${pref.fast ? 'checked' : ''}></label>
+  <label class="setting-line">Faster bots in solo and hosted rooms<input type="checkbox" data-pref="fast" ${pref.fast ? 'checked' : ''}></label>
   <label class="setting-line">Reduce motion<input type="checkbox" data-pref="reduce" ${pref.reduce ? 'checked' : ''}></label>
   <h3>How to play</h3><p>Pick one of three rewards, then take one action. Strike any living rival, use equipment, defend for a shield, or scavenge for another reward. The last contender standing wins.</p>
   <p>Armor reduces incoming damage before shields absorb it. Abilities recover at the start of your personal turn. Inspect a contender to see their build and status effects. Carried consumables stay secret until used.</p>
@@ -433,12 +557,19 @@ soundButton.addEventListener('click', () => {
 modal.addEventListener('click', (e) => {
   if (e.target === modal) modal.close();
 });
+document.addEventListener('input', (event) => {
+  if (event.target.matches('[data-history-search]')) filterHistory(contents, event.target.value);
+});
 document.addEventListener('change', (event) => {
   if (event.target.dataset.pref) {
     pref[event.target.dataset.pref] = event.target.checked;
     preferences();
     if (event.target.dataset.pref === 'sound') chime('select');
-    if (screen === 'battle') schedule();
+    if (screen === 'battle') {
+      if (event.target.dataset.pref === 'reduce' && pref.reduce) playback?.cancel();
+      refreshBattle();
+      schedule();
+    }
   }
   if (event.target.id === 'target-select') {
     target = event.target.value;
@@ -485,6 +616,17 @@ document.addEventListener('click', (event) => {
     command({ type: 'act', actionId: d.execute, targetId: d.target });
   else if (d.ui) {
     switch (d.ui) {
+      case 'battle-settings':
+        settings();
+        break;
+      case 'battle-sound':
+        soundButton.click();
+        refreshBattle();
+        break;
+      case 'toggle-draft':
+        draftHidden = !draftHidden;
+        refreshBattle();
+        break;
       case 'close':
         modal.close();
         break;

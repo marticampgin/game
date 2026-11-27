@@ -33,7 +33,7 @@ test('title menu, real solo turns, previews, cooldowns, reload and victory', asy
   await page.goto('/');
   await expect(page).toHaveTitle(/Riftbound/);
   await page.getByRole('button', { name: 'Settings and rules' }).click();
-  await page.getByLabel('Faster solo opponents').check();
+  await page.getByLabel('Faster bots in solo and hosted rooms').check();
   await page.getByLabel('Reduce motion').check();
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await page.getByRole('button', { name: 'Enter the arena' }).click();
