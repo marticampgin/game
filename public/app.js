@@ -3,7 +3,7 @@ import { renderArena } from './arena-render.js';
 import { battleHTML, buildHTML } from './battle.js';
 import { historyHTML, filterHistory, refreshHistory } from './history.js';
 import { planBotStep } from './pacing.js';
-import { playArenaAction, preloadArenaSkins } from './animation.js';
+import { healthBand, playArenaAction, preloadArenaSkins } from './animation.js';
 import { glyph, esc } from './art.js';
 import { mountLobby, resumeLobby, roomRequest as request } from './lobby.js';
 
@@ -198,7 +198,7 @@ function refreshBattle() {
   if (!v) return;
   if (match.state)
     sessionStorage.setItem('rift-solo', JSON.stringify({ state: match.state, viewerId: match.viewerId }));
-  refreshHistory(contents, v);
+  if (modal.open) refreshHistory(contents, v);
   if (playback) return;
   const arena = app.querySelector('.arena-world');
   const action = v.lastAction;
@@ -244,6 +244,9 @@ function refreshBattle() {
         if (seat) {
           seat.querySelector('.vital-bar i').style.width = (100 * value) / p.maxHp + '%';
           seat.querySelector('.fighter-hp').textContent = value + ' / ' + p.maxHp;
+          const tier = healthBand({ hp: value, maxHp: p.maxHp, alive: value > 0 });
+          seat.querySelector('.arena-sprite').dataset.tier = tier;
+          if (p.id === action.actorId) arena.querySelector('.arena-fx-actor .arena-sprite').dataset.tier = tier;
         }
         impactSound(event);
       },

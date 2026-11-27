@@ -3,11 +3,15 @@ import {applyCommand,createMatch} from '../src/game/index.js';
 import {fileURLToPath} from 'node:url';
 
 const classes=['guardian','berserker','chronomancer','alchemist'];
-async function arena(page,first='guardian') {
+async function arena(page,first='guardian',woundOnHit) {
   const players=classes.map(classId=>({id:classId,classId,name:classId,bot:false}));
   let state;
   for(let seed=0;seed<100 && state?.activeId!==first;seed++) state=createMatch({seed:'animation-'+seed,players});
   state=applyCommand(state,first,{type:'pick',rewardId:state.offers[0]});
+  if (woundOnHit) {
+    const defender=state.players.find(player=>player.id===woundOnHit);
+    defender.hp=Math.floor(defender.maxHp*.65)+1;
+  }
   await page.addInitScript(saved=>sessionStorage.setItem('rift-solo',JSON.stringify(saved)),{state,viewerId:first});
   await page.goto('/');
   await expect(page.getByRole('heading',{name:'The Shattered Ring'})).toBeVisible();
@@ -65,7 +69,7 @@ for(const scenario of [
   test(scenario.role+' performs a confirmed action and hits the selected rival in the live arena',async({page},info)=>{
     if(scenario.mobile) await page.setViewportSize({width:390,height:844});
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
-    await arena(page,scenario.role);
+    await arena(page,scenario.role,scenario.other);
     const {role,other,action,effect}=scenario;
     await page.locator('[data-action="'+action+'"]').click();
     await page.locator('[data-aim="'+other+'"]').click();
@@ -76,11 +80,20 @@ for(const scenario of [
       const cx=r=>r.x+r.width/2;
       const trace=window.travel;
       trace.from=cx(origin);trace.to=cx(dest);
+      const health=document.querySelector('[data-seat="'+other+'"] .fighter-hp');
+      const readHp=()=>Number.parseInt(health.textContent,10);
+      const fighter=health.closest('[data-seat]').querySelector('.arena-sprite');
+      trace.beforeHp=readHp();trace.windupHp=[];trace.impactHp=[];trace.impactBands=[];
       const loop=()=>{
         const scene=document.querySelector('.arena-fx');
         if(scene) {
           trace.seen=true;
           trace.stages.push(scene.dataset.stage);
+          if(scene.dataset.stage==='windup')trace.windupHp.push(readHp());
+          if(scene.dataset.stage==='impact') {
+            trace.impactHp.push(readHp());
+            trace.impactBands.push(fighter.dataset.tier);
+          }
           trace.ghost.push(cx(scene.querySelector('.arena-fx-actor').getBoundingClientRect()));
           const projectile=scene.querySelector('.arena-fx-missile');
           if(projectile)trace.projectile.push(cx(projectile.getBoundingClientRect()));
@@ -102,6 +115,9 @@ for(const scenario of [
     expect(track.stages).toContain('windup');
     expect(track.stages).toContain('impact');
     expect(track.effects).toContain(effect);
+    expect([...new Set(track.windupHp)]).toEqual([track.beforeHp]);
+    expect(Math.min(...track.impactHp)).toBeLessThan(track.beforeHp);
+    expect(track.impactBands).toContain('wounded');
     const xs=action==='venom-flask'?track.projectile:track.ghost;
     const span=Math.max(...xs)-Math.min(...xs);
     expect(span).toBeGreaterThan(Math.abs(track.to-track.from)*.45);
