@@ -20,7 +20,7 @@ test('identical class portraits retain distinct and readable player labels as or
     await restore(page, initial);
     const rail = page.getByRole('navigation', { name: 'Turn order' });
     const readLabels = () => rail.getByRole('button').evaluateAll(buttons => Object.fromEntries(buttons.map(button => {
-      const label = [...button.querySelectorAll('span')].find(span => span.getBoundingClientRect().width > 0);
+      const label = [...button.querySelectorAll('.rail-name, .rail-code')].find(span => span.getBoundingClientRect().width > 0);
       return [button.dataset.inspect, label.textContent];
     })));
     const labels = await readLabels();
@@ -32,7 +32,7 @@ test('identical class portraits retain distinct and readable player labels as or
     expect(labels.p6).toBe('Lark');
     expect(await rail.getByRole('button').evaluateAll(buttons => buttons.every(button => {
       const box = button.getBoundingClientRect();
-      const label = [...button.querySelectorAll('span')].find(span => span.getBoundingClientRect().width > 0);
+      const label = [...button.querySelectorAll('.rail-name, .rail-code')].find(span => span.getBoundingClientRect().width > 0);
       const hit = document.elementFromPoint(box.left + box.width / 2, box.bottom - 2);
       return box.left >= 0 && box.right <= innerWidth && label.scrollWidth <= label.clientWidth && button.contains(hit);
     }))).toBe(true);
