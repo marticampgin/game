@@ -1,3 +1,5 @@
+import { statusCue, statusIcon } from './status-effects.js';
+import { recapStatusHTML } from './effect-strip.js';
 import { actionIcon, esc, glyph, rewardIcon } from './art.js';
 
 const eventIcons = {
@@ -107,10 +109,11 @@ function effectList(action, view) {
       previousTiming = '';
     }
     const step = 1 + i + (i >= 16 ? action.omitted || 0 : 0);
-    const icon = eventIcons[e.type] || 'rune';
+    const cue = statusCue(e);
+    const icon = cue ? statusIcon(cue.id) : rewardIcon({icon:eventIcons[e.type] || 'rune'});
     rows += '<li class="recap-event" data-event-type="' + esc(e.type) + '" value="' + step + '">' +
       (timing && timing !== previousTiming ? '<small class="recap-timing">' + esc(timing) + '</small>' : '') +
-      '<div><span class="recap-step" aria-hidden="true">' + step + '</span>' + rewardIcon({icon}) +
+      '<div><span class="recap-step" aria-hidden="true">' + step + '</span>' + icon +
       '<span>' + effectTextHTML(e, view, action.actorId) + '</span></div></li>';
     previousTiming = timing;
   });
@@ -164,6 +167,6 @@ export function resolutionHTML(view, viewerId, { expanded = false, actionId, pin
     handoffHTML(handoff(view, view, latest, viewerId)) +
     '<button type="button" class="recap-toggle" data-ui="toggle-recap" aria-expanded="' + expanded +
     '"' + (expanded ? ' aria-controls="recap-effects"' : '') + '>' +
-    'Effects' + glyph('right') + '</button></div>' +
+    recapStatusHTML(latest) + 'Effects' + glyph('right') + '</button></div>' +
     (expanded ? history(view, viewerId, actions, actionId) : '') + '</section>';
 }

@@ -126,3 +126,39 @@
   }
   .battle-journal .journal-row.main-action::before { display: none; }
 }
+.live-effects {
+  min-height: 42px;
+  display: flex; align-items: center; gap: clamp(10px,1.4vw,24px);
+  padding: 3px 13px; border: 1px solid #93714e;
+  background: linear-gradient(90deg,#292029,#161119 75%);
+}
+.live-phase { min-width: 105px; display: grid; align-content: center; line-height: 1.05; }
+.live-phase strong { color: #ffdbab; font: 600 15px/1.1 var(--battle-font); }
+.live-phase small { color: #d5c2b6; font: 13px/1.1 var(--body); }
+.live-effects .recap-toggle { margin-left: auto; flex: none; }
+.effect-trail { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; list-style: none; padding: 0; margin: 0; }
+.effect-receipt {
+  display: flex; align-items: center; gap: 5px; min-width: 0;
+  padding: 4px 9px; border-left: 2px solid #726168; color: #dfd0c7;
+  font: 15px/1.1 var(--body); white-space: nowrap;
+}
+.effect-receipt strong { color: var(--effect-ink,#f1d5ac); font-weight: 600; }
+.effect-receipt > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.effect-receipt:last-child { border-color: var(--effect-ink,#f1d5ac); background: #332931; }
+.recap-conditions { display: inline-flex; align-items: center; gap: 2px; }
+.seat-conditions { position: absolute; left: calc(100% - 2px); top: 4px; }
+[data-facing='left'] > .fighter-main .seat-conditions { left: auto; right: calc(100% - 2px); }
+.condition-chips {
+  display: flex; align-items: center; width: max-content; gap: 2px; padding: 2px 4px;
+  color: #f1e9d8; background: #211724eb; border: 1px solid #705747; border-radius: 2px;
+  font: 600 12px/1 var(--body);
+}
+.condition-chip { display: inline-flex; align-items: center; gap: 1px; }
+.condition-chip b { font-weight: 600; }
+.condition-chips small { font-size: 11px; }
+
+.live-effects .recap-toggle { color: #f8ebdb; font: 500 14px/1.15 var(--battle-font); }
+.live-effects .recap-toggle svg { transform: none; }
+.recap-event .status-icon { align-self: center; width: 16px; height: 16px; }
+.journal-row:has(> .status-icon)::before { display: none; }
+.journal-row > .status-icon { margin-top: 2px; }

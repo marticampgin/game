@@ -3,6 +3,7 @@ import { fighterModel, fighterPortrait } from './fighter-kit.js';
 import { rewardIcon, seatCrest, glyph, esc } from './art.js';
 import { actionDock } from './command.js';
 import { fighterSpriteHTML } from './animation.js';
+import { statusBankHTML } from './effect-strip.js';
 import { draftHTML } from './draft.js';
 import { resolutionHTML } from './resolution.js';
 
@@ -54,13 +55,14 @@ function combatant(p, index, view, viewerId, selection, intent) {
       <span class="fighter-panel" id="vitals-${esc(p.id)}"><strong class="fighter-title">${seatCrest(index)}${esc(p.name)}</strong>
         <span class="vital-bar" aria-hidden="true"><i style="width:${hp}%"></i></span>
         <span class="fighter-hp">${p.alive ? p.hp + ' / ' + p.maxHp : 'Out'}</span>
+        <span class="seat-conditions" aria-hidden="true">${statusBankHTML(p.statuses)}</span>
         <span class="sr-turn">${esc(details)}${p.shield ? ' · ' + p.shield + ' shield' : ''}</span>
       </span>
     </button><button type="button" class="fighter-info" data-inspect="${esc(p.id)}" aria-label="Inspect ${esc(p.name)}" title="${esc(p.name + ' · ' + details)}"><span aria-hidden="true">i</span></button>
   </article>`;
 }
 
-function turnRail(view, viewerId) {
+export function turnRail(view, viewerId) {
   const end = view.phase === 'finished';
   const order = end ? view.order : view.upcoming.slice(0, view.players.filter((p) => p.alive).length);
   // Use the original seats to keep a contender's nameplate stable as turn order changes.

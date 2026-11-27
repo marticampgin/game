@@ -1,4 +1,5 @@
 import { esc, seatCrest } from './art.js';
+import { statusCue, statusIcon } from './status-effects.js';
 import { effectTextHTML } from './resolution.js';
 
 function liveTurn(view) {
@@ -38,8 +39,9 @@ function logRounds(view) {
 
 function eventRow(event, group, view) {
   const primary = event.type === 'action' && event.targetId != null;
+  const cue = statusCue(event);
   return '<li class="journal-row' + (primary ? ' main-action' : '') + '" data-kind="' + esc(event.type) +
-    '" data-event-id="' + esc(event.id) + '"><span>' + effectTextHTML(event,view,group.actorId) + '</span></li>';
+    '" data-event-id="' + esc(event.id) + '">' + (cue ? statusIcon(cue.id) : '') + '<span>' + effectTextHTML(event,view,group.actorId) + '</span></li>';
 }
 
 function roundsHTML(view) {

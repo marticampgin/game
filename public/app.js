@@ -1,7 +1,9 @@
 import { applyCommand, REWARDS, viewMatch } from '/src/game/index.js';
+import { mountEffectStrip, statusBankHTML } from './effect-strip.js';
+import { statusCue } from './status-effects.js';
 import { renderArena } from './arena-render.js';
 import { clearRewardFlight, dealOffers, deliverReward, pickedEmblem } from './draft-motion.js';
-import { battleHTML, buildHTML } from './battle.js';
+import { battleHTML, buildHTML, turnRail } from './battle.js';
 import { historyHTML, filterHistory, refreshHistory } from './history.js';
 import { planBotStep } from './pacing.js';
 import { actionVisual, healthBand, playArenaAction, preloadArenaSkins } from './animation.js';
@@ -201,12 +203,13 @@ function refreshBattle() {
   // authoritative state. Only animate when the before and after states are adjacent.
   const consecutive = arena && shownView && action && action.id === shownView.globalAction + 1 && !document.hidden;
   const reduced = pref.reduce || matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (consecutive && reduced && pref.sound) {
+  const hasConditions = consecutive && action.events.some(event => statusCue(event));
+  if (consecutive && reduced && !hasConditions && pref.sound) {
     const role = shownView.players.find((p) => p.id === action.actorId)?.classId;
     const profile = actionVisual(action.actionId, role, action.actorId === action.targetId);
     impactSound({ action: action.actionId, role, effect: profile.effect, event: action.events?.[0], first: true });
   }
-  if (consecutive && !reduced) {
+  if (consecutive && (!reduced || hasConditions)) {
     clearRewardFlight();
     const old = shownView;
     const shell = app.querySelector('.battle-shell');
@@ -220,7 +223,34 @@ function refreshBattle() {
     if (innerWidth <= 700 && arena.getBoundingClientRect().bottom < innerHeight / 2)
       arena.scrollIntoView({ block: 'center', behavior: 'instant' });
     const hp = new Map(old.players.map((p) => [p.id, p.hp]));
+    const conditions = new Map(old.players.map(p => [p.id, { ...p.statuses }]));
+    const showBeat = hasConditions || action.events.length > 6
+      ? mountEffectStrip(shell.querySelector('.turn-resolution'), action, old.players) : undefined;
+    if (showBeat) {
+      const heading = shell.querySelector('.command-heading h2');
+      const confirm = shell.querySelector('.confirm-action');
+      if (heading) heading.textContent = 'Action played';
+      if (confirm) confirm.textContent = action.actionName;
+    }
+    let shownOwner = old.activeId;
     const handle = playArenaAction(arena, action, {
+      onBeat(beat, index, total) {
+        if (!showBeat) return;
+        showBeat(beat, index, total);
+        const event = beat.events[0];
+        if (event.timing === 'round') callout.textContent = 'Round ' + event.round + ' begins';
+        if (event.timing !== 'turn') return;
+        const owner = old.players.find(p => p.id === event.turnOwnerId);
+        if (!owner) return;
+        callout.textContent = owner.name + ' · Turn start';
+        if (shownOwner === owner.id) return;
+        shownOwner = owner.id;
+        for (const seat of arena.querySelectorAll('[data-seat]'))
+          seat.classList.toggle('acting', seat.dataset.seat === owner.id);
+        if (owner.id === v.activeId && v.phase !== 'finished')
+          shell.querySelector('.turn-rail').outerHTML = turnRail(v, match.viewerId);
+      },
+      reducedMotion: reduced,
       speed:
         old.players.find((p) => p.id === action.actorId)?.bot &&
         (match.session ? match.view.room.fastBots : pref.fast)
@@ -238,6 +268,13 @@ function refreshBattle() {
         hp.set(p.id, value);
         const seat = arena.querySelector('[data-seat="' + CSS.escape(p.id) + '"]');
         if (seat) {
+          const cue = statusCue(event);
+          if (cue && Number.isInteger(cue.remaining)) {
+            const stacks = conditions.get(p.id);
+            stacks[cue.id] = cue.remaining;
+            if (Number.isInteger(event.chillRemaining)) stacks.chill = event.chillRemaining;
+            seat.querySelector('.seat-conditions').innerHTML = statusBankHTML(stacks);
+          }
           seat.querySelector('.vital-bar i').style.width = (100 * value) / p.maxHp + '%';
           seat.querySelector('.fighter-hp').textContent = value + ' / ' + p.maxHp;
           const tier = healthBand({ hp: value, maxHp: p.maxHp, alive: value > 0 });
@@ -249,11 +286,13 @@ function refreshBattle() {
     playback = handle;
     handle.finished.finally(() => {
       if (playback !== handle) return;
+      const returnFocus = document.activeElement?.matches('[data-ui="skip-effects"]');
       playback = null;
       renderBattle(v);
       // Polling can advance during a cinematic; only stage a subsequent action
       // when its own starting positions and health have actually been shown.
       if (current().globalAction !== v.globalAction || match.session) refreshBattle();
+      if (returnFocus) app.querySelector('[data-draft-select], [data-action]:enabled, [data-ui="toggle-recap"]')?.focus({preventScroll:true});
       schedule();
     });
     return;
@@ -621,6 +660,9 @@ document.addEventListener('click', (event) => {
     command({ type: 'act', actionId: d.execute, targetId: d.target });
   } else if (d.ui) {
     switch (d.ui) {
+      case 'skip-effects':
+        playback?.cancel();
+        break;
       case 'battle-settings':
         settings();
         break;
