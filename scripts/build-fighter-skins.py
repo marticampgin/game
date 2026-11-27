@@ -53,7 +53,8 @@ class Inbetweens:
         self.images = [np.asarray(im) for im in keys]
         # Inbetweens share their source palette, which keeps the color clusters
         # calm in motion and keeps the downloadable atlas compact.
-        pixels = np.concatenate([im[im[:, :, 3] > 0, :3] for im in self.images])
+        # Supplemental gestures reuse the colors of the original twenty drawings.
+        pixels = np.concatenate([im[im[:, :, 3] > 0, :3] for im in self.images[:20]])
         self.palette = Image.fromarray(pixels.reshape((-1, 1, 3))).quantize(colors=112)
         self.gray = []
         for im in self.images:
@@ -119,15 +120,32 @@ def idle_glint(frame, role, tier, exposure):
         draw.point((x + rim, y - 12), fill='#ddcaff')
 
 
+def ambient_key(keys, role, tier):
+    if role != 'alchemist':
+        return keys[2]
+    # The field alchemist checks the contents with the sickle kept in hand.
+    # Carry the glass from the resting cel into the palm at the belt.
+    held = keys[8].copy()
+    vx, vy = GLINT_ORIGIN[role][tier]
+    glass = keys[0].crop((vx - 3, vy - 6, vx + 6, vy + 7))
+    hand = ((109, 72), (110, 78), (110, 93))[tier]
+    held.alpha_composite(glass, hand)
+    return held
+
+
 def clip(solver, role, tier, name):
-    script = TRACK_KEYS[name]
+    if name == 'ambient':
+        script = ((0, 0), (2, 1), (5, 20), (7, 20), (10, 1), (11, 0))
+    else:
+        script = TRACK_KEYS[name]
     for exposure in range(12):
         for (left, a), (right, b) in zip(script, script[1:]):
             if left <= exposure <= right:
                 frame = solver.between(a, b, (exposure - left) / (right - left))
-                if name == 'idle':
+                if name in ('idle', 'ambient'):
                     rest = Image.fromarray(solver.images[0])
                     frame.paste(rest.crop((0, 133, CELL[0], CELL[1])), (0, 133))
+                if name == 'idle':
                     idle_glint(frame, role, tier, exposure)
                 yield frame
                 break
@@ -152,11 +170,13 @@ def build(role):
         raise ValueError(f'{role}: expected a four-column master with sixteen drawings per health band')
     standing = Image.new('RGBA', (CELL[0] * 4, CELL[1] * 9))
     moving = Image.new('RGBA', (CELL[0] * 12, CELL[1] * len(TRACK_KEYS) * 3))
+    ambient = Image.new('RGBA', (CELL[0] * 12, CELL[1] * 3))
     for tier in range(3):
         keys = drawings(master, tier)
         for column in range(4):
             x, y = column * CELL[0], tier * CELL[1]
             keys.append(breakdowns.crop((x, y, x + CELL[0], y + CELL[1])))
+        keys.append(ambient_key(keys, role, tier))
         solver = Inbetweens(keys)
         stills = [keys[0], keys[1], keys[2], solver.between(0, 1, .55),
                   keys[5], keys[6], keys[12], keys[13], keys[14], keys[15], fallen(keys[15]), keys[9]]
@@ -166,10 +186,13 @@ def build(role):
             y = (tier * len(TRACK_KEYS) + row) * CELL[1]
             for i, cel in enumerate(clip(solver, role, tier, name)):
                 moving.paste(cel, (CELL[0] * i, y))
+        for i, cel in enumerate(clip(solver, role, tier, 'ambient')):
+            ambient.paste(cel, (CELL[0] * i, CELL[1] * tier))
         if tier == 0:
             keys[0].crop(keys[0].getbbox()).save(ASSETS / f'{role}.png', optimize=True)
     standing.save(ASSETS / 'skins' / f'{role}-founder.png', optimize=True)
     moving.save(ASSETS / 'skins' / f'{role}-motions.webp', lossless=True, method=5)
+    ambient.save(ASSETS / 'skins' / f'{role}-ambient.webp', lossless=True, method=5)
     print(f'{role}: 60 painted keys, {len(TRACK_KEYS) * 36} combat and idle cels')
 
 

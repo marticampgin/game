@@ -15,6 +15,7 @@ All sheets use the same health bands in the same order. Healthy fighters are abo
 | Standing, required | 832 × 1494, four columns and nine rows | Three rows per health band |
 | Motion, optional | 2496 × 3486, twelve columns and twenty-one rows | Seven clips per health band |
 | Return footwork, optional | 832 × 498, four columns and three rows | One counterstep sequence per health band |
+| Ambient gesture, optional | 2496 × 498, twelve columns and three rows | One equipment check per health band |
 
 Pack cels edge to edge with transparent space inside each cel. PNG and lossless WebP are both supported. Older standing sheets remain usable on their own.
 
@@ -29,6 +30,8 @@ For the standing sheet, repeat the following three rows in each health band.
 Within each motion band, the seven rows are **idle, basic attack, signature, cast, utility, brace and hurt**. Number the twelve drawings within each row from zero. The actor’s release or contact lands on frame 7 of an offensive clip. Wound recoil peaks on frame 2 and the braced guard holds through frames 6–9. Frame 11 returns to the resting stance. The idle loops into frame 0 with feet on the same baseline. Utility handles a low search or pickup. Brace keeps the hands, equipment and eyes up in guard.
 
 The footwork sheet has four drawings per band. The fighter faces the rival throughout the return. Retract the weapon and load the front leg, draw the boot under the hip, reach back with the opposite boot, then catch the weight with bent knees.
+
+The ambient sheet starts and ends in the normal resting pose. Frames 5–7 hold a short, recognizable equipment check, such as the Guardian inspecting a gauntlet or the Alchemist checking a vial. Keep the boot soles planted. An attack can interrupt this short gesture at any time.
 
 ## Founder art sources
 
@@ -54,6 +57,7 @@ registerFighterSkin(
   '/assets/skins/guardian-dawn-order.webp',
   '/assets/skins/guardian-dawn-order-motions.webp',
   '/assets/skins/guardian-dawn-order-footwork.webp',
+  '/assets/skins/guardian-dawn-order-ambient.webp',
 );
 ```
 
