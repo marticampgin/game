@@ -144,12 +144,13 @@ for (const count of [2, 8]) {
         }
         const targetAfter = resolved.game.players.find(p => p.id === target.id);
         expect(targetAfter.hp).toBeLessThan(target.hp);
+        const targetVitals = new RegExp('^' + targetAfter.hp + '\\s*/\\s*' + targetAfter.maxHp + '$');
         for (const page of [acting, watching]) {
           const region = page.getByRole('region', { name: 'Last action' });
           await expect(region.locator('.recap-who')).toContainText(REWARDS[starter].name);
           await expect(region.locator('.recap-route')).toContainText(target.name);
           await expect(region.locator('.recap-handoff')).toContainText(page === watching ? 'Your turn' : 'Choosing a reward');
-          await expect(page.locator('[data-seat="' + target.id + '"] .fighter-hp')).toContainText(targetAfter.hp + '/' + targetAfter.maxHp);
+          await expect(page.locator('[data-seat="' + target.id + '"] .fighter-hp')).toHaveText(targetVitals);
           await activate(region.getByRole('button', { name: 'Effects', exact: true }));
           await expect(region.getByRole('list', { name: 'Effects in resolution order' })).toBeVisible();
           await expect(region.locator('[data-event-type="damage"]').first()).toContainText(REWARDS[starter].name);
