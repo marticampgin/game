@@ -21,5 +21,6 @@ The recording begins in round 11 of the eight-seat solo seed `ring-at-dusk-3`. T
 
 - The desktop and touch room matrix used two and eight human-controlled seats. Two independent browser clients played and observed the handoff. Each seat’s server view was checked for the same outcome and appropriate private draft data.
 - Automated checks cover target selection, item replacement, repeated names, long loadouts, keyboard use, action cancellation, reduced motion, knockouts, revivals, hidden choices, bot takeover and skin persistence. All 36 browser tests passed in each of Chromium, Firefox and WebKit. All 72 Node rules and server tests passed.
+- In a separate eight-seat phone run with Chromium CPU throttling set to 4×, the first visible impact followed the start of Bastion Bash by 474 ms and Time Bolt by 627 ms. The viewport stayed at 390 pixels through both handoffs. These are observations from that run.
 - Twelve seeded duels and twelve seeded eight-seat simulations played to completion. The seed prefix was `arena-qa`.
 - The phone captures used a touch-enabled browser viewport. Physical-device frame pacing, thumb reach and players’ ability to recognize an attack at a glance still need a hands-on playtest. On the smallest screens, the critical pose and lowered weapon are easier to distinguish than individual chips in the armor.
