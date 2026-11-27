@@ -1,0 +1,45 @@
+.status-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1.1em;
+  height: 1.1em;
+  background: url('/assets/skins/status-icons.png') no-repeat 0 calc(var(--status-row) * 100% / 7);
+  background-size: 100% 800%;
+  image-rendering: pixelated;
+}
+.arena-fx-burst.arena-status-burst {
+  background-image: url('/assets/skins/status-effects.png');
+  background-size: 1600% 800%;
+}
+.arena-status-burst[data-change='cleansed'],
+.arena-status-burst[data-change='consumed'],
+.arena-status-burst[data-change='thawed'],
+.arena-status-burst[data-change='discharged'],
+.arena-status-burst[data-change='decayed'] {
+  animation-direction: reverse;
+}
+.arena-fx-label.arena-status-label {
+  color: var(--status-ink);
+  padding: 3px 7px 4px;
+  gap: 1px;
+  border: 1px solid color-mix(in srgb,var(--status-ink) 52%,#352735);
+  background: #221b25f5;
+  box-shadow: 0 1px 3px #180e1ec2;
+}
+.arena-status-title {
+  display: inline-flex;
+  justify-content: center;
+  gap: 3px;
+  align-items: center;
+  font: 600 clamp(13px,1.06vw,17px)/1.1 var(--battle-font,serif);
+}
+.arena-status-title .status-icon { width: 18px; height: 18px; }
+.arena-status-value { color: #fff2db; font: 600 clamp(12px,.9vw,15px)/1.12 var(--body,sans-serif); }
+.arena-status-label .arena-fx-source {
+  max-width: 14em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ddcbd2;
+  font: 500 clamp(10px,.77vw,13px)/1.1 var(--body,sans-serif);
+}
+

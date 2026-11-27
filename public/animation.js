@@ -1,3 +1,4 @@
+import { statusCue, statusIcon } from './status-effects.js';
 import { combatTiming, directOutcome } from './combat-timing.js';
 import { fighterLayout, healthBand, resolveFighterSkin } from './fighter-kit.js';
 import { actorClip, impactCauses, motionScore } from './combat-motion.js';
@@ -91,6 +92,8 @@ export function preloadArenaSkins(players = []) {
   const urls = new Set([
     fxSheet,
     missileSheet,
+    '/assets/skins/status-effects.png',
+    '/assets/skins/status-icons.png',
     ...players.flatMap((p) => {
       const skin = resolveFighterSkin(p.classId, p.skinId);
       return Object.keys(fighterLayout.layers).map(layer => skin[layer]).filter(Boolean);
@@ -363,6 +366,19 @@ export function playArenaAction(arena, recap, options = {}) {
     if (still) el.classList.add('arena-fx-still');
     at(duration, () => el.remove());
     return el;
+  }
+  function statusBurst(subject, cue) {
+    const box = visibleBounds(subject);
+    const size = Math.max(54, Math.min(210, box.h * cue.scale));
+    const el = part(scene, 'arena-fx-burst arena-status-burst');
+    el.dataset.effect = cue.effect;
+    el.dataset.status = cue.id;
+    el.dataset.change = cue.change;
+    positioned(el, centerX(box) - size / 2, box.y + box.h * cue.anchor - size / 2, size, size);
+    el.style.setProperty('--effect-row', cue.row * 100 / 7 + '%');
+    el.style.setProperty('--effect-time', 630 / speed + 'ms');
+    if (still) el.classList.add('arena-fx-still');
+    at(630, () => el.remove());
   }
   function contactBurst(subject, kind, amount, full = true) {
     const box = visibleBounds(subject);
@@ -712,12 +728,14 @@ export function playArenaAction(arena, recap, options = {}) {
     const subject = seats.get(event.targetId);
     if (!subject) return;
     const direct = directOutcome(event, recap);
+    const status = statusCue(event);
     const kind = effectFor(event, score, direct);
     const full = event === timing.primary || event.type === 'revival' || event.type === 'elimination';
-    const wardHit = !still && direct && event.type === 'damage' && (kind === 'guard' || kind === 'fracture');
+    const wardHit = !still && (direct || status) && event.type === 'damage' && (kind === 'guard' || kind === 'fracture');
     // A ward records its own result just after physical contact; it never erases
     // the bottle breaking, blade hitting, or spell that caused that result.
-    contactBurst(subject, wardHit ? score.effect : kind, event.amount, full);
+    if (status) statusBurst(subject, status);
+    else contactBurst(subject, wardHit ? score.effect : kind, event.amount, full);
     if (wardHit) at(108, () => contactBurst(subject, kind, event.amount, false));
     const blocked = event.type === 'damage' && event.shieldDamage && !event.healthDamage;
     const reaction = {
@@ -753,7 +771,7 @@ export function playArenaAction(arena, recap, options = {}) {
         });
       }
     }
-    if (!still && event.type === 'damage' && subject !== actor) {
+    if (!still && !status && event.type === 'damage' && subject !== actor) {
       const source = seats.get(event.actorId);
       const from = source ? centerX(visibleBounds(source)) : centerX(start);
       const sign = centerX(bounds(subject)) >= from ? 1 : -1;
@@ -777,20 +795,35 @@ export function playArenaAction(arena, recap, options = {}) {
       );
     }
     const text = badge(event);
-    if (text) {
+    if (text || status) {
       labels.get(subject)?.remove();
       const box = visibleBounds(subject),
         label = part(scene, 'arena-fx-label');
       label.dataset.kind = event.type;
-      label.textContent = text;
-      const cause = causeNames[event.cause];
-      if (cause && (!direct || event.timing !== 'action')) {
-        const name = seats.get(event.actorId)?.seat.querySelector('.fighter-title')?.textContent;
-        const byline = part(label, 'arena-fx-source');
-        byline.textContent = name ? cause + ' · ' + name : cause;
+      if (status) {
+        label.classList.add('arena-status-label');
+        label.dataset.status = status.id;
+        label.dataset.change = status.change;
+        label.style.setProperty('--status-ink', status.ink);
+        const title = part(label, 'arena-status-title');
+        title.innerHTML = statusIcon(status.id);
+        title.append(status.title);
+        if (text) part(label, 'arena-status-value').textContent = text;
+        const sources = event.statusSources;
+        const source = seats.get(event.actorId)?.seat.querySelector('.fighter-title')?.textContent;
+        if (sources?.length > 1) part(label, 'arena-fx-source').textContent = sources.length + ' sources';
+        else if (source && event.actorId !== event.targetId) part(label, 'arena-fx-source').textContent = 'From ' + source;
+      } else {
+        label.textContent = text;
+        const cause = causeNames[event.cause];
+        if (cause && (!direct || event.timing !== 'action')) {
+          const name = seats.get(event.actorId)?.seat.querySelector('.fighter-title')?.textContent;
+          part(label, 'arena-fx-source').textContent = name ? cause + ' · ' + name : cause;
+        }
       }
+      const hold = status ? 660 : still ? 250 : 550;
       label.style.left = centerX(box) + 'px';
-      label.style.top = Math.max(24, box.y + box.h * 0.1) + 'px';
+      label.style.top = Math.max(status ? 58 : 24, box.y + box.h * 0.1) + 'px';
       labels.set(subject, label);
       tween(
         label,
@@ -800,11 +833,11 @@ export function playArenaAction(arena, recap, options = {}) {
           { opacity: 1, translate: '0 -4px', offset: 0.74 },
           { opacity: 0, translate: '0 -12px' },
         ],
-        550,
+        hold,
       );
-      at(still ? 250 : 550, () => label.remove());
+      at(hold, () => label.remove());
     }
-    options.onCue?.({ action, role, effect: wardHit ? score.effect : kind, event, first: event === timing.primary });
+    options.onCue?.({ action, role, effect: status?.sound ?? (wardHit ? score.effect : kind), event, first: event === timing.primary });
   }
   at(timing.contact, () => {
     scene.dataset.stage = 'impact';
