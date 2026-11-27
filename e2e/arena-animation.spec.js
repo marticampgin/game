@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {applyCommand,createMatch} from '../src/game/index.js';
+import {fileURLToPath} from 'node:url';
 
 const classes=['guardian','berserker','chronomancer','alchemist'];
 async function arena(page,first='guardian') {
@@ -141,4 +142,39 @@ test('ordered reactions, cancellation and reduced motion leave connected seats i
   });
   expect(result).toEqual({observed:[[1,'fracture'],[2,'revival'],[3,'guard'],[4,'heal']],
     motion:'reduced',moving:0,before:'idle',after:'idle',band:'critical',skin:'festival',stranded:0});
+});
+
+test('the restored battle renders another seat’s registered cosmetic and falls back for an uninstalled one',async({page})=>{
+  const state=createMatch({seed:'costume-roster',players:[
+    {id:'rival',name:'Rune',classId:'guardian',skinId:'festival-2'},
+    {id:'me',name:'Owl',classId:'alchemist',skinId:'future-edition'},
+  ]});
+  // Install a test cosmetic just as a future shipped skin would register at
+  // app startup. The roster, public projection, restoration and rendering are real.
+  await page.route('**/animation.js',async route=>{
+    const response=await route.fetch();
+    await route.fulfill({response,body:(await response.text())+
+      "\nregisterFighterSkin('guardian','festival-2','/assets/skins/test-festival.png');"});
+  });
+  await page.route('**/assets/skins/test-festival.png',route=>route.fulfill({
+    path:fileURLToPath(new URL('../public/assets/skins/guardian-founder.png',import.meta.url)),contentType:'image/png',
+  }));
+  await page.addInitScript(saved=>{
+    if (!sessionStorage.getItem('rift-solo')) sessionStorage.setItem('rift-solo',JSON.stringify(saved));
+  },{state,viewerId:'me'});
+  const fetched=page.waitForResponse(response=>response.url().endsWith('/assets/skins/test-festival.png') && response.ok());
+  await page.goto('/');
+  await fetched;
+  const rival=page.locator('[data-seat="rival"] .arena-sprite');
+  await expect(rival).toHaveAttribute('data-skin','festival-2');
+  await expect(rival.locator('.arena-cel')).toHaveCSS('background-image',/test-festival\.png/);
+  await expect(page.locator('[data-seat="me"] .arena-sprite')).toHaveAttribute('data-skin','founder');
+  const visibleIds=await page.evaluate(async()=>{
+    const {viewMatch}=await import('/src/game/index.js');
+    const {state,viewerId}=JSON.parse(sessionStorage.getItem('rift-solo'));
+    return viewMatch(state,viewerId).players.map(p=>p.skinId);
+  });
+  expect(visibleIds).toEqual(['festival-2','future-edition']);
+  await page.reload();
+  await expect(rival).toHaveAttribute('data-skin','festival-2');
 });

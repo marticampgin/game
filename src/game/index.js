@@ -2,6 +2,7 @@ import { CLASSES, DEFAULT_CONFIG, EVENTS, REWARDS, STATUSES } from './catalog.js
 import { drawOffers, eligible, sample, seedNumber, shuffled } from './draft.js';
 import { assessHit, capacity, castCooldown, deal, executeEffects, findPlayer, grantReward, previewSelfSupport, rawHit, record, resolveDefend, restore, setStatus, spendConsumable, tickStatus } from './combat.js';
 import { beginRecap, finishRecap, markBoundary, publicEvent, publicRecap, resumeRecap } from './recap.js';
+import { isSkinId } from './skin-id.js';
 
 export { CLASSES, DEFAULT_CONFIG, EVENTS, RARITIES, REWARDS, STATUSES } from './catalog.js';
 export { rarityWeights, resonance, eligible } from './draft.js';
@@ -35,6 +36,7 @@ function makePlayer(seat) {
   requireValue(Object.hasOwn(CLASSES,seat.classId),'Unknown class.');
   const role = CLASSES[seat.classId];
   return {id:seat.id,name:seat.name.trim(),classId:role.id,bot:Boolean(seat.bot),...role.stats,hp:role.stats.maxHp,
+    ...(isSkinId(seat.skinId) ? {skinId:seat.skinId} : {}),
     alive:true,shield:0,regen:0,rerolls:1,statuses:{},sources:{},abilities:[{id:role.ability,cooldown:0,modifiers:[]}],
     artifacts:[],consumables:[],personalTurn:0,usedBorrowedTime:false,extraTurnRound:0};
 }
@@ -264,6 +266,7 @@ export function viewMatch(state,viewerId=null) {
   // added to an engine player must never become public merely by being present.
   const players = state.players.map(p => ({
     id:p.id,name:p.name,classId:p.classId,bot:p.bot,alive:p.alive,hp:p.hp,maxHp:p.maxHp,
+    ...(isSkinId(p.skinId) ? {skinId:p.skinId} : {}),
     attack:p.attack,armor:p.armor,spellPower:p.spellPower,shield:p.shield,regen:p.regen,rerolls:p.rerolls,
     statuses:p.statuses,abilities:p.abilities.map(({id,cooldown,modifiers}) => ({id,cooldown,modifiers})),
     artifacts:p.artifacts,personalTurn:p.personalTurn,

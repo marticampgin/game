@@ -1,9 +1,11 @@
+import { isSkinId } from '../src/game/skin-id.js';
+
 // Sheets face right. Each of the three health bands repeats the same twelve
 // poses in four columns. A cosmetic can replace the artwork without touching rules.
 const roles = ['guardian','berserker','chronomancer','alchemist'];
 const skins = new Map();
 export function registerFighterSkin(classId, id, sheet) {
-  if (!roles.includes(classId) || !/^[a-z][a-z0-9-]*$/.test(id) ||
+  if (!roles.includes(classId) || !isSkinId(id) ||
       !/^\/assets\/skins\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.(png|webp)$/.test(sheet)) {
     throw new Error('A skin needs a known class, a simple ID and a local skin sheet.');
   }

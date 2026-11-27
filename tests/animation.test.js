@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {actionVisual,fighterSpriteHTML,healthBand,impactScale,preloadArenaSkins,registerFighterSkin,resolveFighterSkin} from '../public/animation.js';
+import {applyCommand,botCommand,createMatch,replayMatch,viewMatch} from '../src/game/index.js';
 
 test('every founder sheet has twelve poses in each of three damage bands',async()=>{
   for (const classId of ['guardian','berserker','chronomancer','alchemist']) {
@@ -46,4 +47,45 @@ test('abilities own their visual language when another class equips them, and he
   assert.deepEqual(actionVisual('interrupted','chronomancer'),{motion:'interrupted',effect:'cleave'});
   assert.ok(impactScale(85)>impactScale(10));
   assert.ok(impactScale(1e6)<2);
+});
+
+test('public cosmetics survive save, projection and replay without changing the seeded match',()=>{
+  const players=[{id:'a',name:'Rune',classId:'guardian'},{id:'b',name:'Owl',classId:'alchemist'}];
+  const classic={seed:'costume-replay',players};
+  const dressed={...classic,players:players.map((p,i)=>({...p,skinId:i?'midnight-2':'fallen-order'}))};
+  let base=createMatch(classic),alternate=createMatch(dressed);
+  const commands=[];
+  for(let i=0;i<10;i++){
+    const command=botCommand(base);
+    assert.deepEqual(command,botCommand(alternate));
+    commands.push(command);
+    base=applyCommand(base,base.activeId,command);
+    alternate=applyCommand(alternate,alternate.activeId,command);
+  }
+  const restored=JSON.parse(JSON.stringify(alternate));
+  assert.deepEqual(replayMatch(dressed,commands),restored);
+  for(const viewer of ['a','b',null]) {
+    assert.deepEqual(viewMatch(restored,viewer).players.map(p=>p.skinId),['fallen-order','midnight-2']);
+  }
+  for(const p of restored.players)delete p.skinId;
+  assert.deepEqual(restored,base);
+  assert.deepEqual(replayMatch(classic,commands),base);
+  assert.equal(viewMatch(base,'a').players.every(p=>!Object.hasOwn(p,'skinId')),true);
+});
+
+test('malformed and excessive skin IDs fall back cleanly on roster input and old saved state',()=>{
+  const players=[{id:'a',name:'Rune',classId:'guardian'},{id:'b',name:'Owl',classId:'alchemist'}];
+  for(const skinId of [null,{},'../hidden.png','Mixed-Case','a--b','a-','z'.repeat(41)]) {
+    const state=createMatch({seed:'cosmetics',players:[{...players[0],skinId},players[1]]});
+    assert.equal(Object.hasOwn(state.players[0],'skinId'),false);
+    state.players[0].skinId=skinId;
+    const seat=viewMatch(state,'b').players[0];
+    assert.equal(Object.hasOwn(seat,'skinId'),false);
+    assert.match(fighterSpriteHTML(seat),/data-skin="founder"/);
+    assert.throws(()=>registerFighterSkin('guardian',skinId,'/assets/skins/guardian-founder.png'));
+  }
+  const edge='a'.repeat(40);
+  const seat=createMatch({seed:'cosmetics',players:[{...players[0],skinId:edge},players[1]]}).players[0];
+  assert.equal(seat.skinId,edge);
+  assert.equal(resolveFighterSkin(seat.classId,seat.skinId).id,'founder');
 });
