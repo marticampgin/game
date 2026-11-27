@@ -1,10 +1,11 @@
-import { CLASSES, previewAction } from '/src/game/index.js';
+import { previewAction } from '/src/game/index.js';
+import { fighterPortrait } from './fighter-kit.js';
 import { actionIcon, seatCrest, esc, glyph } from './art.js';
 
 const PAGE_SIZE = 6;
 
 function portrait(player, view) {
-  return `<img src="/assets/portrait-${CLASSES[player.classId].id}.webp" alt="" draggable="false">${seatCrest(view.players.findIndex(p => p.id === player.id))}`;
+  return `<img src="${fighterPortrait(player)}" alt="" draggable="false">${seatCrest(view.players.findIndex(p => p.id === player.id))}`;
 }
 
 function playerStation(player, view) {

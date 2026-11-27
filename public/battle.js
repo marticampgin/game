@@ -1,5 +1,6 @@
 import { CLASSES, REWARDS, STATUSES, currentAttack, getActions } from '/src/game/index.js';
-import { classArt, rewardIcon, seatCrest, glyph, esc } from './art.js';
+import { fighterModel, fighterPortrait } from './fighter-kit.js';
+import { rewardIcon, seatCrest, glyph, esc } from './art.js';
 import { actionDock } from './command.js';
 import { fighterSpriteHTML } from './animation.js';
 import { draftHTML } from './draft.js';
@@ -90,7 +91,7 @@ function turnRail(view, viewerId) {
         const label =
           (end ? '' : i === 0 ? 'Acting · ' : i === 1 ? 'Up next · ' : 'Turn ' + (i + 1) + ' · ') + p.name + seatHint;
         return `<li><button data-inspect="${esc(id)}" aria-label="${esc(label)}" title="${esc(label + (id === viewerId ? ' · You' : ''))}" ${!end && i === 0 ? 'aria-current="step"' : ''}>
-          <img src="/assets/portrait-${esc(p.classId)}.webp" alt="">${seatCrest(seat)}<span class="rail-name" aria-hidden="true">${esc(shortName)}</span><span class="rail-code" aria-hidden="true">${esc(code)}</span>
+          <img src="${fighterPortrait(p)}" alt="">${seatCrest(seat)}<span class="rail-name" aria-hidden="true">${esc(shortName)}</span><span class="rail-code" aria-hidden="true">${esc(code)}</span>
         </button></li>`;
       })
       .join('')}</ol></nav>`;
@@ -105,7 +106,7 @@ function waiting(view, player, active, intent) {
     : view.phase === 'acquire'
       ? 'Choosing a reward'
       : 'Choosing an action';
-  return `<div class="watch"><img src="/assets/portrait-${esc(active.classId)}.webp" alt="">
+  return `<div class="watch"><img src="${fighterPortrait(active)}" alt="">
     <div><small>${player.alive ? 'Rival turn' : 'Spectating'}</small><h2>${esc(active.name)}</h2></div><p>${preparing}</p></div>`;
 }
 
@@ -179,7 +180,7 @@ export function buildHTML(p, own) {
         '</ul>'
       : '<p class="muted">' + empty + '</p>';
   const stats = Object.entries(p.statuses).filter(([, v]) => v);
-  return `<div class="inspect-top"><img src="${classArt(p.classId)}" alt=""><div><small>${esc(CLASSES[p.classId].name)}</small><h2>${esc(p.name)}</h2><p>${esc(CLASSES[p.classId].innate)}</p></div></div>
+  return `<div class="inspect-top"><img src="${fighterModel(p)}" alt=""><div><small>${esc(CLASSES[p.classId].name)}</small><h2>${esc(p.name)}</h2><p>${esc(CLASSES[p.classId].innate)}</p></div></div>
   <dl class="stats-row">${[
     ['Health', p.hp + '/' + p.maxHp],
     ['Shield', p.shield],

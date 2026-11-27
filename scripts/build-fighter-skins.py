@@ -7,6 +7,8 @@ The client needs only the produced images. All coordinates are in artist pixels.
 from argparse import ArgumentParser
 from pathlib import Path
 
+import json
+
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
@@ -14,10 +16,12 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'public' / 'assets'
 MASTERS = ROOT / 'scripts' / 'art' / 'founders'
-ROLES = ('guardian', 'berserker', 'chronomancer', 'alchemist')
-CELL = (208, 166)
-BASELINE = 144
-TIERS = ('healthy', 'wounded', 'critical')
+KIT = json.loads((ROOT / 'public' / 'fighter-kit.json').read_text())
+ROLES = tuple(KIT['founders'])
+CELL = (KIT['cell']['width'], KIT['cell']['height'])
+BASELINE = KIT['cell']['baseline']
+TIERS = tuple(band['id'] for band in KIT['health'])
+MOTIONS = KIT['layers']['motions']
 
 # Each number refers to a painted drawing in the artist's four-by-four key sheet.
 # In every attacking take the stroke crosses its apex at exposure seven.
@@ -138,7 +142,7 @@ def clip(solver, role, tier, name):
         script = ((0, 0), (2, 1), (5, 20), (7, 20), (10, 1), (11, 0))
     else:
         script = TRACK_KEYS[name]
-    for exposure in range(12):
+    for exposure in range(MOTIONS['columns']):
         for (left, a), (right, b) in zip(script, script[1:]):
             if left <= exposure <= right:
                 frame = solver.between(a, b, (exposure - left) / (right - left))
@@ -169,7 +173,7 @@ def build(role):
     if master.size != (CELL[0] * 4, CELL[1] * 12):
         raise ValueError(f'{role}: expected a four-column master with sixteen drawings per health band')
     standing = Image.new('RGBA', (CELL[0] * 4, CELL[1] * 9))
-    moving = Image.new('RGBA', (CELL[0] * 12, CELL[1] * len(TRACK_KEYS) * 3))
+    moving = Image.new('RGBA', (CELL[0] * MOTIONS['columns'], CELL[1] * len(MOTIONS['rows']) * len(TIERS)))
     ambient = Image.new('RGBA', (CELL[0] * 12, CELL[1] * 3))
     for tier in range(3):
         keys = drawings(master, tier)
@@ -182,8 +186,8 @@ def build(role):
                   keys[5], keys[6], keys[12], keys[13], keys[14], keys[15], fallen(keys[15]), keys[9]]
         for i, cel in enumerate(stills):
             standing.paste(cel, (CELL[0] * (i % 4), CELL[1] * (tier * 3 + i // 4)))
-        for row, name in enumerate(TRACK_KEYS):
-            y = (tier * len(TRACK_KEYS) + row) * CELL[1]
+        for row, name in enumerate(MOTIONS['rows']):
+            y = (tier * len(MOTIONS['rows']) + row) * CELL[1]
             for i, cel in enumerate(clip(solver, role, tier, name)):
                 moving.paste(cel, (CELL[0] * i, y))
         for i, cel in enumerate(clip(solver, role, tier, 'ambient')):

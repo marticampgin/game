@@ -1,0 +1,25 @@
+{
+  "cell": { "width": 208, "height": 166, "baseline": 144 },
+  "health": [
+    { "id": "healthy", "above": 0.65 },
+    { "id": "wounded", "above": 0.30 },
+    { "id": "critical" }
+  ],
+  "layers": {
+    "sheet": {
+      "columns": 4,
+      "poses": ["idle", "breathe", "survey", "settle", "windup", "strike", "channel", "release", "guard", "hurt", "fallen", "victory"]
+    },
+    "motions": { "columns": 12, "rows": ["idle", "attack", "signature", "cast", "utility", "brace", "hurt"], "contactFrame": 7 },
+    "footwork": { "columns": 4 },
+    "ambient": { "columns": 12 },
+    "consume": { "columns": 12 }
+  },
+  "founders": {
+    "guardian": { "weapon": "hammer", "emblem": "shield", "title": "Frontline bulwark", "layers": ["motions", "footwork", "ambient"] },
+    "berserker": { "weapon": "saber", "emblem": "axe", "title": "Bloodied vanguard", "layers": ["motions", "footwork", "ambient"] },
+    "chronomancer": { "weapon": "focus", "emblem": "clock", "title": "Keeper of time", "layers": ["motions", "footwork", "ambient"] },
+    "alchemist": { "weapon": "sickle", "emblem": "flask", "title": "Brewer of wonders", "layers": ["motions", "footwork", "ambient"] }
+  },
+  "skins": []
+}

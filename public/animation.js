@@ -1,76 +1,20 @@
 import { combatTiming, directOutcome } from './combat-timing.js';
-import { isSkinId } from '../src/game/skin-id.js';
+import { fighterLayout, healthBand, resolveFighterSkin } from './fighter-kit.js';
 import { actorClip, impactCauses, motionScore } from './combat-motion.js';
+export { healthBand, registerFighterSkin, resolveFighterSkin } from './fighter-kit.js';
 
-// Sheets face right. Each of the three health bands repeats the same twelve
-// poses in four columns. A cosmetic can replace the artwork without touching rules.
-const roles = ['guardian', 'berserker', 'chronomancer', 'alchemist'];
-const skins = new Map();
-const localSheet = /^\/assets\/skins\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.(png|webp)$/;
 const readySheets = new Set();
-export function registerFighterSkin(classId, id, sheet, motions, footwork, ambient) {
-  if (
-    !roles.includes(classId) ||
-    !isSkinId(id) ||
-    !localSheet.test(sheet) ||
-    [motions, footwork, ambient].some((url) => url !== undefined && !localSheet.test(url))
-  ) {
-    throw new Error('A skin needs a known class, a simple ID and local sprite sheets.');
-  }
-  skins.set(
-    classId + '/' + id,
-    Object.freeze({
-      classId,
-      id,
-      sheet,
-      ...(motions ? { motions } : {}),
-      ...(footwork ? { footwork } : {}),
-      ...(ambient ? { ambient } : {}),
-    }),
-  );
-}
-for (const role of roles)
-  registerFighterSkin(
-    role,
-    'founder',
-    '/assets/skins/' + role + '-founder.png',
-    '/assets/skins/' + role + '-motions.webp',
-    '/assets/skins/' + role + '-footwork.webp',
-    '/assets/skins/' + role + '-ambient.webp',
-  );
-
-export function resolveFighterSkin(classId, skinId = 'founder') {
-  const role = roles.includes(classId) ? classId : 'guardian';
-  return skins.get(role + '/' + skinId) ?? skins.get(role + '/founder');
-}
-export function healthBand(player) {
-  if (player.alive === false) return 'critical';
-  if (!Number.isFinite(player.hp) || !(player.maxHp > 0)) return 'healthy';
-  const fraction = player.hp / player.maxHp;
-  return fraction <= 0.3 ? 'critical' : fraction <= 0.65 ? 'wounded' : 'healthy';
-}
-const poses = [
-  'idle',
-  'breathe',
-  'survey',
-  'settle',
-  'windup',
-  'strike',
-  'channel',
-  'release',
-  'guard',
-  'hurt',
-  'fallen',
-  'victory',
-];
+const standing = fighterLayout.layers.sheet;
+const motionSheet = fighterLayout.layers.motions;
+const standingRows = standing.poses.length / standing.columns * fighterLayout.health.length;
 function pose(element, name) {
   delete element.dataset.track;
   element.style.removeProperty('--clip-row');
   element.querySelector('.arena-cel').style.removeProperty('background-position-x');
-  const index = poses.indexOf(name);
+  const index = standing.poses.indexOf(name);
   element.dataset.pose = name;
-  element.style.setProperty('--pose-x', ((index % 4) / 3) * 100 + '%');
-  element.style.setProperty('--pose-y', Math.floor(index / 4) * 12.5 + '%');
+  element.style.setProperty('--pose-x', (index % standing.columns) * 100 / (standing.columns - 1) + '%');
+  element.style.setProperty('--pose-y', Math.floor(index / standing.columns) * 100 / (standingRows - 1) + '%');
 }
 export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotion = false } = {}) {
   const skin = resolveFighterSkin(player.classId, skinId);
@@ -87,6 +31,9 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
       '"' +
       (readySheets.has(skin.ambient) ? ' data-ambient-ready' : '')
     : '';
+  const consume = skin.consume
+    ? ' data-consume-src="' + skin.consume + '"' + (readySheets.has(skin.consume) ? ' data-consume-ready' : '')
+    : '';
   const steps = skin.footwork ? ' data-footwork-src="' + skin.footwork + '"' : '';
   const motion = skin.motions
     ? ' data-motion-src="' + skin.motions + '"' + (readySheets.has(skin.motions) ? ' data-motion-ready' : '')
@@ -96,6 +43,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     skin.sheet +
     ');' +
     (skin.motions ? '--motion-skin:url(' + skin.motions + ');' : '') +
+    (skin.consume ? '--consume-skin:url(' + skin.consume + ');' : '') +
     (skin.footwork ? '--footwork-skin:url(' + skin.footwork + ');' : '') +
     (skin.ambient
       ? '--check-skin:url(' +
@@ -125,6 +73,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     '"' +
     (reducedMotion ? ' data-still' : '') +
     motion +
+    consume +
     steps +
     ambient +
     ' style="' +
@@ -144,7 +93,7 @@ export function preloadArenaSkins(players = []) {
     missileSheet,
     ...players.flatMap((p) => {
       const skin = resolveFighterSkin(p.classId, p.skinId);
-      return [skin.sheet, skin.motions, skin.footwork, skin.ambient].filter(Boolean);
+      return Object.keys(fighterLayout.layers).map(layer => skin[layer]).filter(Boolean);
     }),
   ]);
   return Promise.all(
@@ -163,12 +112,10 @@ export function preloadArenaSkins(players = []) {
                 return;
               }
               readySheets.add(url);
-              document
-                .querySelectorAll('[data-motion-src="' + url + '"]')
-                .forEach((el) => el.setAttribute('data-motion-ready', ''));
-              document
-                .querySelectorAll('[data-ambient-src="' + url + '"]')
-                .forEach((el) => el.setAttribute('data-ambient-ready', ''));
+              for (const layer of ['motion', 'ambient', 'consume']) {
+                document.querySelectorAll('[data-' + layer + '-src="' + url + '"]')
+                  .forEach(el => el.setAttribute('data-' + layer + '-ready', ''));
+              }
               resolve(true);
             };
             image.onerror = () => {
@@ -254,7 +201,7 @@ function positioned(el, x, y, w, h) {
 }
 
 const running = new WeakMap();
-const clipRows = ['idle', 'attack', 'signature', 'cast', 'utility', 'brace', 'hurt'];
+
 const propIcons = {
   'red-tonic': 'tonic',
   antidote: 'antidote',
@@ -459,10 +406,14 @@ export function playArenaAction(arena, recap, options = {}) {
   const recovery = score.family === 'melee' ? Math.min(225, (duration - lead) * 0.73) : duration - lead;
   for (const fraction of [0.14, 0.37, 0.68, 1]) actorFrames.push(lead + fraction * recovery);
   function flipbook(element, track, frames) {
-    if (still || !element.hasAttribute('data-motion-ready') || !clipRows.includes(track)) return false;
+    if (still) return false;
+    if (track === 'consume' && !element.hasAttribute('data-consume-ready')) track = 'brace';
+    const single = track === 'consume';
+    if (!single && (!element.hasAttribute('data-motion-ready') || !motionSheet.rows.includes(track))) return false;
     element.dataset.track = track;
     element.dataset.pose = 'perform';
-    element.style.setProperty('--clip-row', (clipRows.indexOf(track) / 20) * 100 + '%');
+    const totalRows = motionSheet.rows.length * fighterLayout.health.length;
+    element.style.setProperty('--clip-row', single ? '0%' : motionSheet.rows.indexOf(track) * 100 / (totalRows - 1) + '%');
     const atlas = element.querySelector('.arena-cel');
     // Pixel art is exposed one cel at a time. Keeping that cel on the painted
     // clock also lets a later reaction replace a still-unfolding recoil.
@@ -471,7 +422,7 @@ export function playArenaAction(arena, recap, options = {}) {
     atlas.style.backgroundPositionX = '0%';
     frames.slice(1).forEach((time, i) => {
       at(time, () => {
-        if (activeClips.get(element) === token) atlas.style.backgroundPositionX = ((i + 1) / 11) * 100 + '%';
+        if (activeClips.get(element) === token) atlas.style.backgroundPositionX = ((i + 1) / (motionSheet.columns - 1)) * 100 + '%';
       });
     });
     return true;

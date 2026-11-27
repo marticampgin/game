@@ -1,9 +1,8 @@
 import { CLASSES, REWARDS, createMatch } from '/src/game/index.js';
+import { fighterKit, fighterPortrait } from './fighter-kit.js';
 import { classArt, esc, glyph, rewardIcon } from './art.js';
 
 const classes = Object.values(CLASSES);
-const classIcons = { guardian: 'shield', berserker: 'axe', chronomancer: 'clock', alchemist: 'flask' };
-const roles = { guardian: 'Frontline bulwark', berserker: 'Bloodied vanguard', chronomancer: 'Keeper of time', alchemist: 'Brewer of wonders' };
 const botNames = ['Morrow', 'Sable', 'Brasswick', 'Vesper', 'Belladonna', 'Orin', 'Holloway'];
 
 async function jsonRequest(path, token, body) {
@@ -28,8 +27,8 @@ export function roomRequest(session, operation = '', body) {
 function classGallery(picked, allowed, locked) {
   return '<div class="lobby-classes" aria-label="Character classes">' + classes.filter(c => allowed.includes(c.id)).map(c =>
     '<button type="button" class="lobby-class" data-lobby-class="' + c.id + '" aria-pressed="' + (c.id === picked) +
-    '" aria-label="' + c.name + '"' + (locked ? ' disabled' : '') + '><img class="class-portrait" src="/assets/portrait-' + c.id +
-    '.webp" alt=""><span class="class-plaque">' + rewardIcon({ icon: classIcons[c.id] }) + c.name + '</span></button>'
+    '" aria-label="' + c.name + '"' + (locked ? ' disabled' : '') + '><img class="class-portrait" src="' + fighterPortrait({classId:c.id}) +
+    '" alt=""><span class="class-plaque">' + rewardIcon({ icon: fighterKit(c.id).emblem }) + c.name + '</span></button>'
   ).join('') + '</div>';
 }
 
@@ -41,8 +40,8 @@ function classDetail(picked) {
   const stats = [['Health', c.stats.maxHp, 'heart'], ['Attack', c.stats.attack, 'sword'],
     ['Armor', c.stats.armor, 'shield'], ['Spell power', c.stats.spellPower, 'crystal']];
   return '<section class="lobby-detail" aria-label="Selected class details">' +
-    '<div class="lobby-identity"><h2>' + c.name + '</h2><p>' + roles[c.id] + '</p><img src="' + classArt(c.id) + '" alt=""></div>' +
-    '<div class="lobby-skills"><p>' + esc(c.description) + '</p><div>' + rewardIcon({ icon: classIcons[c.id] }) +
+    '<div class="lobby-identity"><h2>' + c.name + '</h2><p>' + esc(fighterKit(c.id).title || c.name) + '</p><img src="' + classArt(c.id) + '" alt=""></div>' +
+    '<div class="lobby-skills"><p>' + esc(c.description) + '</p><div>' + rewardIcon({ icon: fighterKit(c.id).emblem }) +
     '<p><strong>' + esc(innateName) + '</strong><span>' + esc(innateEffect.charAt(0).toUpperCase() + innateEffect.slice(1)) + '</span></p></div>' +
     '<div>' + rewardIcon(ability) + '<p><strong>' + esc(ability.name) + '</strong><span>' + esc(ability.description) + '</span></p></div></div>' +
     '<dl class="lobby-stats">' + stats.map(([label, value, icon]) => '<div><dt>' + rewardIcon({ icon }) + label +
