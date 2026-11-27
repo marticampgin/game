@@ -18,4 +18,6 @@ The uninterrupted turn starts in round 11 of the eight-contender solo seed `ring
 
 The browser suite exercises two- and eight-seat turns with mouse and keyboard, and tests camera placement and target selection for every roster size in between. Desktop review sizes range from 1280 × 720 to 1920 × 1080. The suite also covers reduced motion, muted audio, legacy skins, missing skins and simultaneous room updates. Twelve seeded duels and twelve seeded eight-seat simulations ran to completion.
 
+In a local Chromium run at 1440 × 900, the median frame interval was 16.7 ms for a two-seat bash, an eight-seat bash and an eight-seat flask throw. The 95th percentile was 16.7–16.8 ms. These timings cover the visible action after the sheets loaded. The fighter illustrations use twelve ordered cels per main motion, with separate countersteps and continuous movement between seats.
+
 The four founders can appear more than once in a match. Crests identify individual seats, while duplicate characters still share their founder's face and costume. In the final recording, the Berserker still straightens quickly after the low cleave. The reviews here were internal. Readability for first-time players is an open playtest question.
