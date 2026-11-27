@@ -66,6 +66,7 @@ const poses = [
 function pose(element, name) {
   delete element.dataset.track;
   element.style.removeProperty('--clip-row');
+  element.querySelector('.arena-cel').style.removeProperty('background-position-x');
   const index = poses.indexOf(name);
   element.dataset.pose = name;
   element.style.setProperty('--pose-x', ((index % 4) / 3) * 100 + '%');
@@ -333,7 +334,7 @@ export function playArenaAction(arena, recap, options = {}) {
   // A retaliation can land while the attacker is still retreating. Reactions
   // follow the visible body instead of bursting over the empty seat marker.
   const visibleBounds = (subject) => (subject === actor && !still ? boxFor(ghost) : bounds(subject));
-  const clipAnimations = new Map();
+  const activeClips = new Map();
   const originals = new Map(),
     labels = new Map();
   const animations = new Map();
@@ -402,7 +403,7 @@ export function playArenaAction(arena, recap, options = {}) {
   }
   function cut(subject, name) {
     const element = subject === actor ? art : subject.sprite;
-    clipAnimations.get(element)?.cancel();
+    activeClips.delete(element);
     if (subject !== actor && !originals.has(element)) originals.set(element, element.dataset.pose);
     pose(element, name);
   }
@@ -453,28 +454,30 @@ export function playArenaAction(arena, recap, options = {}) {
 
   const clip = actorClip(score, action, role);
   const duration = score.path.at(-1)[0];
+  const lead = score.family === 'cast' ? score.release : score.contact;
+  const actorFrames = [0, 0.2, 0.37, 0.53, 0.67, 0.8, 0.91, 1].map((fraction) => fraction * lead);
+  const recovery = score.family === 'melee' ? Math.min(225, (duration - lead) * 0.73) : duration - lead;
+  for (const fraction of [0.14, 0.37, 0.68, 1]) actorFrames.push(lead + fraction * recovery);
   function flipbook(element, track, frames) {
     if (still || !element.hasAttribute('data-motion-ready') || !clipRows.includes(track)) return false;
     element.dataset.track = track;
     element.dataset.pose = 'perform';
     element.style.setProperty('--clip-row', (clipRows.indexOf(track) / 20) * 100 + '%');
-    const length = frames.at(-1);
     const atlas = element.querySelector('.arena-cel');
-    const sequence = frames.map((ms, i) => ({
-      offset: ms / length,
-      backgroundPositionX: (i / 11) * 100 + '%',
-      easing: 'steps(1,end)',
-    }));
-    clipAnimations.get(element)?.cancel();
-    clipAnimations.set(element, tween(atlas, sequence, length));
+    // Pixel art is exposed one cel at a time. Keeping that cel on the painted
+    // clock also lets a later reaction replace a still-unfolding recoil.
+    const token = {};
+    activeClips.set(element, token);
+    atlas.style.backgroundPositionX = '0%';
+    frames.slice(1).forEach((time, i) => {
+      at(time, () => {
+        if (activeClips.get(element) === token) atlas.style.backgroundPositionX = ((i + 1) / 11) * 100 + '%';
+      });
+    });
     return true;
   }
   function articulate() {
-    const lead = score.family === 'cast' ? score.release : score.contact;
-    const frames = [0, 0.2, 0.37, 0.53, 0.67, 0.8, 0.91, 1].map((t) => t * lead);
-    const recovery = score.family === 'melee' ? Math.min(225, (duration - lead) * 0.73) : duration - lead;
-    for (const t of [0.14, 0.37, 0.68, 1]) frames.push(lead + t * recovery);
-    if (flipbook(art, clip, frames)) return;
+    if (flipbook(art, clip, actorFrames)) return;
     const guard = score.track === 'bash' || score.track === 'brace';
     const windup = guard
       ? 'guard'
@@ -726,9 +729,15 @@ export function playArenaAction(arena, recap, options = {}) {
     }
   }
   const timing = combatTiming(recap, still ? 40 : score.contact, still);
+  // On a slow display allow the weight shift, chamber, release and recovery to
+  // each reach the screen. Fast bots retain their deliberately compressed score.
+  const keyDrawings = !still && speed <= 1 && art.hasAttribute('data-motion-ready')
+    ? [2, 4, 6, 7, 9, 10].map(index => timing.windup + actorFrames[index])
+    : [];
   const paintPoints = [...new Set([
     timing.contact,
     ...timing.beats.map(({ time }) => time),
+    ...keyDrawings,
     ...(score.family === 'cast' && !still ? [timing.windup + score.release] : []),
   ])].sort((a, b) => a - b);
   function startMove() {

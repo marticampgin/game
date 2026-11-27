@@ -119,6 +119,23 @@ test('desktop weapon swing, shield drive and bottle throw use different illustra
   expect(errors).toEqual([]);
 });
 
+test('a slow paint loop preserves the anticipation and recovery of a normal-speed shield drive', async ({ page }) => {
+  await page.addInitScript(() => {
+    function delayPaint() {
+      if (document.querySelector('.arena-fx')) {
+        const end = performance.now() + 105;
+        while (performance.now() < end) { /* Simulate sustained slow frames. */ }
+      }
+      requestAnimationFrame(delayPaint);
+    }
+    requestAnimationFrame(delayPaint);
+  });
+  await page.goto('/');
+  const trace = await perform(page, 'guardian', 'bastion-bash');
+  expect(trace.cells).toEqual(expect.arrayContaining([2, 4, 6, 7, 9, 10]));
+  expect(trace.impact).toBe(7);
+});
+
 test('idle equipment checks are staggered by seat and respect reduced motion', async ({ page }) => {
   const state = readySeat('guardian');
   await page.addInitScript(
