@@ -15,6 +15,12 @@ function sameTick(a, b) {
     a.targetId === b.targetId && a.timing === b.timing && a.turnOwnerId === b.turnOwnerId;
 }
 
+function sameRoundApplication(a, b) {
+  return a.timing === 'round' && b.timing === 'round' && a.type === 'status' && b.type === 'status' &&
+    a.statusChange === 'applied' && b.statusChange === a.statusChange && !!statusCue(a) &&
+    a.cause === b.cause && a.actorId === b.actorId && a.round === b.round && a.amount === b.amount;
+}
+
 function beatFor(events) {
   const first = events[0];
   if (events.length === 1) return { events, event: first };
@@ -32,7 +38,9 @@ function orderedBeats(events, primary) {
   const groups = [];
   for (const event of events) {
     const last = groups.at(-1);
-    if (last && event !== primary && !last.includes(primary) && sameTick(last[0], event)) last.push(event);
+    const joins = last && (sameTick(last[0], event) ||
+      (sameRoundApplication(last[0], event) && !last.some(e => e.targetId === event.targetId)));
+    if (joins && event !== primary && !last.includes(primary)) last.push(event);
     else groups.push([event]);
   }
   // For an exceptional cascade, combine adjacent minor results first. Never
