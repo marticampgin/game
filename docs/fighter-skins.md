@@ -53,6 +53,12 @@ A reward definition supplies the action’s category, target and effects. The ac
 
 Override a move only when its delivery needs different staging. Whiteout declares `presentation: { move: 'wave' }`; its Chill effect supplies the frost art. A healing item can declare `presentation: { move: 'ring', prop: 'bell' }`. The supported moves, effect atlas rows, projectile types, release times and impact times live together in [combat-motion.js](../public/combat-motion.js). The chosen gesture also selects the sound at contact.
 
+## Reusing a condition
+
+A spell or consumable that inflicts an existing status inherits its on-target animation, stack icon and timed damage readout. Give the reward its ordinary status effect in the catalog. Burn, Poison, Bleed, Shock, Chill, Freeze, Curse and Doom each have their own drawing. Applications, ticks and removals use the same identity throughout the arena, result strip and battle log.
+
+To paint a new condition, register its row, color, target anchor and sound in [status-effects.js](../public/status-effects.js) and extend the [status art generator](../scripts/build-status-effects.py). Update both atlas grids for the new row. Rebuild the sheets and check an application, a shielded tick if applicable, and removal on a rear seat. The [desktop examples](qa/pc-combat/conditions.webp) show the eight founder conditions at playing size.
+
 ## Founder art sources
 
 The individual base and breakdown paintings are packed under [scripts/art/founders](../scripts/art/founders). Each class has 16 primary paintings and four extra weapon or arm breakdowns in each of the three health bands. The builder registers the painted surfaces to create intermediate exposures, keeps the hard silhouette edge, preserves the original color palette and packs the sheets for the browser. Each class also has twelve separately painted footwork drawings in the shipped footwork sheet.

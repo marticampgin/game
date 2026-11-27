@@ -6,6 +6,14 @@ Both recordings capture the playable game at 1440 × 900, with normal-speed anim
 
 The uninterrupted turn starts in round 11 of the eight-contender solo seed `ring-at-dusk-3`. Earlier turns were advanced with the engine's normal bot decisions. Moss selects Golden Shell and drives his shield into Rowan. Aster then chooses a reward, announces Time Bolt, casts it at Flint and hands off. The recording ends with the battle log open. [Reward selection](draft.webp) · [Target selection](arena.webp) · [Battle log](journal.webp)
 
+## Conditions and held items
+
+[Watch the 11-second desktop capture with game audio](effects-and-props.mp4) · [Compare all eight conditions](conditions.webp) · [Inspect the reach and drink frames](prop-gestures.webp)
+
+The four clips show a Guardian scavenging in a duel, an injured Berserker drinking Red Tonic, an Alchemist ringing Mender’s Bell, and an eight-seat turn passing from Moss to Cinder. In the last clip, Defend gives Moss a shield. Burn takes 3 HP from Cinder, Poison takes 5 and Doom takes 2. Each tick updates the fighter’s health and surviving conditions while its name is still on screen.
+
+In the original eight-seat replay, separate ticks replaced one another roughly every 280 ms. The default spacing is now 680 ms. A short trail keeps the last three results in view. Skip effects goes straight to the resolved turn, and reduced motion shows stationary receipts. The automated desktop checks also cover both sides of the ring, shielded damage, Scavenge’s bonus reward and labels near the turn portraits.
+
 ## What changed under review
 
 - In the first unlabelled recordings, the shield travelled through the opponent and the extended saber slid backward. The near shield rim now stops against the body. A separate counterstep retracts the weapon, transfers weight and catches the landing. A second review caught an empty frame at the change of sheet. Overlapping the painted layers kept all three melee attackers visible in a third frame-by-frame review.
