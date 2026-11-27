@@ -4,9 +4,13 @@ const eventLimit = 32;
 const recording = new WeakMap();
 const outcomes = new Set(['action','damage','heal','shield','stat','status','synergy','elimination','revival','event','reward','victory','timing','cooldown']);
 
+// A visual cause describes an already public effect. Item IDs and hidden triggers never pass this boundary.
+const publicCauses = new Set(['poison','burn','bleed','doom','chill','freeze','shock','curse','echo','arena-fire','retaliation']);
+
 export function publicEvent(event) {
   const {id,round,type,text} = event;
   const result = {id,round,type,text};
+  if ((type === 'damage' || type === 'status') && publicCauses.has(event.cause)) result.cause = event.cause;
   for (const key of ['actorId','targetId','amount','shieldDamage','healthDamage','shieldBroken']) {
     if (event[key] !== undefined) result[key] = event[key];
   }

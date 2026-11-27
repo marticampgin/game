@@ -99,11 +99,11 @@ function addStatus(state,p,target,key,amount,label) {
     if (last && last.id === (p?.id ?? null)) last.amount += amount;
     else target.sources[key].push({id:p?.id ?? null,amount});
   }
-  record(state,'status',label + ' applied ' + amount + ' ' + STATUSES[key].name + ' to ' + target.name + '.',{actorId:p?.id,targetId:target.id,amount});
+  record(state,'status',label + ' applied ' + amount + ' ' + STATUSES[key].name + ' to ' + target.name + '.',{actorId:p?.id,targetId:target.id,amount,cause:key});
   if (key === 'chill' && target.statuses.chill >= 3) {
     setStatus(target,'chill',target.statuses.chill % 3);
     setStatus(target,'freeze',1);
-    record(state,'status',target.name + ' is frozen.',{targetId:target.id});
+    record(state,'status',target.name + ' is frozen.',{targetId:target.id,cause:'freeze'});
   }
   trigger(state,p,'applyStatus',{key,target});
 }
@@ -143,7 +143,7 @@ export function deal(state,source,target,raw,label,flags={}) {
   target.shield -= shieldDamage;
   target.hp -= healthDamage;
   const split = shieldDamage ? ' (' + shieldDamage + ' to shield)' : '';
-  record(state,'damage',label + ' dealt ' + damage + ' to ' + target.name + split + '.',{actorId:source?.id,targetId:target.id,amount:damage,shieldDamage,healthDamage,
+  record(state,'damage',label + ' dealt ' + damage + ' to ' + target.name + split + '.',{actorId:source?.id,targetId:target.id,amount:damage,shieldDamage,healthDamage,cause:flags.cause,
     shieldBroken:shieldDamage > 0 && target.shield === 0});
   if (target.hp <= 0) {
     if (!react(state,target,'lethal')) {
@@ -211,7 +211,7 @@ export function executeEffects(state,p,target,effects,context={}) {
         break;
       case 'status': addStatus(state,p,e.target === 'self' ? p : target,e.key,e.amount,label); break;
       case 'stat': addStat(state,p,e.key,e.amount,label); break;
-      case 'retaliate': deal(state,p,target,e.amount,label,{trueDamage:true}); break;
+      case 'retaliate': deal(state,p,target,e.amount,label,{trueDamage:true,cause:'retaliation'}); break;
       case 'shards':
         for (let i=0; i<e.amount; i++) {
           const shard = sample(state,shards);
@@ -323,7 +323,7 @@ export function tickStatus(state,p,key) {
   for (const [id,amount] of contributors) {
     if (!p.alive) break;
     const source = findPlayer(state,id);
-    deal(state,source,p,amount,label,{trueDamage:['doom','poison'].includes(key)});
+    deal(state,source,p,amount,label,{trueDamage:['doom','poison'].includes(key),cause:key});
     if (key === 'poison') trigger(state,p,'poisoned');
     if (source && source !== p) trigger(state,source,key + 'Tick',{target:p});
   }

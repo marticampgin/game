@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {actionVisual,fighterSpriteHTML,healthBand,impactScale,preloadArenaSkins,registerFighterSkin,resolveFighterSkin} from '../public/animation.js';
+import {publicEvent} from '../src/game/recap.js';
 import {applyCommand,botCommand,createMatch,replayMatch,viewMatch} from '../src/game/index.js';
 
 test('every founder sheet has twelve poses in each of three damage bands',async()=>{
@@ -88,4 +89,12 @@ test('malformed and excessive skin IDs fall back cleanly on roster input and old
   const seat=createMatch({seed:'cosmetics',players:[{...players[0],skinId:edge},players[1]]}).players[0];
   assert.equal(seat.skinId,edge);
   assert.equal(resolveFighterSkin(seat.classId,seat.skinId).id,'founder');
+});
+
+test('public impact causes describe visible outcomes without exposing private items',()=>{
+  const base={id:1,type:'damage',round:1,text:'Poison dealt 2.'};
+  assert.equal(publicEvent({...base,cause:'poison'}).cause,'poison');
+  assert.deepEqual(publicEvent({...base,cause:'emergency-ward',hidden:'widows-brew'}),base);
+  assert.deepEqual(publicEvent(base),base);
+  assert.equal(publicEvent({...base,type:'reward',cause:'poison'}).cause,undefined);
 });

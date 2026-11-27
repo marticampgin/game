@@ -94,7 +94,7 @@ function beginRound(state) {
     const amount = state.config.chaosBase + (state.round - chaosStart) * state.config.chaosStep;
     record(state,'event','The arena burns. All living contenders take ' + amount + ' unavoidable damage.');
     // All seats take the pulse before the victory check so simultaneous deaths can draw.
-    for (const p of state.players.filter(p => p.alive)) deal(state,null,p,amount,'Arena fire',{trueDamage:true,bypassShield:true});
+    for (const p of state.players.filter(p => p.alive)) deal(state,null,p,amount,'Arena fire',{trueDamage:true,bypassShield:true,cause:'arena-fire'});
     if (conclude(state)) return;
   }
   state.queue = state.order.filter(id => findPlayer(state,id).alive);
@@ -122,7 +122,7 @@ function startNextTurn(state) {
     record(state,'turn',p.name + ' begins a turn.',{actorId:id});
     const due = state.delayed.filter(e => e.due <= state.globalTurn);
     state.delayed = state.delayed.filter(e => e.due > state.globalTurn);
-    for (const e of due) deal(state,findPlayer(state,e.source),findPlayer(state,e.target),e.raw,e.label,{trueDamage:e.trueDamage});
+    for (const e of due) deal(state,findPlayer(state,e.source),findPlayer(state,e.target),e.raw,e.label,{trueDamage:e.trueDamage,cause:'echo'});
     for (const key of ['burn','poison']) tickStatus(state,p,key);
     if (p.alive && p.doomClock && --p.doomClock === 0) tickStatus(state,p,'doom');
     if (conclude(state)) return;
