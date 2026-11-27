@@ -115,3 +115,35 @@ test('the third mobile offer reveals its confirmation within the viewport', asyn
     return box.top >= 0 && box.bottom <= innerHeight + 1;
   })).toBe(true);
 });
+
+test('three illustrated offers stay together on the arena and survive viewing the battlefield', async ({ page }) => {
+  const payload = fixture(8);
+  payload.state.offers = ['iron-shard', 'cinder-orb', 'starfall-cache'];
+  await openMatch(page, payload);
+  const stage = page.getByRole('region', { name: 'Battlefield' });
+  const cards = stage.getByRole('group', { name: 'Reward offers' }).getByRole('button');
+  await expect.poll(() => cards.evaluateAll(nodes => nodes.filter(node => node.querySelector('img').naturalWidth > 0).length)).toBe(3);
+  for (const width of [1366, 390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    const positions = await cards.evaluateAll(nodes => nodes.map(node => {
+      const box = node.getBoundingClientRect();
+      const image = node.querySelector('img');
+      return { x: box.left, top: box.top, right: box.right, image: image.currentSrc };
+    }));
+    expect(positions).toHaveLength(3);
+    expect(new Set(positions.map(card => card.image)).size).toBe(3);
+    expect(positions.every(card => card.top === positions[0].top)).toBe(true);
+    expect(positions[0].right).toBeLessThan(positions[1].x);
+    expect(positions[1].right).toBeLessThan(positions[2].x);
+    expect(positions[2].right).toBeLessThanOrEqual(width);
+  }
+  await cards.nth(1).click();
+  const before = await saved(page);
+  await stage.getByRole('button', { name: 'View arena' }).click();
+  await expect(cards).toHaveCount(0);
+  await expect(stage.locator('.combatant')).toHaveCount(8);
+  await stage.getByRole('button', { name: 'Show rewards' }).click();
+  await expect(cards.nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await expect(stage.getByRole('button', { name: 'Take Cinder Orb' })).toBeEnabled();
+  expect(await saved(page)).toEqual(before);
+});

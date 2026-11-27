@@ -1,0 +1,144 @@
+.command-deck {
+  --deck-ink: #18131b;
+  --deck-bronze: #a17a57;
+  --deck-ivory: #f5e3c8;
+  --deck-serif: var(--battle-font, Georgia, 'Times New Roman', serif);
+  display: grid;
+  grid-template-columns: minmax(0, .82fr) minmax(0, 1.54fr) minmax(0, 1.36fr);
+  align-items: stretch;
+  gap: clamp(10px, 1.4vw, 26px);
+  min-width: 0;
+  padding: clamp(10px, 1.15vw, 20px) clamp(12px, 1.8vw, 29px);
+  color: var(--deck-ivory);
+  background: radial-gradient(ellipse at 33% 100%, #362735 0, transparent 58%), linear-gradient(#251b23, #17121a);
+  border: 2px solid #917055;
+  border-block-color: #dfb782 #92664d;
+  box-shadow: inset 0 0 0 1px #4f3a39, inset 0 0 0 3px #19141b;
+}
+.command-deck .command-player {
+  display: flex; align-items: center; gap: clamp(9px,1.05vw,18px); min-width: 0;
+  width: 100%; padding: 0 clamp(9px,1.1vw,17px) 0 0;
+  border: 0; border-right: 1px solid #876c6a; background: none; color: inherit;
+  text-align: left; font-family: var(--deck-serif);
+}
+.command-portrait, .command-target-art {
+  display: block; position: relative; overflow: hidden; flex: 0 0 auto;
+  border: 2px solid #ae8e6e; background: #2d2330; box-shadow: inset 0 0 0 1px #261c20;
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px),0 6px);
+}
+.command-portrait { width: clamp(56px, 6.3vw, 107px); height: clamp(63px, 6.8vw, 115px) }
+.command-portrait img, .command-target-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 21%; transform: scale(1.42); transform-origin: 50% 24% }
+.command-player-info { display: block; flex: 1; min-width: 0 }
+.command-player-info > strong { display: block; color: var(--deck-ivory); font: 700 clamp(17px,1.8vw,31px)/1.1 var(--deck-serif); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.command-player:hover .command-player-info > strong { color: #ffe5b1 }
+.command-hp { display: block; margin: 8px 0 5px; color: #cebcaf; font: 600 clamp(13px,1vw,18px)/1.15 var(--deck-serif) }
+.command-hp b { margin-left: .3em; color: #f4e1cf; font-weight: 600 }
+.command-health { display: block; height: clamp(7px,.8vw,13px); background: #2d1c2c; border: 1px solid #705268; border-radius: 2px }
+.command-health i { display: block; height: 100%; background: linear-gradient(#fc9597, #ce5668); border-top: 1px solid #ffb0a89c }
+.command-hand { min-width: 0; align-self: center }
+.command-deck .command-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 7px;
+  margin: 0 0 5px; color: var(--deck-ivory);
+}
+.command-heading > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; min-width: 0 }
+.command-deck .command-heading h2 { font: 650 clamp(16px,1.35vw,24px)/1.05 var(--deck-serif); margin: 0 }
+.command-deck .command-heading small { color: #d1b79c; font: 14px/1.1 var(--body) }
+.command-deck .action-pages { display: flex; align-items: center; flex: 0 0 auto; gap: 4px; color: #dec5ad; font: 13px var(--body) }
+.command-deck .action-pages button { display: grid; place-items: center; width: 29px; height: 28px; padding: 0; border: 1px solid #8c705d; background: #291d26; color: #f7d8a6 }
+.command-deck .action-pages svg { width: 14px; height: 14px }
+.command-deck .action-grid { display: grid; grid-template-columns: repeat(var(--command-count), minmax(0,1fr)); gap: clamp(4px,.65vw,10px); max-height: none; overflow: visible; padding: 0; margin: 0 }
+.command-deck .action-choice {
+  display: flex; align-items: stretch; flex-direction: column; justify-content: flex-start;
+  min-width: 0; min-height: 44px; width: auto; height: auto;
+  gap: 3px; padding: 0; border: 0; color: var(--deck-ivory);
+  background: transparent; box-shadow: none; text-align: center;
+}
+.command-deck .action-choice:hover:not(:disabled) { background: none; color: #ffe9b8 }
+.command-deck .action-choice[aria-pressed=true] { background: none; color: #ffdf9e }
+.command-deck .action-choice:disabled { opacity: .68; cursor: default }
+.command-deck .action-choice:disabled .command-icon { filter: grayscale(.78) }
+.command-icon {
+  --cut: 5px;
+  position: relative; display: grid; grid-template: minmax(0,1fr) / minmax(0,1fr); place-items: center; width: 100%; height: clamp(44px, 4.75vw, 78px);
+  padding: 2px; overflow: hidden;
+  background: linear-gradient(145deg,#ddbb91,#7b5e53 40%,#c7a689 70%,#705242);
+  clip-path: polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
+}
+.command-icon::before {
+  content: ''; position: absolute; inset: 2px; z-index: -1;
+  background: #2a202b url('/assets/reliquary.webp') center 54% / cover;
+  clip-path: inherit;
+}
+.command-deck .action-choice img { height: 88%; width: 88%; padding: 0; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 2px 2px #150d15) }
+.command-deck .action-choice img.command-painting { width: 100%; height: 100%; min-height: 0; object-fit: cover; image-rendering: auto; filter: none; clip-path: inherit }
+.command-deck .action-choice[aria-pressed=true] .command-icon { background: #ffd48c; padding: 3px }
+.command-deck .action-choice[aria-pressed=true] .command-icon::after { content: ''; position: absolute; inset: 3px; box-shadow: inset 0 0 9px #ffb84eaa; clip-path: inherit }
+.command-name { min-width: 0; color: inherit; font: 600 clamp(13px,1.1vw,20px)/1.12 var(--deck-serif); overflow-wrap: anywhere }
+.command-name small { display: block; margin: 2px 0 0; color: #d6c1ce; font: 11px/1.1 var(--body) }
+.command-deck .target-panel {
+  display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "target confirm" "readout readout";
+  align-content: center; align-items: end; gap: 5px 12px; min-width: 0; margin: 0;
+  padding: 0 0 0 clamp(11px,1.6vw,24px); background: none; border: 0; border-left: 1px solid #876c6a;
+}
+.command-deck .aim-line { grid-area: target; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0 }
+.command-deck .aim-line > :is(label,span:first-child) { color: var(--deck-ivory); font: 650 clamp(15px,1.25vw,22px)/1.05 var(--deck-serif) }
+.command-target { display: flex; gap: 4px; align-items: center; width: 100%; min-width: 0; padding: 2px; border: 1px solid #b3947a; background: #291e28; box-shadow: inset 0 0 0 1px #473544 }
+.command-target-art { width: 27px; height: 27px; border: 0; clip-path: none }
+.command-deck .aim-line strong { color: #ffe9cd; padding: 0 4px; font: 600 15px/1.2 var(--deck-serif) }
+.command-deck #target-select { min-width: 0; width: 100%; min-height: 31px; height: auto; padding: 2px 1px; margin: 0; border: 0; color: #ffe9cd; background: #291e28; font: 600 clamp(13px,1vw,19px)/1.24 var(--deck-serif) }
+.command-estimate { grid-area: readout; min-width: 0 }
+.command-deck .action-description { display: block; margin: 0; color: #d9c9d5; font: 13px/1.22 var(--body) }
+.command-deck .preview { margin: 2px 0 0; color: #eed19d; font: 600 14px/1.22 var(--body) }
+.command-deck .confirm-action {
+  grid-area: confirm; align-self: end; min-width: 0; max-width: 18em; width: auto; min-height: clamp(38px,3.4vw,58px); margin: 0; padding: 7px clamp(8px,1vw,18px);
+  border: 2px solid #b88cc8; color: #fff0e6; background: linear-gradient(#854aa1,#51286c);
+  box-shadow: inset 0 1px #eeceec77,inset 0 -2px #2d153a;
+  font: 650 clamp(15px,1.35vw,24px)/1.13 var(--deck-serif); text-shadow: 0 1px 2px #211028;
+}
+.command-deck .confirm-action svg { display: none }
+.command-deck .confirm-action:disabled { opacity: .58 }
+.command-deck :is(button,select):focus-visible { outline: 2px solid #ffe3ad; outline-offset: 2px }
+@media (max-width: 1080px) {
+  .command-deck { grid-template-columns: minmax(0,.7fr) minmax(0,1.45fr) minmax(250px,1.05fr); gap: 10px; padding: 9px 12px }
+  .command-player-info > strong { font-size: 18px }
+  .command-deck .target-panel { gap: 5px 6px; padding-left: 10px }
+  .command-deck .command-heading small { font-size: 12px }
+  .command-target-art { width: 22px; height: 26px }
+}
+@media (max-width: 760px) {
+  .command-deck { grid-template-columns: minmax(58px,.3fr) minmax(0,1fr); grid-template-areas: "player hand" "aim aim"; gap: 7px 10px; padding: 7px 10px }
+  .command-deck .command-player { grid-area: player; flex-direction: column; justify-content: center; gap: 3px; padding-right: 8px; text-align: center }
+  .command-portrait { width: 46px; height: 47px }
+  .command-player-info { flex: 0 0 auto; width: 100% }
+  .command-player-info > strong { font-size: 13px }
+  .command-hp { margin: 2px 0; font-size: 10px; white-space: nowrap }
+  .command-health { height: 5px }
+  .command-hand { grid-area: hand }
+  .command-deck .target-panel { grid-area: aim; border-left: 0; border-top: 1px solid #69525c; padding: 5px 0 0; align-items: center; gap: 4px 8px }
+  .command-deck .aim-line { flex-direction: row; align-items: center; gap: 6px }
+  .command-deck .aim-line > :is(label,span:first-child) { font-size: 13px }
+  .command-target-art { width: 21px; height: 22px }
+  .command-deck #target-select { min-height: 38px }
+  .command-deck .confirm-action { min-height: 44px; padding: 4px 9px }
+  .command-deck .action-description { font-size: 12px }
+  .command-deck .preview { font-size: 13px; margin-top: 1px }
+}
+@media (max-width: 520px) {
+  .command-deck { grid-template-columns: 58px minmax(0,1fr); padding: 6px 8px; gap: 5px 7px }
+  .command-deck .command-player { padding-right: 6px }
+  .command-hp { font: 10px/1.15 var(--body) }
+  .command-hp b { margin-left: 0 }
+  .command-deck .command-heading { margin: 0 0 4px; gap: 4px }
+  .command-heading > div { gap: 1px 5px }
+  .command-deck .command-heading h2 { font-size: 15px }
+  .command-deck .command-heading small { font-size: 11px }
+  .command-deck .action-pages { font-size: 10px; gap: 2px }
+  .command-deck .action-pages button { width: 24px; height: 26px }
+  .command-deck .action-grid { grid-template-columns: repeat(var(--phone-columns), minmax(0,1fr)); gap: 4px }
+  .command-deck .action-choice { min-height: 44px; gap: 2px }
+  .command-icon { height: auto; aspect-ratio: 1.75; min-height: 37px; max-height: 56px }
+  .command-name { font-size: 12px; line-height: 1.02 }
+  .command-name small { font-size: 10px; margin-top: 1px }
+  .command-deck .confirm-action { max-width: 143px; font-size: 14px }
+}
+

@@ -6,28 +6,30 @@ const categories = {
   consumable: 'Consumable', chest: 'Chest', modifier: 'Modifier',
 };
 
-function card(reward, lines, selected) {
-  const inspect = `draft-${reward.id}-details`;
+function offerCard(reward, impact, selected) {
+  const descriptionId = 'offer-' + reward.id;
   return `<button type="button" class="reward-card draft-card ${reward.rarity}" data-draft-select="${reward.id}"
-    aria-label="Inspect ${esc(reward.name)}" aria-pressed="${selected}" aria-controls="draft-inspection" aria-describedby="${inspect}${lines.length ? ' ' + inspect + '-impact' : ''}">
-    <span class="draft-art">${rewardIcon(reward)}<span class="draft-select-mark" aria-hidden="true">${selected ? glyph('check') : ''}</span></span>
-    <span class="draft-copy"><span class="draft-meta">${esc(reward.rarity)} <span>·</span> ${categories[reward.category]}</span>
-      <strong>${esc(reward.name)}</strong><span class="draft-rule" id="${inspect}">${esc(reward.description)}</span></span>
-    ${lines.length ? `<span class="draft-readout" id="${inspect}-impact">${esc(lines[0])}</span>` : ''}
-  </button>`;
+      aria-label="Inspect ${esc(reward.name)}" aria-pressed="${selected}" aria-controls="draft-inspection" aria-describedby="${descriptionId}">
+    <span class="offer-mount"><span class="draft-art">${rewardIcon(reward)}</span>
+      <span class="offer-sigil" aria-hidden="true">${selected ? glyph('check') : '◆'}</span>
+      <span class="draft-meta">${esc(reward.rarity)}<span> · ${categories[reward.category]}</span></span>
+      <strong class="offer-name">${esc(reward.name)}</strong>
+      <span class="offer-preview" id="${descriptionId}">${esc(impact || reward.description)}</span>
+    </span></button>`;
 }
 
-function inspect(reward, lines, player) {
-  const facts = lines.slice(1);
+function review(reward, lines, player) {
   const consumable = reward.category === 'consumable';
   const replace = consumable
     ? player.consumableCount >= player.consumableCapacity
     : ['ability', 'item'].includes(reward.category) && player.abilities.length >= player.abilityCapacity;
   const copies = consumable ? (player.consumables || []).filter(id => id === reward.id).length : 0;
+  const facts = [...lines];
   if (copies) facts.push(`Already carrying ${copies} ${copies === 1 ? 'copy' : 'copies'} of ${reward.name}.`);
   const glossary = reward.tags.filter(tag => Object.hasOwn(STATUSES, tag));
   return `<section class="draft-review" id="draft-inspection" aria-label="Selected reward">
-    <div class="draft-review-copy"><span class="draft-selected-label">${glyph('check')} Selected</span><h3>${esc(reward.name)}</h3>
+    <div class="draft-review-copy">
+      <p class="draft-rule"><strong>${esc(reward.name)}</strong><span class="draft-kind">${categories[reward.category]}</span> ${esc(reward.description)}</p>
       ${facts.length ? `<ul class="draft-facts">${facts.map(text => `<li>${esc(text)}</li>`).join('')}</ul>` : ''}
       ${glossary.length ? `<details class="draft-glossary"><summary>How ${glossary.map(tag => STATUSES[tag].name).join(', ')} ${glossary.length === 1 ? 'works' : 'work'}</summary>
         <dl>${glossary.map(tag => `<div><dt>${STATUSES[tag].name}</dt><dd>${esc(STATUSES[tag].description)}</dd></div>`).join('')}</dl></details>` : ''}
@@ -44,14 +46,12 @@ export function draftHTML(view, player, selectedId) {
   }));
   const selected = choices.find(choice => choice.reward.id === selectedId);
   return `<div class="loot-draft">
-    <header class="dock-heading draft-heading"><div><small>${view.bonusDraft ? 'Scavenge' : 'Acquisition phase'}</small><h2>Choose a reward</h2></div>
-      <button type="button" class="tool-btn draft-reroll" data-ui="reroll" ${player.rerolls > 0 ? '' : 'disabled'}>${glyph('cycle')} Reroll (${player.rerolls})</button>
-    </header>
-    <div class="draft-options" role="group" aria-label="Reward offers">${choices.map(({ reward, lines }) => {
-      const chosen = reward.id === selected?.reward.id;
-      return card(reward, lines, chosen) + (chosen ? inspect(reward, lines, player) : '');
-    }).join('')}
-    ${selected ? '' :
-      `<div class="draft-review draft-prompt" id="draft-inspection"><p>Select a reward to inspect it before taking it.</p><button type="button" class="primary draft-confirm" disabled>Take reward ${glyph('right')}</button></div>`}</div>
+    <header class="dock-heading draft-heading"><h2>${view.bonusDraft ? 'Scavenge · ' : ''}Choose a reward</h2>
+      <button type="button" class="tool-btn draft-reroll" data-ui="reroll" ${player.rerolls > 0 ? '' : 'disabled'}>${glyph('cycle')} Reroll (${player.rerolls})</button></header>
+    <div class="draft-options" role="group" aria-label="Reward offers">
+      ${choices.map(({reward, lines}) => offerCard(reward, lines[0], reward.id === selected?.reward.id)).join('')}
+    </div>
+    ${selected ? review(selected.reward, selected.lines, player) :
+      `<div class="draft-review draft-prompt" id="draft-inspection"><p>Select a reward to inspect it.</p><button type="button" class="primary draft-confirm" disabled>Take reward ${glyph('right')}</button></div>`}
   </div>`;
 }
