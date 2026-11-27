@@ -15,11 +15,44 @@
     "ambient": { "columns": 12 },
     "consume": { "columns": 12 }
   },
+  "defaultAnchors": {
+    "healthy": { "hand": [114, 73], "mouth": [111, 41], "ground": [157, 149] },
+    "wounded": { "hand": [114, 77], "mouth": [111, 46], "ground": [156, 149] },
+    "critical": { "hand": [116, 83], "mouth": [113, 59], "ground": [152, 149] }
+  },
   "founders": {
-    "guardian": { "weapon": "hammer", "emblem": "shield", "title": "Frontline bulwark", "layers": ["motions", "footwork", "ambient", "consume"] },
-    "berserker": { "weapon": "saber", "emblem": "axe", "title": "Bloodied vanguard", "layers": ["motions", "footwork", "ambient", "consume"] },
-    "chronomancer": { "weapon": "focus", "emblem": "clock", "title": "Keeper of time", "layers": ["motions", "footwork", "ambient", "consume"] },
-    "alchemist": { "weapon": "sickle", "emblem": "flask", "title": "Brewer of wonders", "layers": ["motions", "footwork", "ambient", "consume"] }
+    "guardian": {
+      "weapon": "hammer", "emblem": "shield", "title": "Frontline bulwark", "layers": ["motions", "footwork", "ambient", "consume"],
+      "anchors": {
+        "healthy": { "hand": [95, 75], "mouth": [104, 39], "ground": [166, 149] },
+        "wounded": { "hand": [96, 78], "mouth": [102, 44], "ground": [164, 149] },
+        "critical": { "hand": [100, 81], "mouth": [106, 61], "ground": [158, 149] }
+      }
+    },
+    "berserker": {
+      "weapon": "saber", "emblem": "axe", "title": "Bloodied vanguard", "layers": ["motions", "footwork", "ambient", "consume"],
+      "anchors": {
+        "healthy": { "hand": [128, 69], "mouth": [111, 40], "ground": [161, 149] },
+        "wounded": { "hand": [129, 74], "mouth": [111, 46], "ground": [160, 149] },
+        "critical": { "hand": [130, 81], "mouth": [117, 57], "ground": [155, 149] }
+      }
+    },
+    "chronomancer": {
+      "weapon": "focus", "emblem": "clock", "title": "Keeper of time", "layers": ["motions", "footwork", "ambient", "consume"],
+      "anchors": {
+        "healthy": { "hand": [108, 70], "mouth": [110, 39], "ground": [159, 149] },
+        "wounded": { "hand": [107, 72], "mouth": [111, 40], "ground": [157, 149] },
+        "critical": { "hand": [107, 81], "mouth": [113, 56], "ground": [153, 149] }
+      }
+    },
+    "alchemist": {
+      "weapon": "sickle", "emblem": "flask", "title": "Brewer of wonders", "layers": ["motions", "footwork", "ambient", "consume"],
+      "anchors": {
+        "healthy": { "hand": [124, 70], "mouth": [118, 44], "ground": [147, 149] },
+        "wounded": { "hand": [124, 73], "mouth": [118, 48], "ground": [146, 149] },
+        "critical": { "hand": [125, 85], "mouth": [117, 64], "ground": [144, 149] }
+      }
+    }
   },
   "skins": []
 }

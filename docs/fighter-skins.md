@@ -79,11 +79,16 @@ The runtime and atlas builder read the frame layout, artistic defaults and skin 
   "consume": "/assets/skins/dawn/consume.webp",
   "portrait": "/assets/skins/dawn/head.webp",
   "model": "/assets/skins/dawn/full.png",
-  "anchors": { "mouth": [112, 41], "hand": [122, 81], "ground": [133, 144] }
+  "anchors": {
+    "mouth": [112, 41],
+    "hand": [122, 81],
+    "wounded": { "mouth": [111, 47] },
+    "critical": { "mouth": [109, 61], "hand": [119, 86] }
+  }
 }
 ```
 
-Only the class, ID and standing sheet are required. The turn rail and command deck use the portrait. Inspection uses the full model. Omitted portraits and models use the class art. Optional anchor pairs are pixel coordinates from the top left of the right-facing cel. The renderer handles facing and display scale. Pack authors can also call `registerFighterSkin(classId, id, descriptor)` during startup. The older positional call for standing, motion, footwork and ambient sheets remains supported.
+Only the class, ID and standing sheet are required. The turn rail and command deck use the portrait. Inspection uses the full model. Omitted portraits and models use the class art. Optional anchor pairs are pixel coordinates from the top left of the right-facing cel. Use a `healthy`, `wounded` or `critical` object when a painted pose moves the mouth, grip or cache. In the example a wounded fighter keeps the usual hand position. The critical fighter lowers both hand and mouth. Each missing point falls back to the skin’s shared point, then the class’s band or shared point, then the default humanoid for that band. Class artists can supply the same `anchors` object in their founder entry. The renderer handles facing and display scale. Pack authors can also call `registerFighterSkin(classId, id, descriptor)` during startup. The older positional call for standing, motion, footwork and ambient sheets remains supported.
 
 For a new class, define its stats and signature `ability` in [catalog.js](../src/game/catalog.js). Add one entry in the manifest’s `founders` object for its weapon, emblem, display title and available layers. Supply `/assets/skins/<class>-founder.png` and `/assets/skins/<class>-<layer>.webp` for each declared layer, plus `/assets/portrait-<class>.webp` and `/assets/<class>.png`. A class with only standing art can start with an empty layer list. Weapon choices include hammer, saber, dagger, focus and sickle; a new weapon uses the standard swing until it needs a distinct movement.
 

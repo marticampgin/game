@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CLASSES, REWARDS } from '../src/game/catalog.js';
 import { actorClip, effectRows, missiles, motionScore, rewardMotion } from '../public/combat-motion.js';
-import { fighterLayout, fighterModel, fighterPortrait, registerFighterSkin, resolveFighterSkin } from '../public/fighter-kit.js';
+import { fighterAnchors, fighterLayout, fighterModel, fighterPortrait, registerFighterSkin, resolveFighterSkin } from '../public/fighter-kit.js';
 import { fighterSpriteHTML } from '../public/animation.js';
 
 test('new rewards use their category, icon, target and effects to select a gesture', () => {
@@ -74,4 +74,24 @@ test('an installed skin owns its portrait, model, consumable cels and attachment
   assert.equal(fighterPortrait({ ...player, skinId: 'uninstalled' }), '/assets/portrait-guardian.webp');
   assert.throws(() => registerFighterSkin('guardian', 'bad-anchor', { ...skin, anchors: { hand: [300, 10] } }));
   assert.throws(() => registerFighterSkin('guardian', 'bad-portrait', { ...skin, portrait: '/untrusted/art.png' }));
+});
+
+test('prop attachments follow the selected painting and inherit missing points independently', () => {
+  const anchors = { mouth: [130, 45], wounded: { hand: [110, 83] }, critical: { mouth: [109, 66] } };
+  const sheet = '/assets/skins/winter.png';
+  registerFighterSkin('guardian', 'winter', { sheet, anchors });
+  anchors.critical.mouth[1] = 0;
+  const skin = resolveFighterSkin('guardian', 'winter');
+  assert.deepEqual(fighterAnchors('guardian', 'healthy', skin.anchors),
+    { hand: [95, 75], mouth: [130, 45], ground: [166, 149] });
+  assert.deepEqual(fighterAnchors('guardian', 'wounded', skin.anchors),
+    { hand: [110, 83], mouth: [130, 45], ground: [164, 149] });
+  assert.deepEqual(fighterAnchors('guardian', 'critical', skin.anchors),
+    { hand: [100, 81], mouth: [109, 66], ground: [158, 149] });
+  assert.deepEqual(fighterAnchors('new-role', 'critical'), fighterLayout.defaultAnchors.critical);
+  assert.deepEqual(fighterAnchors('new-role', undefined), fighterLayout.defaultAnchors.healthy);
+  for (const invalid of [{ injured: { mouth: [112, 41] } }, { critical: { wounded: {} } },
+    { healthy: ['hand'] }, { wounded: { ground: [-1, 144] } }]) {
+    assert.throws(() => registerFighterSkin('guardian', 'winter-invalid', { sheet, anchors: invalid }));
+  }
 });

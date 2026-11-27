@@ -199,9 +199,9 @@ test('the restored battle renders another seat’s registered cosmetic and falls
   await page.route('**/fighter-kit.json',async route=>{
     const response=await route.fetch();
     const layout=await response.json();
-    layout.founders.fencer={weapon:'dagger',emblem:'sword',title:'Duelist',layers:[]};
+    layout.founders.fencer={weapon:'dagger',emblem:'sword',title:'Duelist',layers:[],anchors:{hand:[111,72],critical:{ground:[151,146]}}};
     layout.skins.push({classId:'fencer',id:'festival-2',sheet:'/assets/skins/test-festival.png',
-      portrait:'/assets/skins/festival-head.webp',model:'/assets/skins/festival-full.png'});
+      portrait:'/assets/skins/festival-head.webp',model:'/assets/skins/festival-full.png',anchors:{critical:{mouth:[110,63]}}});
     await route.fulfill({response,json:layout});
   });
   await page.route('**/assets/skins/test-festival.png',route=>route.fulfill({
@@ -224,10 +224,12 @@ test('the restored battle renders another seat’s registered cosmetic and falls
   await expect(rival).toHaveAttribute('data-class','fencer');
   const score=await page.evaluate(async()=>{
     const {motionScore,actorClip}=await import('/combat-motion.js');
+    const {fighterAnchors,resolveFighterSkin}=await import('/fighter-kit.js');
     const hit=motionScore('hollow-needle','fencer');
-    return [motionScore('attack','fencer').track,actorClip(hit,'hollow-needle','fencer')];
+    return [motionScore('attack','fencer').track,actorClip(hit,'hollow-needle','fencer'),
+      fighterAnchors('fencer','critical',resolveFighterSkin('fencer','festival-2').anchors)];
   });
-  expect(score).toEqual(['needle','signature']);
+  expect(score).toEqual(['needle','signature',{hand:[111,72],mouth:[110,63],ground:[151,146]}]);
   await expect(rival.locator('.arena-cel')).toHaveCSS('background-image',/test-festival\.png/);
   await expect(page.locator('[data-seat="me"] .arena-sprite')).toHaveAttribute('data-skin','founder');
   const railButton=page.locator('.turn-rail [data-inspect="rival"]');
