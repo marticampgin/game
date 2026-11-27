@@ -1,5 +1,6 @@
 import { randomBytes, randomInt } from 'node:crypto';
-import { applyCommand, botCommand, CLASSES, createMatch, viewMatch } from '../src/game/index.js';
+import { applyCommand, CLASSES, createMatch, viewMatch } from '../src/game/index.js';
+import { planBotStep } from '../public/pacing.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const BOT_NAMES = ['Brasswick', 'Morrow', 'Belladonna', 'Holloway', 'Orin', 'Sable', 'Vesper'];
@@ -44,16 +45,18 @@ function addSeat(room, name, requestedClass, bot = false) {
 }
 
 function roomView(room, session) {
+  const game = room.game && viewMatch(room.game, session.id);
+  if (game) game.botIntent = room.pendingBot ? { ...room.pendingBot.intent } : null;
   return {
     code: room.code,
     revision: room.revision,
     playerId: session.id,
     room: {
       code: room.code, hostId: room.hostId, capacity: room.capacity, mode: room.mode,
-      fillBots: room.fillBots, started: room.game !== null,
+      fillBots: room.fillBots, fastBots: room.fastBots, started: room.game !== null,
       seats: room.seats.map(seat => ({ ...seat })), draft: [...session.draft],
     },
-    game: room.game && viewMatch(room.game, session.id),
+    game,
   };
 }
 
@@ -77,19 +80,22 @@ function playerCommand(input) {
   throw new RoomError(400, 'Choose a valid move.');
 }
 
-export function createRooms({ botDelay = 500, idleTimeout = 24 * 60 * 60 * 1000 } = {}) {
+export function createRooms({ botDelay, idleTimeout = 24 * 60 * 60 * 1000 } = {}) {
   const rooms = new Map();
 
   function scheduleBot(room) {
-    if (room.game.phase === 'finished' ||
-        !room.seats.some(seat => seat.bot && seat.id === room.game.activeId)) return;
+    clearTimeout(room.timer);
+    const plan = planBotStep(room.game, {fast: room.fastBots, delayOverride: botDelay});
+    room.pendingBot = plan;
+    if (!plan) return;
     room.timer = setTimeout(() => {
+      if (room.pendingBot !== plan) return;
       room.timer = null;
-      const command = botCommand(room.game);
-      room.game = applyCommand(room.game, room.game.activeId, command);
+      room.pendingBot = null;
+      room.game = applyCommand(room.game, plan.intent.actorId, plan.command);
       room.revision++;
       scheduleBot(room);
-    }, botDelay);
+    }, plan.delayMs);
     room.timer.unref();
   }
 
@@ -126,7 +132,7 @@ export function createRooms({ botDelay = 500, idleTimeout = 24 * 60 * 60 * 1000 
       } while (rooms.has(code));
       const room = {
         code, capacity, mode, fillBots, seats: [], nextSeat: 1, sessions: new Map(), game: null,
-        revision: 1, timer: null, touched: Date.now(),
+        revision: 1, timer: null, pendingBot: null, fastBots: false, touched: Date.now(),
       };
       const { token, seat } = addSeat(room, name, input.classId);
       room.hostId = seat.id;
@@ -177,6 +183,8 @@ export function createRooms({ botDelay = 500, idleTimeout = 24 * 60 * 60 * 1000 
         if (room.hostId !== session.id) throw new RoomError(403, 'Only the host can start the match.');
         if (room.game) throw new RoomError(409, 'The match is already in progress.');
         if (!room.fillBots && room.seats.length < 2) throw new RoomError(409, 'Invite another player to start.');
+        if (input.fastBots !== undefined && typeof input.fastBots !== 'boolean') throw new RoomError(400, 'Choose a valid bot speed.');
+        room.fastBots = input.fastBots ?? false;
         let botIndex = 0;
         while (room.fillBots && room.seats.length < room.capacity) {
           addSeat(room, BOT_NAMES[botIndex++], sampleClasses(1)[0], true);

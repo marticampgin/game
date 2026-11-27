@@ -188,7 +188,12 @@ function lobbyController(host, callbacks, initialSession, initialView) {
       return;
     }
     await perform(async () => {
-      if (session) return update(await roomRequest(session, 'start', {}));
+      if (session) {
+        let fastBots = false;
+        try { fastBots = JSON.parse(localStorage.getItem('rift-preferences'))?.fast === true; }
+        catch { /* A stale preference falls back to the room's normal pace. */ }
+        return update(await roomRequest(session, 'start', { fastBots }));
+      }
       if (model.tab === 'solo') {
         const rivals = classes.filter(c => c.id !== model.selected).concat(CLASSES[model.selected]);
         const players = [{ id:'p1', name:model.name.trim(), classId:model.selected, bot:false }];
