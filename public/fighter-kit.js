@@ -1,7 +1,10 @@
-import layout from './fighter-kit.json' with { type: 'json' };
 import { CLASSES } from '../src/game/catalog.js';
 import { isSkinId } from '../src/game/skin-id.js';
 
+// Early Node 20 reads import assertions; browsers and later Node read attributes.
+const { default: layout } = await import('./fighter-kit.json', {
+  with: { type: 'json' }, assert: { type: 'json' },
+});
 export const fighterLayout = layout;
 const skins = new Map();
 const localSheet = /^\/assets\/skins\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.(png|webp)$/;

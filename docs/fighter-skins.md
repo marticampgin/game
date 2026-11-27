@@ -16,6 +16,7 @@ All sheets use the same health bands in the same order. Healthy fighters are abo
 | Motion, optional | 2496 × 3486, twelve columns and twenty-one rows | Seven clips per health band |
 | Return footwork, optional | 832 × 498, four columns and three rows | One counterstep sequence per health band |
 | Ambient gesture, optional | 2496 × 498, twelve columns and three rows | One equipment check per health band |
+| Drink and use, optional | 2496 × 498, twelve columns and three rows | One reach, raise, hold and return sequence per health band |
 
 Pack cels edge to edge with transparent space inside each cel. PNG and lossless WebP are both supported. Older standing sheets remain usable on their own.
 
@@ -33,6 +34,25 @@ The footwork sheet has four drawings per band. The fighter faces the rival throu
 
 The ambient sheet starts and ends in the normal resting pose. Frames 5–7 hold a short, recognizable equipment check, such as the Guardian inspecting a gauntlet or the Alchemist checking a vial. Keep the boot soles planted. An attack can interrupt this short gesture at any time.
 
+The consume strip drives drinks and held items. Start at rest, reach to the belt, raise the empty grip, hold it at the face or chest, then lower it. The runtime adds the bottle or item to the grip. Use each character’s own shoulders, wrists and weight shift. A skin with the motion sheet alone uses its braced pose for this gesture. A standing-only skin uses its guard painting.
+
+## Which animation plays
+
+A reward definition supplies the action’s category, target and effects. The acting character supplies the drawings. For example, a new enemy-targeted consumable with a Shock status spins toward its target and bursts with a Shock impact even when its ID has never appeared in the animation code. A new self-targeted healing flask uses the same drink strip as Red Tonic. A self-targeted rune consumable uses the held-item gesture.
+
+| Action | Body and staging |
+| --- | --- |
+| Waiting | Loop idle with occasional equipment checks. A command interrupts the check. |
+| Weapon strike | Approach, contact, counterstep and return. The fighter’s weapon determines the ordinary strike. Armor-scaled hits use the shield bash. |
+| Native signature | The ability named in the class's `ability` field uses the painted signature clip. When another fighter acquires that ability it performs the same movement and effect with its own attack or cast drawings. |
+| Spell or throw | Channel, release, then allow travel time before contact. Status keys color the projectile and impact. |
+| Guard | Brace, hold and recover. |
+| Scavenge | Reach down and collect the loot at the fighter’s forward foot. |
+| Drink or use | Raise the hand to the mouth or chest. Reuse the same painting sequence for bottles, bells and activated items. |
+| Hit and recovery | Enter the hurt clip on impact, update the health band and recover in that band. Lethal damage selects fallen. The surviving winner has a victory pose. |
+
+Override a move only when its delivery needs different staging. Whiteout declares `presentation: { move: 'wave' }`; its Chill effect supplies the frost art. A healing item can declare `presentation: { move: 'ring', prop: 'bell' }`. The supported moves, effect atlas rows, projectile types, release times and impact times live together in [combat-motion.js](../public/combat-motion.js). The chosen gesture also selects the sound at contact.
+
 ## Founder art sources
 
 The individual base and breakdown paintings are packed under [scripts/art/founders](../scripts/art/founders). Each class has 16 primary paintings and four extra weapon or arm breakdowns in each of the three health bands. The builder registers the painted surfaces to create intermediate exposures, keeps the hard silhouette edge, preserves the original color palette and packs the sheets for the browser. Each class also has twelve separately painted footwork drawings in the shipped footwork sheet.
@@ -46,19 +66,33 @@ python scripts/build-fighter-skins.py --review founder-health.png
 
 ## Registration and roster
 
-Place the artwork in `public/assets/skins/`. Register the class, skin ID, standing sheet and any optional sheet URLs before the first battle render. IDs start with a lowercase letter and support lowercase letters and digits separated by single hyphens, up to 40 characters total. Each class has a built-in `founder` skin.
+The runtime and atlas builder read the frame layout, artistic defaults and skin registrations in [fighter-kit.json](../public/fighter-kit.json). Place alternate artwork under `public/assets/skins/` and append a descriptor to the manifest’s `skins` array. IDs start with a lowercase letter and support lowercase letters and digits separated by single hyphens, up to 40 characters total.
 
-```js
-import { registerFighterSkin } from './animation.js';
+```json
+{
+  "classId": "guardian",
+  "id": "dawn-order",
+  "sheet": "/assets/skins/dawn/standing.png",
+  "motions": "/assets/skins/dawn/motions.webp",
+  "footwork": "/assets/skins/dawn/footwork.webp",
+  "ambient": "/assets/skins/dawn/ambient.webp",
+  "consume": "/assets/skins/dawn/consume.webp",
+  "portrait": "/assets/skins/dawn/head.webp",
+  "model": "/assets/skins/dawn/full.png",
+  "anchors": { "mouth": [112, 41], "hand": [122, 81], "ground": [133, 144] }
+}
+```
 
-registerFighterSkin(
-  'guardian',
-  'dawn-order',
-  '/assets/skins/guardian-dawn-order.webp',
-  '/assets/skins/guardian-dawn-order-motions.webp',
-  '/assets/skins/guardian-dawn-order-footwork.webp',
-  '/assets/skins/guardian-dawn-order-ambient.webp',
-);
+Only the class, ID and standing sheet are required. The turn rail and command deck use the portrait. Inspection uses the full model. Omitted portraits and models use the class art. Optional anchor pairs are pixel coordinates from the top left of the right-facing cel. The renderer handles facing and display scale. Pack authors can also call `registerFighterSkin(classId, id, descriptor)` during startup. The older positional call for standing, motion, footwork and ambient sheets remains supported.
+
+For a new class, define its stats and signature `ability` in [catalog.js](../src/game/catalog.js). Add one entry in the manifest’s `founders` object for its weapon, emblem, display title and available layers. Supply `/assets/skins/<class>-founder.png` and `/assets/skins/<class>-<layer>.webp` for each declared layer, plus `/assets/portrait-<class>.webp` and `/assets/<class>.png`. A class with only standing art can start with an empty layer list. Weapon choices include hammer, saber, dagger, focus and sickle; a new weapon uses the standard swing until it needs a distinct movement.
+
+Validate the packed sheet sizes, every cel and the three band openings before inspecting in-game playback. The checker needs Pillow and reads the same manifest as the game.
+
+```sh
+python scripts/check-fighter-skins.py
+python scripts/check-fighter-skins.py --class-id guardian --skin dawn-order
+node --test tests/animation-grammar.test.js
 ```
 
 Pass the optional `skinId` in the original match roster. The match saves the ID, projects it to the other seats and retains it for replays. Clients missing a registration display the class founder, as do older saves without a selection.

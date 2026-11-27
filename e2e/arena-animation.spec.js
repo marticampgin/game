@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-import {applyCommand,createMatch} from '../src/game/index.js';
+import {CLASSES,applyCommand,createMatch} from '../src/game/index.js';
 import {fileURLToPath} from 'node:url';
 
 const classes=['guardian','berserker','chronomancer','alchemist'];
@@ -181,16 +181,28 @@ test('ordered reactions, cancellation and reduced motion leave connected seats i
 });
 
 test('the restored battle renders another seat’s registered cosmetic and falls back for an uninstalled one',async({page})=>{
-  const state=createMatch({seed:'costume-roster',players:[
-    {id:'rival',name:'Rune',classId:'guardian',skinId:'festival-2'},
-    {id:'me',name:'Owl',classId:'alchemist',skinId:'future-edition'},
-  ]});
-  // Install a test cosmetic just as a future shipped skin would register at
-  // app startup. The roster, public projection, restoration and rendering are real.
-  await page.route('**/fighter-kit.js',async route=>{
+  const role={...CLASSES.guardian,id:'fencer',name:'Fencer',ability:'hollow-needle'};
+  CLASSES[role.id]=role;
+  let state;
+  try {
+    state=createMatch({seed:'costume-roster',players:[
+      {id:'rival',name:'Rune',classId:'fencer',skinId:'festival-2'},
+      {id:'me',name:'Owl',classId:'alchemist',skinId:'future-edition'},
+    ]});
+  } finally { delete CLASSES[role.id]; }
+  // Artists extend the public catalog and manifest. Render the restored state
+  // through the same startup, roster projection and skin lookup as a match.
+  await page.route('**/src/game/catalog.js',async route=>{
     const response=await route.fetch();
-    await route.fulfill({response,body:(await response.text())+
-      "\nregisterFighterSkin('guardian','festival-2',{ sheet:'/assets/skins/test-festival.png', portrait:'/assets/skins/festival-head.webp', model:'/assets/skins/festival-full.png' });"});
+    await route.fulfill({response,body:(await response.text())+'\nCLASSES.fencer='+JSON.stringify(role)+';'});
+  });
+  await page.route('**/fighter-kit.json',async route=>{
+    const response=await route.fetch();
+    const layout=await response.json();
+    layout.founders.fencer={weapon:'dagger',emblem:'sword',title:'Duelist',layers:[]};
+    layout.skins.push({classId:'fencer',id:'festival-2',sheet:'/assets/skins/test-festival.png',
+      portrait:'/assets/skins/festival-head.webp',model:'/assets/skins/festival-full.png'});
+    await route.fulfill({response,json:layout});
   });
   await page.route('**/assets/skins/test-festival.png',route=>route.fulfill({
     path:fileURLToPath(new URL('../public/assets/skins/guardian-founder.png',import.meta.url)),contentType:'image/png',
@@ -209,6 +221,13 @@ test('the restored battle renders another seat’s registered cosmetic and falls
   await fetched;
   const rival=page.locator('[data-seat="rival"] .arena-sprite');
   await expect(rival).toHaveAttribute('data-skin','festival-2');
+  await expect(rival).toHaveAttribute('data-class','fencer');
+  const score=await page.evaluate(async()=>{
+    const {motionScore,actorClip}=await import('/combat-motion.js');
+    const hit=motionScore('hollow-needle','fencer');
+    return [motionScore('attack','fencer').track,actorClip(hit,'hollow-needle','fencer')];
+  });
+  expect(score).toEqual(['needle','signature']);
   await expect(rival.locator('.arena-cel')).toHaveCSS('background-image',/test-festival\.png/);
   await expect(page.locator('[data-seat="me"] .arena-sprite')).toHaveAttribute('data-skin','founder');
   const railButton=page.locator('.turn-rail [data-inspect="rival"]');

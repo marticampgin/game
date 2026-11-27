@@ -16,10 +16,10 @@
     "consume": { "columns": 12 }
   },
   "founders": {
-    "guardian": { "weapon": "hammer", "emblem": "shield", "title": "Frontline bulwark", "layers": ["motions", "footwork", "ambient"] },
-    "berserker": { "weapon": "saber", "emblem": "axe", "title": "Bloodied vanguard", "layers": ["motions", "footwork", "ambient"] },
-    "chronomancer": { "weapon": "focus", "emblem": "clock", "title": "Keeper of time", "layers": ["motions", "footwork", "ambient"] },
-    "alchemist": { "weapon": "sickle", "emblem": "flask", "title": "Brewer of wonders", "layers": ["motions", "footwork", "ambient"] }
+    "guardian": { "weapon": "hammer", "emblem": "shield", "title": "Frontline bulwark", "layers": ["motions", "footwork", "ambient", "consume"] },
+    "berserker": { "weapon": "saber", "emblem": "axe", "title": "Bloodied vanguard", "layers": ["motions", "footwork", "ambient", "consume"] },
+    "chronomancer": { "weapon": "focus", "emblem": "clock", "title": "Keeper of time", "layers": ["motions", "footwork", "ambient", "consume"] },
+    "alchemist": { "weapon": "sickle", "emblem": "flask", "title": "Brewer of wonders", "layers": ["motions", "footwork", "ambient", "consume"] }
   },
   "skins": []
 }
