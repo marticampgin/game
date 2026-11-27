@@ -89,3 +89,26 @@ test('reduced motion keeps the sequence readable and skipping restores final vit
   await expect(page.locator('[data-ui="toggle-recap"]')).toBeFocused();
   await expect(page.locator('.recap-handoff')).toContainText('Cinder’s turn');
 });
+
+test('taking Scavenge loot plays the new turn ticks once without reopening the chest', async ({page}) => {
+  let state = stackedMatch(2);
+  state = applyCommand(state, 'p0', {type:'act', actionId:'scavenge'});
+  state.offers = ['iron-shard','heartwood','golden-shell'];
+  await page.goto('/');
+  await page.evaluate(state => sessionStorage.setItem('rift-solo', JSON.stringify({state,viewerId:'p0'})), state);
+  await page.reload();
+  await page.locator('[data-draft-select="iron-shard"]').click();
+  await page.evaluate(() => {
+    window.cacheOpened = false;
+    new MutationObserver(() => {
+      if (document.querySelector('[data-prop="cache"]')) window.cacheOpened = true;
+    }).observe(document.querySelector('.arena-world'), {subtree:true,childList:true});
+  });
+  await page.locator('[data-pick="iron-shard"]').click();
+  await expect(page.locator('.arena-status-label[data-status="burn"]')).toBeVisible();
+  await expect(page.locator('.effect-receipt[data-receipt="doom"]')).toBeVisible();
+  await expect(page.locator('.recap-handoff')).toContainText('Cinder’s turn');
+  expect(await page.evaluate(() => window.cacheOpened)).toBe(false);
+  await expect(page.locator('[data-seat="p1"] .fighter-hp')).toHaveText('475 / 485');
+  await expect(page.locator('[data-ui="toggle-recap"] .status-icon')).toHaveCount(3);
+});

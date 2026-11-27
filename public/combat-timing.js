@@ -56,15 +56,26 @@ function orderedBeats(events, primary) {
 
 const hasStatus = beat => beat.events.some(e => statusCue(e));
 
-export function combatTiming(recap, lead, reduced) {
+// Collecting Scavenge loot extends the original recap without spending a second
+// action. Its new turn-start events must play once, after the loot is taken.
+export function bonusDraftContinuation(before, after) {
+  const previous = before?.lastAction, next = after.lastAction;
+  if (!before?.bonusDraft || !previous || next?.actionId !== 'scavenge' || previous.id !== next.id)
+    return null;
+  const through = previous.events.at(-1)?.id ?? -1;
+  const events = next.events.filter(event => event.id > through);
+  return events.some(event => event.targetId && visibleTypes.has(event.type)) ? { ...next, events } : null;
+}
+
+export function combatTiming(recap, lead, reduced, effectsOnly = false) {
   const all = (recap.events ?? []).filter(e => e.targetId && visibleTypes.has(e.type));
   const direct = all.filter(e => directOutcome(e, recap) && !(e.type === 'damage' && statusCue(e)) &&
     !setupChanges.has(e.statusChange));
-  const primary = recap.actionId === 'interrupted' ? all[0] : direct[0];
+  const primary = effectsOnly ? undefined : recap.actionId === 'interrupted' ? all[0] : direct[0];
   const beats = orderedBeats(all, primary);
   const primaryIndex = beats.findIndex(b => primary && b.event === primary);
   const boundary = beats.findIndex(b => b.events.some(e => e.timing === 'turn' || e.timing === 'round'));
-  const before = primaryIndex >= 0 ? primaryIndex : boundary < 0 ? beats.length : boundary;
+  const before = effectsOnly ? 0 : primaryIndex >= 0 ? primaryIndex : boundary < 0 ? beats.length : boundary;
   function interval(a, b) {
     if ((a && !a.event) || (b && !b.event)) return 790;
     if ((a && hasStatus(a)) || (b && hasStatus(b))) return reduced ? 610 : 680;
@@ -76,10 +87,10 @@ export function combatTiming(recap, lead, reduced) {
     beats[i].time = previousTime;
     next = beats[i];
   }
-  const contact = Math.max(lead, -previousTime + (reduced ? 12 : 35));
+  const contact = effectsOnly ? 0 : Math.max(lead, -previousTime + (reduced ? 12 : 35));
   let time = 0;
   for (let i = before; i < beats.length; i++) {
-    if (i !== primaryIndex) time += interval(i > before ? beats[i - 1] : beats[primaryIndex], beats[i]);
+    if (i !== primaryIndex && !(effectsOnly && i === 0)) time += interval(i > before ? beats[i - 1] : beats[primaryIndex], beats[i]);
     beats[i].time = time;
   }
   for (const beat of beats) beat.time += contact;

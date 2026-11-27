@@ -21,11 +21,12 @@ test('an actor bleeding on the way in still damages the target on the shield con
   await page.evaluate(({ actor, target, beforeContact }) => {
     const hp = id => document.querySelector('[data-seat="' + id + '"] .fighter-hp').textContent;
     const initial = hp(actor);
-    let bledDuringWindup = false, stalled = false;
+    let bledDuringWindup = false, portraitMatches = false, stalled = false;
     const reactions = new MutationObserver(() => {
       const scene = document.querySelector('.arena-fx');
       if (!bledDuringWindup && scene?.dataset.stage === 'windup' && initial !== hp(actor)) {
         bledDuringWindup = true;
+        portraitMatches = document.querySelector('.command-hp b').textContent === hp(actor);
         // Bleed lands first. Occupy the main thread across the scheduled
         // strike so the next paint must recover the drawing that delivered it.
         setTimeout(() => {
@@ -37,7 +38,7 @@ test('an actor bleeding on the way in still damages the target on the shield con
       if (scene?.dataset.stage === 'impact') {
         const cel=scene.querySelector('.arena-fx-actor .arena-cel');
         const contactFrame=Math.round(parseFloat(getComputedStyle(cel).backgroundPositionX) * 11 / 100);
-        window.contactRead = { bledDuringWindup, stalled, contactFrame, targetHP: hp(target) };
+        window.contactRead = { bledDuringWindup, portraitMatches, stalled, contactFrame, targetHP: hp(target) };
         reactions.disconnect();
       }
     });
@@ -48,6 +49,6 @@ test('an actor bleeding on the way in still damages the target on the shield con
   await page.locator('[data-execute="bastion-bash"]').click();
   const after = outcome.players.find(p => p.id === target);
   await expect.poll(() => page.evaluate(() => window.contactRead)).toEqual({
-    bledDuringWindup: true, stalled: true, contactFrame: 7, targetHP: after.hp + ' / ' + after.maxHp,
+    bledDuringWindup: true, portraitMatches: true, stalled: true, contactFrame: 7, targetHP: after.hp + ' / ' + after.maxHp,
   });
 });

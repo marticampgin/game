@@ -1,3 +1,6 @@
+import { combatTiming } from './combat-timing.js';
+import { motionScore } from './combat-motion.js';
+import { statusCue } from './status-effects.js';
 import { botCommand, REWARDS } from '../src/game/index.js';
 
 // A normal decision stays visible across two room polls. A long outcome gets
@@ -13,7 +16,7 @@ const basicNames = { attack: 'Basic Attack', defend: 'Defend', scavenge: 'Scaven
  * Plan exactly one deterministic bot command. Only intent may be sent to a
  * viewer. The command can contain draft choices or a concealed consumable.
  */
-export function planBotStep(state, { fast = false, delayOverride } = {}) {
+export function planBotStep(state, { fast = false, delayOverride, roomPlayback = false } = {}) {
   const actor = state.players.find(p => p.id === state.activeId);
   if (state.phase === 'finished' || !actor?.alive || !actor.bot) return null;
   const command = botCommand(state);
@@ -22,7 +25,17 @@ export function planBotStep(state, { fast = false, delayOverride } = {}) {
   const followsAction = last && last.next.globalTurn === state.globalTurn &&
     last.next.phase === state.phase && last.next.activeId === actor.id;
   const extraEffects = followsAction ? Math.max(0, last.events.length - 1) : 0;
-  const delayMs = delayOverride ?? speed[state.phase] + Math.min(speed.maxSettle, speed.effect * extraEffects);
+  let delayMs = speed[state.phase] + Math.min(speed.maxSettle, speed.effect * extraEffects);
+  // Solo starts its timer when the picture finishes. Room bots have their own
+  // clock, so let clients read the conditions before the next bot decision.
+  if (roomPlayback && followsAction && last.events.some(event => statusCue(event))) {
+    const previous = state.players.find(p => p.id === last.actorId);
+    const score = motionScore(last.actionId, previous?.classId, last.actorId === last.targetId);
+    const {last:finalBeat, tail} = combatTiming(last, score.contact, false);
+    const playbackRate = fast && previous?.bot ? 2.3 : 1;
+    delayMs = Math.max(delayMs, Math.ceil((finalBeat + tail) / playbackRate));
+  }
+  delayMs = delayOverride ?? delayMs;
   const knownAction = command.type === 'act' &&
     (Object.hasOwn(basicNames, command.actionId) || actor.abilities.some(slot => slot.id === command.actionId));
   const actionId = knownAction ? command.actionId : null;

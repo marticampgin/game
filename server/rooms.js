@@ -85,7 +85,7 @@ export function createRooms({ botDelay, idleTimeout = 24 * 60 * 60 * 1000 } = {}
 
   function scheduleBot(room) {
     clearTimeout(room.timer);
-    const plan = planBotStep(room.game, {fast: room.fastBots, delayOverride: botDelay});
+    const plan = planBotStep(room.game, {fast: room.fastBots, delayOverride: botDelay, roomPlayback: true});
     room.pendingBot = plan;
     if (!plan) return;
     room.timer = setTimeout(() => {

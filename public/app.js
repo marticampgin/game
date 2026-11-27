@@ -1,5 +1,6 @@
 import { applyCommand, REWARDS, viewMatch } from '/src/game/index.js';
 import { mountEffectStrip, statusBankHTML } from './effect-strip.js';
+import { bonusDraftContinuation } from './combat-timing.js';
 import { statusCue } from './status-effects.js';
 import { renderArena } from './arena-render.js';
 import { clearRewardFlight, dealOffers, deliverReward, pickedEmblem } from './draft-motion.js';
@@ -198,10 +199,11 @@ function refreshBattle() {
   if (modal.open) refreshHistory(contents, v);
   if (playback) return;
   const arena = app.querySelector('.arena-world');
-  const action = v.lastAction;
+  const continuation = bonusDraftContinuation(shownView, v);
+  const action = continuation || v.lastAction;
   // A restored game or a client returning from a background tab starts at the
   // authoritative state. Only animate when the before and after states are adjacent.
-  const consecutive = arena && shownView && action && action.id === shownView.globalAction + 1 && !document.hidden;
+  const consecutive = arena && shownView && action && (continuation || action.id === shownView.globalAction + 1) && !document.hidden;
   const reduced = pref.reduce || matchMedia('(prefers-reduced-motion: reduce)').matches;
   const hasConditions = consecutive && action.events.some(event => statusCue(event));
   if (consecutive && reduced && !hasConditions && pref.sound) {
@@ -224,7 +226,7 @@ function refreshBattle() {
       arena.scrollIntoView({ block: 'center', behavior: 'instant' });
     const hp = new Map(old.players.map((p) => [p.id, p.hp]));
     const conditions = new Map(old.players.map(p => [p.id, { ...p.statuses }]));
-    const showBeat = hasConditions || action.events.length > 6
+    const showBeat = continuation || hasConditions || action.events.length > 6
       ? mountEffectStrip(shell.querySelector('.turn-resolution'), action, old.players) : undefined;
     if (showBeat) {
       const heading = shell.querySelector('.command-heading h2');
@@ -234,6 +236,7 @@ function refreshBattle() {
     }
     let shownOwner = old.activeId;
     const handle = playArenaAction(arena, action, {
+      effectsOnly: !!continuation,
       onBeat(beat, index, total) {
         if (!showBeat) return;
         showBeat(beat, index, total);
@@ -266,6 +269,13 @@ function refreshBattle() {
         else if (event.type === 'revival') value = event.amount;
         else if (event.type === 'elimination') value = 0;
         hp.set(p.id, value);
+        if (p.id === old.activeId) {
+          const station = shell.querySelector('.command-player');
+          if (station) {
+            station.querySelector('.command-hp b').textContent = value + ' / ' + p.maxHp;
+            station.querySelector('.command-health i').style.width = (100 * value) / p.maxHp + '%';
+          }
+        }
         const seat = arena.querySelector('[data-seat="' + CSS.escape(p.id) + '"]');
         if (seat) {
           const cue = statusCue(event);

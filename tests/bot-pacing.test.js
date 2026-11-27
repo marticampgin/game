@@ -94,3 +94,20 @@ test('the room publishes only the committed public bot step and immediately retu
     assert.equal(pick.game.phase,'action');
   } finally { rooms.close(); }
 });
+
+test('room bots leave time for the public status sequence and honor explicit fast playback', () => {
+  const state = initial();
+  const previous = state.players.find(p => p.id !== state.activeId);
+  state.recentActions = [{
+    actionId:'defend', actorId:previous.id, targetId:previous.id,
+    events:['burn','poison','doom'].map(cause => ({type:'damage', cause, targetId:state.activeId, timing:'turn'})),
+    next:{activeId:state.activeId,phase:'acquire',globalTurn:state.globalTurn},
+  }];
+  const room = planBotStep(state, {roomPlayback:true});
+  assert.ok(room.delayMs >= 3000 && room.delayMs < 3300);
+  assert.ok(planBotStep(state).delayMs < room.delayMs);
+  assert.ok(planBotStep(state,{fast:true,roomPlayback:true}).delayMs < room.delayMs / 2);
+  previous.bot = false;
+  assert.equal(planBotStep(state,{fast:true,roomPlayback:true}).delayMs, room.delayMs);
+  assert.equal(planBotStep(state,{roomPlayback:true, delayOverride:10}).delayMs, 10);
+});
