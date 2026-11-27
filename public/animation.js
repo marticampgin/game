@@ -1,3 +1,4 @@
+import { combatTiming, directOutcome } from './combat-timing.js';
 import { isSkinId } from '../src/game/skin-id.js';
 import { actorClip, impactCauses, motionScore } from './combat-motion.js';
 
@@ -179,22 +180,6 @@ const missiles = ['arcane', 'venom', 'fire', 'frost', 'doom', 'shock'];
 export function actionVisual(actionId, classId, self = false) {
   const score = motionScore(actionId, classId, self);
   return { motion: score.family, effect: score.effect };
-}
-const animatedEvents = new Set(['damage', 'shield', 'heal', 'revival', 'elimination', 'status']);
-function visualBeats(recap) {
-  const eligible = (recap.events ?? []).filter((event) => event.targetId && animatedEvents.has(event.type));
-  // Hundreds of simultaneous status messages can come from a round boundary.
-  // Preserve the public ordering of selected beats and always prioritize deaths/reactions.
-  if (eligible.length <= 6) return eligible;
-  const chosen = new Set([eligible[0]]);
-  for (const event of eligible) {
-    if (chosen.size < 6 && ['revival', 'elimination'].includes(event.type)) chosen.add(event);
-  }
-  for (const event of eligible) {
-    if (chosen.size < 6 && event.type !== 'status') chosen.add(event);
-  }
-  for (const event of eligible) if (chosen.size < 6) chosen.add(event);
-  return eligible.filter((event) => chosen.has(event));
 }
 function effectFor(event, profile, primary) {
   if (event.type === 'damage') {
@@ -696,33 +681,31 @@ export function playArenaAction(arena, recap, options = {}) {
       at(score.release, launch);
     }
   }
-  const beats = visualBeats(recap);
-  const contact = still ? 40 : score.contact;
-  const step = still ? 70 : Math.min(268, 810 / Math.max(1, beats.length - 1));
-  articulate();
-  if (!still) {
-    moveActor();
-    if (score.family === 'cast') stageCasting();
-    if (propIcons[action]) heldIcon(propIcons[action], 80, Math.min(duration - 45, score.contact + 180));
-    if (score.track === 'bash' && role !== 'guardian') heldIcon('shield', 65, score.contact + 165);
-    if (score.track === 'scavenge') gatherCoins();
-    if (action === 'pocket-eclipse')
-      at(230, () => imprint('eclipse', centerX(start), centerY(start), start.h * 0.85, 560));
+  const timing = combatTiming(recap, still ? 40 : score.contact, still);
+  function startMove() {
+    articulate();
+    if (!still) {
+      moveActor();
+      if (score.family === 'cast') stageCasting();
+      if (propIcons[action]) heldIcon(propIcons[action], 80, Math.min(duration - 45, score.contact + 180));
+      if (score.track === 'bash' && role !== 'guardian') heldIcon('shield', 65, score.contact + 165);
+      if (score.track === 'scavenge') gatherCoins();
+      if (action === 'pocket-eclipse')
+        at(230, () => imprint('eclipse', centerX(start), centerY(start), start.h * 0.85, 560));
+    }
   }
+  if (timing.windup) at(timing.windup, startMove);
+  else startMove();
 
   const recoil = new Map();
   const reactions = new Map();
-  function react(event, index) {
+  function react(event) {
     const subject = seats.get(event.targetId);
     if (!subject) return;
-    const direct =
-      event.targetId === recap.targetId &&
-      event.timing !== 'turn' &&
-      event.timing !== 'round' &&
-      (!event.actorId || event.actorId === recap.actorId);
+    const direct = directOutcome(event, recap);
     const kind = effectFor(event, score, direct);
-    const full = index === 0 || event.type === 'revival' || event.type === 'elimination';
-    const wardHit = direct && event.type === 'damage' && (kind === 'guard' || kind === 'fracture');
+    const full = event === timing.primary || event.type === 'revival' || event.type === 'elimination';
+    const wardHit = !still && direct && event.type === 'damage' && (kind === 'guard' || kind === 'fracture');
     // A ward records its own result just after physical contact; it never erases
     // the bottle breaking, blade hitting, or spell that caused that result.
     contactBurst(subject, wardHit ? score.effect : kind, event.amount, full);
@@ -812,19 +795,19 @@ export function playArenaAction(arena, recap, options = {}) {
       );
       at(still ? 250 : 550, () => label.remove());
     }
-    options.onCue?.({ action, role, effect: wardHit ? score.effect : kind, event, first: index === 0 });
+    options.onCue?.({ action, role, effect: wardHit ? score.effect : kind, event, first: event === timing.primary });
     options.onImpact?.(event);
   }
-  at(contact, () => {
+  at(timing.contact, () => {
     scene.dataset.stage = 'impact';
-    if (!beats.length) {
+    if (!timing.primary) {
       contactBurst(target, score.effect, 0);
       options.onCue?.({ action, role, effect: score.effect, event: null, first: true });
     }
   });
-  beats.forEach((event, index) => at(contact + index * step, () => react(event, index)));
+  for (const { event, time } of timing.beats) at(time, () => react(event));
   at(
-    Math.max(still ? 360 : duration, contact + Math.max(0, beats.length - 1) * step + (still ? 275 : 555)),
+    Math.max(timing.windup + (still ? 360 : duration), timing.last + (still ? 275 : 555)),
     cancel,
   );
   return handle;
