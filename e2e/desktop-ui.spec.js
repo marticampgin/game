@@ -57,12 +57,12 @@ for (const [width, height] of [[1280, 720], [1440, 900], [1920, 1080]]) {
       const state = createMatch({ seed: 'gui3', players: Array.from({ length: seats }, (_, i) => ({
         id: 'p' + i, name: 'Player ' + (i + 1), classId: classes[i % classes.length], bot: false,
       })) });
-      state.offers = ['iron-shard', 'ward-lantern', 'cinder-orb'];
+      state.offers = ['antidote', 'ward-lantern', 'cinder-orb'];
       await page.goto('/');
       await page.evaluate(save => sessionStorage.setItem('rift-solo', JSON.stringify(save)), { state, viewerId: state.activeId });
       await page.reload();
-      await page.locator('[data-draft-select="iron-shard"]').click();
-      const take = page.locator('[data-pick="iron-shard"]');
+      await page.locator('[data-draft-select="antidote"]').click();
+      const take = page.locator('[data-pick="antidote"]');
       await expect(take).toBeInViewport({ ratio: 1 });
       const labels = page.locator('.fighter-hp');
       await expect(labels).toHaveCount(seats);
@@ -76,6 +76,8 @@ for (const [width, height] of [[1280, 720], [1440, 900], [1920, 1080]]) {
       await take.click();
       await expect(page.locator('.command-deck')).toBeVisible();
       expect(await camera(page)).toEqual(starting);
+      // A carried item can wrap the deck labels to a second text line.
+      await expect(page.locator('.battle-bottom')).toBeInViewport({ ratio: 1 });
       await page.locator('[data-action="defend"]').click();
       await page.locator('[data-execute="defend"]').click();
       await expect(page.locator('.watch')).toBeVisible();

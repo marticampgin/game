@@ -711,8 +711,8 @@ body[data-screen='battle'] > .topbar {
 
 @media (min-width: 960px) {
   .battle-shell {
-    --desktop-controls: clamp(151px, 11.7vw, 186px);
-    --desktop-stage: clamp(310px, calc(100svh - clamp(52px, 6.6svh, 68px) - var(--desktop-controls) - 82px), 970px);
+    --desktop-controls: clamp(156px, calc(8.4vw + 49px), 213px);
+    --desktop-stage: clamp(310px, calc(100svh - clamp(52px, 6.6svh, 68px) - var(--desktop-controls) - 85px), 970px);
     min-height: 100svh;
     display: flex;
     flex-direction: column;
@@ -741,6 +741,10 @@ body[data-screen='battle'] > .topbar {
   .turn-controls:has(.watch) {
     display: grid;
     align-content: center;
+    min-height: var(--desktop-controls);
+  }
+  .turn-controls:has(.command-deck) {
+    display: grid;
     min-height: var(--desktop-controls);
   }
   .battle-bottom { margin-top: auto; }
