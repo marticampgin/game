@@ -140,6 +140,12 @@ def ambient_key(keys, role, tier):
 def clip(solver, role, tier, name):
     if name == 'ambient':
         script = ((0, 0), (2, 1), (5, 20), (7, 20), (10, 1), (11, 0))
+    elif name == 'consume':
+        # Draw from the belt, bring the grip to the lips, swallow, and lower it.
+        script = ((0, 0), (2, 21), (6, 22), (8, 22), (10, 21), (11, 0))
+    elif name == 'utility' and role == 'guardian':
+        # The tower shield moves aside to free the forward hand for the cache.
+        script = ((0, 0), (2, 2), (7, 23), (8, 23), (11, 0))
     else:
         script = TRACK_KEYS[name]
     for exposure in range(MOTIONS['columns']):
@@ -168,6 +174,10 @@ def fallen(frame):
 def build(role):
     master = Image.open(MASTERS / f'{role}-keys.webp').convert('RGBA')
     breakdowns = Image.open(MASTERS / f'{role}-breakdowns.webp').convert('RGBA')
+    drink = Image.open(MASTERS / f'{role}-consume-keys.webp').convert('RGBA')
+    reach = Image.open(MASTERS / 'guardian-reach.webp').convert('RGBA') if role == 'guardian' else None
+    if drink.size != (CELL[0] * 2, CELL[1] * len(TIERS)):
+        raise ValueError(f'{role}: expected a belt grip and a raised grip per health band')
     if breakdowns.size != (CELL[0] * 4, CELL[1] * 3):
         raise ValueError(f'{role}: expected four extra breakdowns for each health band')
     if master.size != (CELL[0] * 4, CELL[1] * 12):
@@ -175,12 +185,19 @@ def build(role):
     standing = Image.new('RGBA', (CELL[0] * 4, CELL[1] * 9))
     moving = Image.new('RGBA', (CELL[0] * MOTIONS['columns'], CELL[1] * len(MOTIONS['rows']) * len(TIERS)))
     ambient = Image.new('RGBA', (CELL[0] * 12, CELL[1] * 3))
+    consume = Image.new('RGBA', (CELL[0] * KIT['layers']['consume']['columns'], CELL[1] * len(TIERS)))
     for tier in range(3):
         keys = drawings(master, tier)
         for column in range(4):
             x, y = column * CELL[0], tier * CELL[1]
             keys.append(breakdowns.crop((x, y, x + CELL[0], y + CELL[1])))
         keys.append(ambient_key(keys, role, tier))
+        y = tier * CELL[1]
+        for column in range(2):
+            x = column * CELL[0]
+            keys.append(drink.crop((x, y, x + CELL[0], y + CELL[1])))
+        if reach:
+            keys.append(reach.crop((0, y, CELL[0], y + CELL[1])))
         solver = Inbetweens(keys)
         stills = [keys[0], keys[1], keys[2], solver.between(0, 1, .55),
                   keys[5], keys[6], keys[12], keys[13], keys[14], keys[15], fallen(keys[15]), keys[9]]
@@ -192,11 +209,14 @@ def build(role):
                 moving.paste(cel, (CELL[0] * i, y))
         for i, cel in enumerate(clip(solver, role, tier, 'ambient')):
             ambient.paste(cel, (CELL[0] * i, CELL[1] * tier))
+        for i, cel in enumerate(clip(solver, role, tier, 'consume')):
+            consume.paste(cel, (CELL[0] * i, CELL[1] * tier))
         if tier == 0:
             keys[0].crop(keys[0].getbbox()).save(ASSETS / f'{role}.png', optimize=True)
     standing.save(ASSETS / 'skins' / f'{role}-founder.png', optimize=True)
     moving.save(ASSETS / 'skins' / f'{role}-motions.webp', lossless=True, method=5)
     ambient.save(ASSETS / 'skins' / f'{role}-ambient.webp', lossless=True, method=5)
+    consume.save(ASSETS / 'skins' / f'{role}-consume.webp', lossless=True, method=5)
     print(f'{role}: 60 painted keys, {len(TRACK_KEYS) * 36} combat and idle cels')
 
 
