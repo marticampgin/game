@@ -9,7 +9,7 @@ TAU = math.tau
 # Outline, shadow, body, glint and core from the same dusk palette as the arena.
 INK = {
     'burn': ('#57283b','#a23d40','#ec6945','#ffac50','#fff2a8'),
-    'poison': ('#303644','#415b4c','#70934e','#abd368','#edffc9'),
+    'poison': ('#303644','#44674f','#82ab54','#c4e77b','#f2ffd7'),
     'bleed': ('#4d2238','#862c49','#bb4557','#ea7773','#ffc4a6'),
     'shock': ('#57395c','#936b4b','#e3ab55','#ffe47b','#fffac9'),
     'chill': ('#374360','#506e98','#74abca','#a7dded','#ecffff'),
@@ -63,14 +63,16 @@ def poison(d,t,c):
             y=50-u*(22+12*math.sin(math.pi*t))-8*t+math.cos(a)*3
             pts.append((x,y))
         line(d,pts,edge,5);line(d,pts,shade,3)
-        line(d,pts[5:18],mid,2)
+        line(d,pts[4:20],mid,2)
+        line(d,pts[11:16],light)
     for n,(x,offset,r) in enumerate([(12,.17,4),(21,.50,3),(48,.18,5),(39,.66,3),(56,.85,2),(27,.05,2)]):
         age=(t*.83+offset)%1
         x+=math.sin(age*6+n)*3; y=51-37*age
         r=max(1,round(r*(.65+.35*math.sin(math.pi*age))))
-        d.ellipse(roundpts([(x-r,y-r),(x+r,y+r)]),fill=shade,outline=edge)
-        d.arc(roundpts([(x-r+1,y-r+1),(x+r-1,y+r-1)]),135,290,fill=light)
-        d.point((round(x-1),round(y-r+1)),fill=core)
+        d.ellipse(roundpts([(x-r,y-r),(x+r,y+r)]),fill=mid,outline=edge)
+        d.arc(roundpts([(x-r+1,y-r+1),(x+r-1,y+r-1)]),15,125,fill=shade,width=2)
+        d.arc(roundpts([(x-r+1,y-r+1),(x+r-1,y+r-1)]),150,290,fill=light)
+        line(d,[(x-1,y-r+1),(x-2,y-r+2)],core)
 
 def bleed(d,t,c):
     edge,shade,mid,light,core=c
@@ -159,7 +161,7 @@ PAINT = [burn,poison,bleed,shock,chill,freeze,curse,doom]
 # Hex masks are hand-drawn at HUD scale, so outlines stay legible at one device pixel.
 SEALS = [
     ['.....1..','....21..','..1.231.','..123321','.1234331','.2344431','.123431.','..1221..'],
-    ['..1111..','.122321.','12344321','12344321','12211221','.122221.','..1211..','..1.1...'],
+    ['..2222..','.234332.','23333332','23123132','23123132','.233332.','..2322..','..2.2...'],
     ['....1...','...12...','..1231..','.123321.','.234321.','.234321.','..2321..','...11...'],
     ['...1111.','..12321.','.12321..','1234431.','..1231..','..121...','.121....','.1......'],
     ['1..21..1','.213212.','..2121..','12344321','12344321','..2121..','.213212.','1..21..1'],
@@ -170,7 +172,7 @@ SEALS = [
 
 def build():
     sheet=Image.new('RGBA',(64*PHASES,64*len(PAINT)))
-    icons=Image.new('RGBA',(12,12*len(PAINT)))
+    icons=Image.new('RGBA',(10,10*len(PAINT)))
     for row, (kind, palette) in enumerate(INK.items()):
         for frame in range(PHASES):
             image=Image.new('RGBA',(64,64)); t=(frame+.5)/PHASES
@@ -182,7 +184,7 @@ def build():
         for y, strip in enumerate(SEALS[row]):
             for x, px in enumerate(strip):
                 if px!='.':
-                    seal.point((x+2,y+2+row*12),fill=palette[int(px)-1 if px!='4' else 4])
+                    seal.point((x+1,y+1+row*10),fill=palette[{'1':0,'2':2,'3':3,'4':4}[px]])
     sheet.save(OUT/'status-effects.png',optimize=True)
     icons.save(OUT/'status-icons.png',optimize=True)
 
