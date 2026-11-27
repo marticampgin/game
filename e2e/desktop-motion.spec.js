@@ -14,6 +14,7 @@ function readySeat(role) {
 
 async function perform(page, role, action) {
   const state = readySeat(role);
+  if (action === 'venom-flask') state.players.find((p) => p.id === 'berserker').shield = 500;
   await page.evaluate((save) => sessionStorage.setItem('rift-solo', JSON.stringify(save)), {
     state,
     viewerId: role,
@@ -37,6 +38,8 @@ async function perform(page, role, action) {
       score: null,
       impact: null,
       floorLeft: false,
+      steps: new Set(),
+      minCoverage: 1,
       fx: [],
     });
     let raf;
@@ -58,7 +61,13 @@ async function perform(page, role, action) {
       const number = Math.round(
         (parseFloat(getComputedStyle(actor.querySelector('.arena-cel')).backgroundPositionX) * 11) / 100,
       );
-      if (!trace.cells.includes(number)) trace.cells.push(number);
+      if (actor.hasAttribute('data-footwork')) {
+        const stepStyle = getComputedStyle(actor.querySelector('.arena-step-cel'));
+        const baseOpacity = parseFloat(getComputedStyle(actor.querySelector('.arena-cel')).opacity);
+        trace.minCoverage = Math.min(trace.minCoverage, baseOpacity + parseFloat(stepStyle.opacity));
+        trace.steps.add(Math.round(parseFloat(stepStyle.backgroundPositionX) * 3 / 100));
+      }
+      else if (!trace.cells.includes(number)) trace.cells.push(number);
       if (scene.dataset.stage === 'impact' && trace.impact === null) trace.impact = number;
       if (world.querySelector('[data-travelling]')) trace.floorLeft = true;
       for (const el of scene.querySelectorAll('[data-effect]'))
@@ -78,7 +87,7 @@ async function perform(page, role, action) {
   });
   await page.locator('[data-execute="' + action + '"]').click();
   await expect.poll(() => page.evaluate(() => window.motionTrace.finished), { timeout: 10000 }).toBe(true);
-  return page.evaluate(() => window.motionTrace);
+  return page.evaluate(() => ({ ...window.motionTrace, steps: Array.from(window.motionTrace.steps) }));
 }
 
 test('desktop weapon swing, shield drive and bottle throw use different illustrated actor sequences', async ({
@@ -101,6 +110,11 @@ test('desktop weapon swing, shield drive and bottle throw use different illustra
     expect(sample.impact).toBeGreaterThanOrEqual(6);
     expect(sample.fx).toContain(effect);
     expect(sample.floorLeft).toBe(travels);
+    if (travels) {
+      expect(sample.steps.length).toBeGreaterThanOrEqual(2);
+      expect(sample.minCoverage).toBeGreaterThanOrEqual(.99);
+    }
+    if (action === 'venom-flask') expect(sample.fx).toContain('guard');
     await expect(page.locator('[data-travelling],.arena-fx,[data-playing="hidden"]')).toHaveCount(0);
   }
   expect(errors).toEqual([]);

@@ -7,19 +7,28 @@ const roles = ['guardian', 'berserker', 'chronomancer', 'alchemist'];
 const skins = new Map();
 const localSheet = /^\/assets\/skins\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.(png|webp)$/;
 const readySheets = new Set();
-export function registerFighterSkin(classId, id, sheet, motions) {
+export function registerFighterSkin(classId, id, sheet, motions, footwork) {
   if (
     !roles.includes(classId) ||
     !isSkinId(id) ||
     !localSheet.test(sheet) ||
-    (motions !== undefined && !localSheet.test(motions))
+    [motions, footwork].some((url) => url !== undefined && !localSheet.test(url))
   ) {
     throw new Error('A skin needs a known class, a simple ID and local sprite sheets.');
   }
-  skins.set(classId + '/' + id, Object.freeze({ classId, id, sheet, ...(motions ? { motions } : {}) }));
+  skins.set(
+    classId + '/' + id,
+    Object.freeze({ classId, id, sheet, ...(motions ? { motions } : {}), ...(footwork ? { footwork } : {}) }),
+  );
 }
 for (const role of roles)
-  registerFighterSkin(role, 'founder', '/assets/skins/' + role + '-founder.png', '/assets/skins/' + role + '-motions.webp');
+  registerFighterSkin(
+    role,
+    'founder',
+    '/assets/skins/' + role + '-founder.png',
+    '/assets/skins/' + role + '-motions.webp',
+    '/assets/skins/' + role + '-footwork.webp',
+  );
 
 export function resolveFighterSkin(classId, skinId = 'founder') {
   const role = roles.includes(classId) ? classId : 'guardian';
@@ -61,6 +70,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     (n, c) => (31 * n + c.charCodeAt(0)) >>> 0,
     0,
   );
+  const steps = skin.footwork ? ' data-footwork-src="' + skin.footwork + '"' : '';
   const motion = skin.motions
     ? ' data-motion-src="' + skin.motions + '"' + (readySheets.has(skin.motions) ? ' data-motion-ready' : '')
     : '';
@@ -69,6 +79,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     skin.sheet +
     ');' +
     (skin.motions ? '--motion-skin:url(' + skin.motions + ');' : '') +
+    (skin.footwork ? '--footwork-skin:url(' + skin.footwork + ');' : '') +
     '--idle-delay:-' +
     (seed % 5300) +
     'ms;' +
@@ -88,6 +99,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     '"' +
     (reducedMotion ? ' data-still' : '') +
     motion +
+    steps +
     ' style="' +
     style +
     '"><span class="arena-cel"></span></span>'
@@ -103,7 +115,7 @@ export function preloadArenaSkins(players = []) {
     missileSheet,
     ...players.flatMap((p) => {
       const skin = resolveFighterSkin(p.classId, p.skinId);
-      return skin.motions ? [skin.sheet, skin.motions] : [skin.sheet];
+      return [skin.sheet, skin.motions, skin.footwork].filter(Boolean);
     }),
   ]);
   return Promise.all(
@@ -113,7 +125,14 @@ export function preloadArenaSkins(players = []) {
         images.set(
           url,
           new Promise((resolve) => {
-            image.onload = () => {
+            image.onload = async () => {
+              try {
+                await image.decode?.();
+              } catch {
+                images.delete(url);
+                resolve(false);
+                return;
+              }
               readySheets.add(url);
               document
                 .querySelectorAll('[data-motion-src="' + url + '"]')
@@ -298,13 +317,14 @@ export function playArenaAction(arena, recap, options = {}) {
 
   // A retaliation can land while the attacker is still retreating. Reactions
   // follow the visible body instead of bursting over the empty seat marker.
-  const visibleBounds = (subject) => subject === actor && !still ? boxFor(ghost) : bounds(subject);
+  const visibleBounds = (subject) => (subject === actor && !still ? boxFor(ghost) : bounds(subject));
   const clipAnimations = new Map();
   const originals = new Map(),
     labels = new Map();
   const animations = [],
     timers = [];
-  let finishedScene = false, resolve;
+  let finishedScene = false,
+    resolve;
   const finished = new Promise((done) => {
     resolve = done;
   });
@@ -405,24 +425,27 @@ export function playArenaAction(arena, recap, options = {}) {
   const clip = actorClip(score, action, role);
   const duration = score.path.at(-1)[0];
   function flipbook(element, track, frames) {
-    if(still || !element.hasAttribute('data-motion-ready') || !clipRows.includes(track))return false;
-    element.dataset.track=track;
-    element.dataset.pose='perform';
-    element.style.setProperty('--clip-row',(clipRows.indexOf(track) / 20 * 100)+'%');
-    const length=frames.at(-1);
-    const atlas=element.querySelector('.arena-cel');
-    const sequence=frames.map((ms,i)=>({
-      offset:ms/length,backgroundPositionX:(i/11*100)+'%',easing:'steps(1,end)',
+    if (still || !element.hasAttribute('data-motion-ready') || !clipRows.includes(track)) return false;
+    element.dataset.track = track;
+    element.dataset.pose = 'perform';
+    element.style.setProperty('--clip-row', (clipRows.indexOf(track) / 20) * 100 + '%');
+    const length = frames.at(-1);
+    const atlas = element.querySelector('.arena-cel');
+    const sequence = frames.map((ms, i) => ({
+      offset: ms / length,
+      backgroundPositionX: (i / 11) * 100 + '%',
+      easing: 'steps(1,end)',
     }));
     clipAnimations.get(element)?.cancel();
-    clipAnimations.set(element,tween(atlas,sequence,length));
+    clipAnimations.set(element, tween(atlas, sequence, length));
     return true;
   }
   function articulate() {
-    const lead=score.family==='cast' ? score.release : score.contact;
-    const frames=[0,.20,.37,.53,.67,.80,.91,1].map(t=>t*lead);
-    for(const t of [.14,.37,.68,1])frames.push(lead+t*(duration-lead));
-    if(flipbook(art,clip,frames))return;
+    const lead = score.family === 'cast' ? score.release : score.contact;
+    const frames = [0, 0.2, 0.37, 0.53, 0.67, 0.8, 0.91, 1].map((t) => t * lead);
+    const recovery = score.family === 'melee' ? Math.min(225, (duration - lead) * 0.73) : duration - lead;
+    for (const t of [0.14, 0.37, 0.68, 1]) frames.push(lead + t * recovery);
+    if (flipbook(art, clip, frames)) return;
     const guard = score.track === 'bash' || score.track === 'brace';
     const windup = guard
       ? 'guard'
@@ -438,11 +461,43 @@ export function playArenaAction(arena, recap, options = {}) {
     at(lead + (duration - lead) * 0.5, () => pose(art, 'settle'));
   }
 
+  function stageFootwork(begin, end) {
+    if (!readySheets.has(art.dataset.footworkSrc)) return;
+    // Both sheets have paintable layers before the attack starts. Mutating the
+    // active background here can leave a blank compositor frame on first use.
+    const stepLayer = part(art, 'arena-step-cel');
+    const baseLayer = art.querySelector('.arena-cel');
+    at(begin, () => {
+      art.dataset.footwork = '';
+      const span = end - begin;
+      const envelope = [
+        { offset: 0, opacity: .008 }, { offset: Math.min(.18, 38/span), opacity: 1 },
+        { offset: 1 - Math.min(.24, 75/span), opacity: 1 }, { offset: 1, opacity: .008 },
+      ];
+      tween(stepLayer, envelope, span);
+      tween(baseLayer, envelope.map(({offset,opacity}) => ({offset,opacity: 1.008 - opacity})), span);
+      const timings = [0, 0.12, 0.27, 0.42, 0.52, 0.65, 0.8, 0.97, 1];
+      const cells = [0, 1, 2, 3, 0, 1, 2, 3, 3];
+      const steps = tween(
+        stepLayer,
+        timings.map((offset, i) => ({
+          offset,
+          backgroundPositionX: (cells[i] / 3) * 100 + '%',
+          easing: 'steps(1,end)',
+        })),
+        end - begin,
+      );
+      at(end - begin, () => {
+        steps?.cancel();
+        delete art.dataset.footwork;
+      });
+    });
+  }
+
   function moveActor() {
     const melee = score.family === 'melee';
-    const distance = Math.hypot(horizontal, centerY(end) - centerY(start)) || 1;
-    const reach = score.track === 'bash' ? 0.3 : score.track === 'needle' ? 0.53 : 0.46;
-    const stop = Math.min(distance * 0.38, end.w * reach);
+    const reach = score.track === 'bash' ? 0.79 : score.track === 'needle' ? 0.53 : 0.46;
+    const stop = Math.min(Math.abs(horizontal) * 0.85, end.w * reach);
     const dx = melee ? horizontal - dir * stop : 0;
     const floorDelta = end.y + end.h - start.y - start.h;
     const dy = melee
@@ -483,7 +538,19 @@ export function playArenaAction(arena, recap, options = {}) {
       tween(floor, shadow, duration);
       // Dust marks the push-off and landing rather than following the character.
       const pushTime = score.track === 'bash' ? 267 : score.track === 'cleave' ? 241 : 147;
-      at(pushTime, () => imprint('dust', centerX(start), start.y + start.h * 0.99, start.w * 0.72, 330));
+      at(pushTime, () =>
+        imprint('dust', centerX(start) - dir * start.w * 0.21, start.y + start.h * 0.97, start.w * 0.62, 285),
+      );
+      const leave = score.contact + (score.track === 'needle' ? 80 : 200);
+      // The weapon retracts on the spot; two short, planted countersteps bring the
+      // fighter back across the floor with a different silhouette from the strike.
+      stageFootwork(leave, duration - 26);
+      at(leave, () =>
+        imprint('dust', centerX(start) + dx - dir * end.w * 0.19, end.y + end.h * 0.95, end.w * 0.56, 270),
+      );
+      at(duration - 60, () =>
+        imprint('dust', centerX(start) - dir * start.w * 0.16, start.y + start.h * 0.96, start.w * 0.44, 210),
+      );
     }
   }
 
@@ -548,11 +615,68 @@ export function playArenaAction(arena, recap, options = {}) {
     }
   }
 
+  function gatherCoins() {
+    const purse = part(scene, 'arena-fx-prop');
+    const size = start.h * 0.31;
+    const x = centerX(start) + dir * start.w * 0.44;
+    const y = start.y + start.h * 0.92;
+    positioned(purse, x - size / 2, y - size / 2, size, size);
+    purse.style.backgroundImage = 'url(/assets/i-chest.png)';
+    tween(
+      purse,
+      [
+        { opacity: 0, transform: 'scale(.72)' },
+        { opacity: 1, transform: 'scale(1)', offset: 0.22 },
+        { opacity: 1, transform: 'scale(1)', offset: 0.74 },
+        { opacity: 0, transform: 'scale(.78)' },
+      ],
+      660,
+    );
+    for (const delay of [0, 75, 130]) {
+      at(290 + delay, () => {
+        const coin = part(scene, 'arena-fx-prop');
+        const width = start.h * 0.145;
+        const dx = -dir * start.w * (0.31 + delay * 0.00085);
+        positioned(coin, x - width / 2, y - width / 2, width, width);
+        coin.style.backgroundImage = 'url(/assets/i-coin.png)';
+        tween(
+          coin,
+          [
+            { opacity: 0, transform: translated(0, 0, 0.65) },
+            { opacity: 1, transform: translated(dx * 0.15, -start.h * 0.35, 1), offset: 0.4 },
+            { opacity: 1, transform: translated(dx * 0.72, -start.h * 0.47, 0.95), offset: 0.78 },
+            { opacity: 0, transform: translated(dx, -start.h * 0.4, 0.5) },
+          ],
+          425,
+        );
+      });
+    }
+  }
+
   function stageCasting() {
     const hand = castPoint();
     if (action === 'combustion') {
       at(score.release, () => imprint('fire', centerX(end), end.y + end.h * 0.75, end.h * 0.58, 300));
     } else if (action === 'whiteout') {
+      at(score.release - 205, () => {
+        imprint('frost', hand.x, hand.y, start.h * 0.47, 265);
+        const shard = part(scene, 'arena-fx-missile');
+        const size = start.h * 0.28;
+        shard.style.setProperty(
+          '--projectile-x',
+          (missiles.indexOf('frost') / (missiles.length - 1)) * 100 + '%',
+        );
+        positioned(shard, hand.x - size / 2, hand.y - size / 2, size, size);
+        tween(
+          shard,
+          [
+            { transform: translated(0, 0, 0.55, 75) },
+            { transform: translated(dir * start.w * 0.17, start.h * 0.56, 0.9, 75) },
+          ],
+          228,
+        );
+        at(228, () => shard.remove());
+      });
       for (const t of [0.22, 0.47, 0.72]) {
         at(score.release + (score.contact - score.release) * t, () => {
           const x = hand.x + (centerX(end) - hand.x) * t;
@@ -581,10 +705,7 @@ export function playArenaAction(arena, recap, options = {}) {
     if (score.family === 'cast') stageCasting();
     if (propIcons[action]) heldIcon(propIcons[action], 80, Math.min(duration - 45, score.contact + 180));
     if (score.track === 'bash' && role !== 'guardian') heldIcon('shield', 65, score.contact + 165);
-    if (score.track === 'scavenge')
-      at(300, () =>
-        imprint('loot', centerX(start) + dir * start.w * 0.23, start.y + start.h * 0.88, start.h * 0.5, 515),
-      );
+    if (score.track === 'scavenge') gatherCoins();
     if (action === 'pocket-eclipse')
       at(230, () => imprint('eclipse', centerX(start), centerY(start), start.h * 0.85, 560));
   }
@@ -601,7 +722,11 @@ export function playArenaAction(arena, recap, options = {}) {
       (!event.actorId || event.actorId === recap.actorId);
     const kind = effectFor(event, score, direct);
     const full = index === 0 || event.type === 'revival' || event.type === 'elimination';
-    contactBurst(subject, kind, event.amount, full);
+    const wardHit = direct && event.type === 'damage' && (kind === 'guard' || kind === 'fracture');
+    // A ward records its own result just after physical contact; it never erases
+    // the bottle breaking, blade hitting, or spell that caused that result.
+    contactBurst(subject, wardHit ? score.effect : kind, event.amount, full);
+    if (wardHit) at(108, () => contactBurst(subject, kind, event.amount, false));
     const blocked = event.type === 'damage' && event.shieldDamage && !event.healthDamage;
     const reaction = {
       damage: blocked ? 'guard' : 'hurt',
@@ -616,10 +741,13 @@ export function playArenaAction(arena, recap, options = {}) {
       cut(subject, reaction);
       // Return the feet under the body before the victor's weapon returns home.
       // A subsequent impact or knockout owns the pose and supersedes this recovery.
-      const body=subject===actor?art:subject.sprite;
-      const illustrated=reaction==='hurt' && flipbook(body,'hurt',[0,22,50,74,98,125,158,194,235,283,338,402]);
+      const body = subject === actor ? art : subject.sprite;
+      const reactionClip = reaction === 'guard' ? 'brace' : reaction === 'hurt' ? 'hurt' : null;
+      const illustrated = reactionClip && flipbook(body, reactionClip, [0, 15, 32, 46, 61, 78, 95, 135, 176, 227, 315, 402]);
       if (illustrated) {
-        at(410,()=>{ if(reactions.get(subject)===event)cut(subject,'idle'); });
+        at(410, () => {
+          if (reactions.get(subject) === event) cut(subject, 'idle');
+        });
       } else if (!still && reaction !== 'fallen') {
         if (reaction === 'hurt')
           at(142, () => {
@@ -684,11 +812,15 @@ export function playArenaAction(arena, recap, options = {}) {
       );
       at(still ? 250 : 550, () => label.remove());
     }
+    options.onCue?.({ action, role, effect: wardHit ? score.effect : kind, event, first: index === 0 });
     options.onImpact?.(event);
   }
   at(contact, () => {
     scene.dataset.stage = 'impact';
-    if (!beats.length) contactBurst(target, score.effect, 0);
+    if (!beats.length) {
+      contactBurst(target, score.effect, 0);
+      options.onCue?.({ action, role, effect: score.effect, event: null, first: true });
+    }
   });
   beats.forEach((event, index) => at(contact + index * step, () => react(event, index)));
   at(

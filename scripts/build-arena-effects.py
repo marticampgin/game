@@ -156,7 +156,19 @@ def shattered_flask(draw, phase, colors):
         scale=.24+.75*math.sin(spread*math.pi/2)
         base=27+phase*15
         pts=[(round(32+x*scale),round(base+y*scale)) for x,y in profile]
-        draw.polygon(pts,fill=mid,outline=dark)
+        draw.polygon(pts,fill=(105,151,65,168),outline=dark)
+        # Thin films of liquid let the target steel and cloth show through.
+        # Gaps between the lobes break up the mass before it flies apart.
+        def facet(points, ink):
+            path=[(round(32+x*scale),round(base+y*scale)) for x,y in points]
+            draw.polygon(path,fill=ink)
+        facet([(-19,-11),(-12,-6),(-5,9),(-12,6)],(188,213,109,202))
+        facet([(-12,11),(-7,5),(-3,9),(2,4),(8,6),(14,2),(11,11),(5,13),(-3,11)],(71,118,61,173))
+        facet([(4,-1),(10,-11),(9,-3),(5,6)],(217,228,132,205))
+        facet([(12,2),(21,-7),(18,-1),(13,6)],(204,224,123,211))
+        if phase>.14:
+            facet([(-15,0),(-11,1),(-8,7),(-12,5)],(0,0,0,0))
+            facet([(7,2),(11,-2),(9,5),(6,8)],(0,0,0,0))
         rim=[(round(32+x*scale),round(base+y*scale)) for x,y in profile[:15]]
         draw.line(rim,fill=light,width=1)
         if phase<.22: star(draw,32,round(base),round(5*(1-phase/.22)),light)

@@ -4,8 +4,9 @@ import { clearRewardFlight, dealOffers, deliverReward, pickedEmblem } from './dr
 import { battleHTML, buildHTML } from './battle.js';
 import { historyHTML, filterHistory, refreshHistory } from './history.js';
 import { planBotStep } from './pacing.js';
-import { healthBand, playArenaAction, preloadArenaSkins } from './animation.js';
+import { actionVisual, healthBand, playArenaAction, preloadArenaSkins } from './animation.js';
 import { glyph, esc } from './art.js';
+import { playContactSound } from './combat-sound.js';
 import { mountLobby, resumeLobby, roomRequest as request } from './lobby.js';
 
 const app = document.querySelector('#app');
@@ -18,6 +19,7 @@ let screen = 'menu',
   timer,
   notifyTimer,
   audio,
+  audioGain,
   match,
   busy = false,
   toolOrigin = 'menu',
@@ -53,13 +55,23 @@ function preferences() {
   soundButton.innerHTML = glyph(pref.sound ? 'sound' : 'mute');
   soundButton.setAttribute('aria-label', pref.sound ? 'Mute sound' : 'Enable sound');
   soundButton.title = soundButton.getAttribute('aria-label');
+  if (audioGain) audioGain.gain.setTargetAtTime(pref.sound ? 1 : 0, audio.currentTime, .008);
   localStorage.setItem('rift-preferences', JSON.stringify(pref));
+}
+function gameAudio() {
+  if (!pref.sound || !window.AudioContext) return;
+  if (!audio) {
+    audio = new AudioContext();
+    audioGain = audio.createGain();
+    audioGain.connect(audio.destination);
+  }
+  if (audio.state === 'suspended') audio.resume().catch(() => {});
+  return audio;
 }
 function chime(kind) {
   if (!pref.sound) return;
   try {
-    audio ??= new AudioContext();
-    if (audio.state === 'suspended') audio.resume().catch(() => {});
+    if (!gameAudio()) return;
     const notes = kind === 'reward' ? [392, 523, 659] : kind === 'hit' ? [163, 98] : [330, 440];
     notes.forEach((hz, i) => {
       const osc = audio.createOscillator(),
@@ -70,7 +82,7 @@ function chime(kind) {
       volume.gain.setValueAtTime(0.0001, t);
       volume.gain.exponentialRampToValueAtTime(0.055, t + 0.01);
       volume.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-      osc.connect(volume).connect(audio.destination);
+      osc.connect(volume).connect(audioGain);
       osc.start(t);
       osc.stop(t + 0.15);
     });
@@ -78,33 +90,13 @@ function chime(kind) {
     /* Audio may be unavailable in embedded browsers. */
   }
 }
-function impactSound(event) {
-  if (!pref.sound || !['damage', 'revival', 'heal', 'shield', 'elimination'].includes(event.type)) return;
+function impactSound(cue) {
+  if (!pref.sound) return;
   try {
-    audio ??= new AudioContext();
-    const t = audio.currentTime;
-    const osc = audio.createOscillator(),
-      gain = audio.createGain();
-    const strike = event.type === 'damage' && event.healthDamage;
-    const weight = Math.min(1, (event.amount || 0) / 36);
-    osc.type = strike || event.type === 'elimination' ? 'triangle' : 'sine';
-    const frequencies = strike
-      ? [185 - 45 * weight, 50]
-      : event.type === 'revival' || event.type === 'heal'
-        ? [392, 659]
-        : event.type === 'elimination'
-          ? [140, 43]
-          : [670, 315];
-    osc.frequency.setValueAtTime(frequencies[0], t);
-    osc.frequency.exponentialRampToValueAtTime(frequencies[1], t + 0.15);
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.045 + 0.045 * weight, t + 0.009);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
-    osc.connect(gain).connect(audio.destination);
-    osc.start(t);
-    osc.stop(t + 0.25);
+    const context = gameAudio();
+    if (context) playContactSound(context, cue, audioGain);
   } catch {
-    /* Audio can be unavailable while a browser tab is suspended. */
+    /* An unavailable audio device must never interrupt the turn. */
   }
 }
 function setScreen(next) {
@@ -207,15 +199,14 @@ function refreshBattle() {
   const action = v.lastAction;
   // A restored game or a client returning from a background tab starts at the
   // authoritative state. Only animate when the before and after states are adjacent.
-  if (
-    arena &&
-    shownView &&
-    action &&
-    action.id === shownView.globalAction + 1 &&
-    !document.hidden &&
-    !pref.reduce &&
-    !matchMedia('(prefers-reduced-motion: reduce)').matches
-  ) {
+  const consecutive = arena && shownView && action && action.id === shownView.globalAction + 1 && !document.hidden;
+  const reduced = pref.reduce || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (consecutive && reduced && pref.sound) {
+    const role = shownView.players.find((p) => p.id === action.actorId)?.classId;
+    const profile = actionVisual(action.actionId, role, action.actorId === action.targetId);
+    impactSound({ action: action.actionId, role, effect: profile.effect, event: action.events?.[0], first: true });
+  }
+  if (consecutive && !reduced) {
     clearRewardFlight();
     const old = shownView;
     const shell = app.querySelector('.battle-shell');
@@ -235,6 +226,7 @@ function refreshBattle() {
         (match.session ? match.view.room.fastBots : pref.fast)
           ? 2.3
           : 1,
+      onCue: impactSound,
       onImpact(event) {
         const p = old.players.find((p) => p.id === event.targetId);
         if (!p) return;
@@ -252,7 +244,6 @@ function refreshBattle() {
           seat.querySelector('.arena-sprite').dataset.tier = tier;
           if (p.id === action.actorId) arena.querySelector('.arena-fx-actor .arena-sprite').dataset.tier = tier;
         }
-        impactSound(event);
       },
     });
     playback = handle;
@@ -624,9 +615,11 @@ document.addEventListener('click', (event) => {
     choice = d.action;
     refreshBattle();
     app.querySelector('[data-action="' + CSS.escape(choice) + '"]')?.focus({ preventScroll: true });
-  } else if (d.execute && screen === 'battle')
+  } else if (d.execute && screen === 'battle') {
+    // Browsers unlock the audio device during the trusted mouse/keyboard action.
+    try { gameAudio(); } catch { /* Playback is optional. */ }
     command({ type: 'act', actionId: d.execute, targetId: d.target });
-  else if (d.ui) {
+  } else if (d.ui) {
     switch (d.ui) {
       case 'battle-settings':
         settings();
