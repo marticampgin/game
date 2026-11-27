@@ -140,7 +140,10 @@ function finishAction(state,p) {
     state.bonusDraft = false;
     return;
   }
-  if (p.statuses.curse) setStatus(p,'curse',p.statuses.curse - 1);
+  if (p.statuses.curse) {
+    setStatus(p,'curse',p.statuses.curse - 1);
+    record(state,'status',p.name + ' lost one stack of Curse.',{targetId:p.id,amount:1,cause:'curse',statusChange:'decayed',statusRemaining:p.statuses.curse || 0});
+  }
   startNextTurn(state);
 }
 function actionDefinition(p,id) {
@@ -198,7 +201,7 @@ function act(state,p,command) {
   beginRecap(state,p,def,target);
   if (p.statuses.freeze) {
     setStatus(p,'freeze',0);
-    record(state,'status',p.name + ' thawed.',{targetId:p.id});
+    record(state,'status',p.name + ' thawed.',{targetId:p.id,cause:'freeze',statusChange:'thawed',statusRemaining:0});
   }
   if (def.target === 'enemy') tickStatus(state,p,'bleed');
   if (!p.alive || !target.alive) {

@@ -1,6 +1,6 @@
 import { REWARDS, STATUSES } from './catalog.js';
 import { eligible, modifiedSlot, sample } from './draft.js';
-import { captureOutcome } from './recap.js';
+import { captureOutcome, settleStatusTick } from './recap.js';
 
 export const findPlayer = (state,id) => state.players.find(p => p.id === id);
 const shards = Object.values(REWARDS).filter(r => r.category === 'shard' && r.id !== 'fortune-chip');
@@ -19,6 +19,7 @@ export function record(state,type,text,details={}) {
   state.log.push(entry);
   captureOutcome(state,entry);
   if (state.log.length > state.config.logLimit) state.log.shift();
+  return entry;
 }
 export function capacity(state,player,kind) {
   if (kind === 'abilities') return state.config.abilitySlots;
@@ -99,11 +100,11 @@ function addStatus(state,p,target,key,amount,label) {
     if (last && last.id === (p?.id ?? null)) last.amount += amount;
     else target.sources[key].push({id:p?.id ?? null,amount});
   }
-  record(state,'status',label + ' applied ' + amount + ' ' + STATUSES[key].name + ' to ' + target.name + '.',{actorId:p?.id,targetId:target.id,amount,cause:key});
+  record(state,'status',label + ' applied ' + amount + ' ' + STATUSES[key].name + ' to ' + target.name + '.',{actorId:p?.id,targetId:target.id,amount,cause:key,statusChange:'applied',statusRemaining:target.statuses[key]});
   if (key === 'chill' && target.statuses.chill >= 3) {
     setStatus(target,'chill',target.statuses.chill % 3);
     setStatus(target,'freeze',1);
-    record(state,'status',target.name + ' is frozen.',{targetId:target.id,cause:'freeze'});
+    record(state,'status',target.name + ' is frozen.',{actorId:p?.id,targetId:target.id,cause:'freeze',statusChange:'frozen',statusRemaining:1,chillRemaining:target.statuses.chill || 0});
   }
   trigger(state,p,'applyStatus',{key,target});
 }
@@ -139,12 +140,14 @@ function react(state,target,key) {
 export function deal(state,source,target,raw,label,flags={}) {
   if (!target?.alive) return;
   const {damage,shieldDamage,healthDamage} = assessHit(state,target,raw,flags);
-  if (flags.direct) setStatus(target,'shock',0);
+  const discharged = flags.direct ? target.statuses.shock : 0;
+  if (discharged) setStatus(target,'shock',0);
   target.shield -= shieldDamage;
   target.hp -= healthDamage;
   const split = shieldDamage ? ' (' + shieldDamage + ' to shield)' : '';
-  record(state,'damage',label + ' dealt ' + damage + ' to ' + target.name + split + '.',{actorId:source?.id,targetId:target.id,amount:damage,shieldDamage,healthDamage,cause:flags.cause,
+  const hit = record(state,'damage',label + ' dealt ' + damage + ' to ' + target.name + split + '.',{actorId:source?.id,targetId:target.id,amount:damage,shieldDamage,healthDamage,cause:flags.cause,
     shieldBroken:shieldDamage > 0 && target.shield === 0});
+  if (discharged) record(state,'status',target.name + ' discharged ' + discharged + ' Shock.',{actorId:source?.id,targetId:target.id,amount:discharged,cause:'shock',statusChange:'discharged',statusRemaining:0});
   if (target.hp <= 0) {
     if (!react(state,target,'lethal')) {
       target.alive = false;
@@ -159,13 +162,14 @@ export function deal(state,source,target,raw,label,flags={}) {
     trigger(state,source,'hit',{key:flags.flavor,target});
     trigger(state,target,'struck',{target:source});
   }
+  return hit;
 }
 
-function removeStatus(state,p,target,key) {
+function removeStatus(state,p,target,key,change='consumed') {
   const count = target.statuses[key] || 0;
   setStatus(target,key,0);
   if (count) {
-    record(state,'status',p.name + ' consumed ' + count + ' ' + STATUSES[key].name + ' from ' + target.name + '.',{actorId:p.id,targetId:target.id,amount:count});
+    record(state,'status',p.name + (change === 'cleansed' ? ' cleansed ' : ' consumed ') + count + ' ' + STATUSES[key].name + ' from ' + target.name + '.',{actorId:p.id,targetId:target.id,amount:count,cause:key,statusChange:change,statusRemaining:0});
     trigger(state,p,'consumedStatus',{amount:count,key,target});
   }
   return count;
@@ -219,7 +223,7 @@ export function executeEffects(state,p,target,effects,context={}) {
         }
         break;
       case 'cleanse':
-        for (const key of e.keys) removeStatus(state,p,p,key);
+        for (const key of e.keys) removeStatus(state,p,p,key,'cleansed');
         break;
       case 'purify': {
         const stacks = removeStatus(state,p,p,'poison');
@@ -320,10 +324,11 @@ export function tickStatus(state,p,key) {
   // Resolve one damage packet per author, keeping healing and kill attribution intact.
   const contributors = new Map();
   for (const group of p.sources[key] || []) contributors.set(group.id,(contributors.get(group.id) || 0) + group.amount);
+  let lastPacket;
   for (const [id,amount] of contributors) {
     if (!p.alive) break;
     const source = findPlayer(state,id);
-    deal(state,source,p,amount,label,{trueDamage:['doom','poison'].includes(key),cause:key});
+    lastPacket = deal(state,source,p,amount,label,{trueDamage:['doom','poison'].includes(key),cause:key});
     if (key === 'poison') trigger(state,p,'poisoned');
     if (source && source !== p) trigger(state,source,key + 'Tick',{target:p});
   }
@@ -332,4 +337,5 @@ export function tickStatus(state,p,key) {
     if (groups?.length && --groups[0].amount <= 0) groups.shift();
     setStatus(p,key,p.statuses[key] - 1);
   } else if (key === 'doom') setStatus(p,key,0);
+  settleStatusTick(state,lastPacket,p.statuses[key] || 0);
 }

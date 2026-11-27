@@ -1,3 +1,5 @@
+import { STATUSES } from './catalog.js';
+
 // Keep a complete circuit of an eight-seat table between ordinary turns.
 const historyLimit = 8;
 const eventLimit = 32;
@@ -5,12 +7,18 @@ const recording = new WeakMap();
 const outcomes = new Set(['action','damage','heal','shield','stat','status','synergy','elimination','revival','event','reward','victory','timing','cooldown']);
 
 // A visual cause describes an already public effect. Item IDs and hidden triggers never pass this boundary.
-const publicCauses = new Set(['poison','burn','bleed','doom','chill','freeze','shock','curse','echo','arena-fire','retaliation']);
+const publicCauses = new Set([...Object.keys(STATUSES),'echo','arena-fire','retaliation']);
+const statusChanges = new Set(['applied','frozen','thawed','cleansed','consumed','discharged','decayed']);
 
 export function publicEvent(event) {
   const {id,round,type,text} = event;
   const result = {id,round,type,text};
   if ((type === 'damage' || type === 'status') && publicCauses.has(event.cause)) result.cause = event.cause;
+  if (result.cause && Object.hasOwn(STATUSES, result.cause)) {
+    if (type === 'status' && statusChanges.has(event.statusChange)) result.statusChange = event.statusChange;
+    if (Number.isSafeInteger(event.statusRemaining) && event.statusRemaining >= 0) result.statusRemaining = event.statusRemaining;
+    if (result.statusChange === 'frozen' && result.cause === 'freeze' && Number.isSafeInteger(event.chillRemaining) && event.chillRemaining >= 0) result.chillRemaining = event.chillRemaining;
+  }
   for (const key of ['actorId','targetId','amount','shieldDamage','healthDamage','shieldBroken']) {
     if (event[key] !== undefined) result[key] = event[key];
   }
@@ -56,6 +64,15 @@ export function captureOutcome(state,event) {
     recap.omitted++;
   }
   recap.events.push(row);
+}
+
+// A trigger can change a status during its last damage packet. Capture the actual
+// remaining balance only after all authors and their reactions have resolved.
+export function settleStatusTick(state, damageEvent, remaining) {
+  if (!damageEvent) return;
+  damageEvent.statusRemaining = remaining;
+  const outcome = recording.get(state)?.recap.events.find(event => event.id === damageEvent.id);
+  if (outcome) outcome.statusRemaining = remaining;
 }
 
 export function finishRecap(state) {
