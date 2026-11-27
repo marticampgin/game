@@ -1,8 +1,10 @@
 # Riftbound
 
-A turn-based pixel art battle arena for 2–8 contenders. Pick one of three rewards, take one action, and survive the Shattered Ring. Fight friends in a private room or fill the arena with bots.
+A PC turn-based pixel art battle arena for 2–8 contenders. Pick one of three rewards, take one action, and survive the Shattered Ring. Fight friends in a private room or fill the arena with bots.
 
-![Eight contenders on the Shattered Ring at dusk](docs/qa/arena/desktop.webp)
+![Eight contenders on the Shattered Ring at dusk](docs/qa/pc-combat/arena.webp)
+
+[Watch nine combat moves](docs/qa/pc-combat/combat.mp4) · [Watch an eight-player turn](docs/qa/pc-combat/turn.mp4)
 
 ## Play
 
@@ -22,7 +24,7 @@ Rooms support free class selection, random assignment, and a personal three-clas
 ## Inside the ring
 
 - **Draft** one reward each personal turn. Two slots favor independent discovery and one favors interactions with your build. The offers rise along the near edge of the ring. Select one to see its effect on your build, then take it or choose a slot to replace. **View arena** tucks the draft away until you reopen it. Opening the Reward Atlas lets you trace what a reward produces or consumes.
-- **Act** once. Attack any living rival, cast an ability, use equipment or a consumable, defend, or scavenge for another draft. Select an action, then tap a rival or use the target menu to preview the result. In a duel the only living rival is selected for you. Press **Use** to commit.
+- **Act** once. Attack any living rival, cast an ability, use equipment or a consumable, defend, or scavenge for another draft. Select an action, then click a rival or use the target menu to preview the result. In a duel the only living rival is selected for you. Press **Use** to commit.
 - **Inspect** contenders using the information button on each fighter to see stats, statuses, equipment and artifacts. Rival consumable identities and unchosen draft options stay private. The **Battle log** groups the latest 100 events by round and turn. Search for a contender, ability or effect to follow direct hits, delayed damage and item triggers back to their source.
 - **Review** the last action and see who acts next beneath the battlefield. Open **Effects** for damage, absorption, reactions and turn-start effects in the order they happened. The arrows step through the last eight actions. Bots pause while drafting and preparing a move. A known move and its target appear before the animation begins. The fast-bot setting shortens these pauses in solo and hosted rooms.
 - **Survive** the four ages. Arena events arrive every four rounds. Starting in round 31, escalating arena damage passes through armor and shields. A simultaneous final elimination can end in a draw.
@@ -67,7 +69,7 @@ For a deterministic replay, retain the initial `{seed, players, config}` and the
 
 The starting health range of 470–520 gives builds time to develop across the four ages. Class stats and global tuning parameters live in the catalog. Fighters keep their place around the ring between actions. Their poses, damaged equipment and reactions share a class skin sheet. The same public outcome drives the animation, health readout and turn recap.
 
-See the [recorded turn and visual QA](docs/qa/arena/README.md) for desktop and phone captures. The [fighter skin guide](docs/fighter-skins.md) covers sheet layout, registration and save compatibility.
+The [PC combat review](docs/qa/pc-combat/README.md) includes recordings with in-game audio, a three-stage injury comparison and desktop playtest findings. The [fighter skin guide](docs/fighter-skins.md) covers sheet layout, registration and save compatibility.
 
 Original game artwork is bundled in `public/assets`. Font license notices are in `public/fonts`.
 
