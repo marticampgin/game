@@ -805,7 +805,6 @@ export function playArenaAction(arena, recap, options = {}) {
       at(still ? 250 : 550, () => label.remove());
     }
     options.onCue?.({ action, role, effect: wardHit ? score.effect : kind, event, first: event === timing.primary });
-    options.onImpact?.(event);
   }
   at(timing.contact, () => {
     scene.dataset.stage = 'impact';
@@ -814,9 +813,15 @@ export function playArenaAction(arena, recap, options = {}) {
       options.onCue?.({ action, role, effect: score.effect, event: null, first: true });
     }
   });
-  for (const { event, time } of timing.beats) at(time, () => react(event));
+  timing.beats.forEach((beat, index) => {
+    at(beat.time, () => {
+      if (beat.event) react(beat.event);
+      for (const event of beat.events) options.onImpact?.(event);
+      options.onBeat?.(beat, index, timing.beats.length);
+    });
+  });
   at(
-    Math.max(timing.windup + (still ? 360 : duration), timing.last + (still ? 275 : 555)),
+    Math.max(timing.windup + (still ? 360 : duration), timing.last + timing.tail),
     cancel,
   );
   document.addEventListener('visibilitychange', onVisibility);
