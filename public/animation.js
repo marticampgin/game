@@ -336,8 +336,9 @@ export function playArenaAction(arena, recap, options = {}) {
   const clipAnimations = new Map();
   const originals = new Map(),
     labels = new Map();
-  const animations = [],
-    timers = [];
+  const animations = new Map();
+  const cues = [];
+  let nextFrame;
   let finishedScene = false,
     resolve;
   const finished = new Promise((done) => {
@@ -346,8 +347,10 @@ export function playArenaAction(arena, recap, options = {}) {
   function cancel() {
     if (finishedScene) return;
     finishedScene = true;
-    timers.forEach(clearTimeout);
-    for (const animation of animations) animation.cancel();
+    cancelAnimationFrame(nextFrame);
+    document.removeEventListener('visibilitychange', onVisibility);
+    cues.length = 0;
+    for (const animation of animations.keys()) animation.cancel();
     for (const [element, oldPose] of originals) pose(element, oldPose);
     delete actor.seat.dataset.travelling;
     delete actor.sprite.dataset.playing;
@@ -357,33 +360,44 @@ export function playArenaAction(arena, recap, options = {}) {
   }
   const handle = { finished, cancel };
   running.set(arena, handle);
-  // Timers drive public event order. Compositor movement shares one clock so a
-  // late frame cannot leave a released flask halfway to a hit that already landed.
-  const epoch = performance.now(),
-    timelineStart = document.timeline?.currentTime;
+  // Start the compositor and the public event queue on the same presentation
+  // clock. A timeout can fire between paints while the body is still winding up.
+  let timelineStart = document.timeline?.currentTime ?? performance.now();
   let cueTime = 0;
   function at(delay, run) {
-    const due = cueTime + delay;
-    timers.push(
-      setTimeout(
-        () => {
-          if (finishedScene) return;
-          cueTime = due;
-          try {
-            run();
-          } finally {
-            cueTime = 0;
-          }
-        },
-        Math.max(0, epoch + due / speed - performance.now()),
-      ),
-    );
+    cues.push({ time: cueTime + delay, run });
+    cues.sort((a, b) => a.time - b.time);
+  }
+  function onVisibility() {
+    if (document.hidden) cancel();
+  }
+  function advance(paintTime) {
+    let elapsed = (paintTime - timelineStart) * speed;
+    if (paintPoints.length && elapsed >= paintPoints[0]) {
+      // Reserve one paint for the actual contact when the main thread misses its
+      // frame. The small fraction crosses the authored step on rounded clocks.
+      elapsed = paintPoints.shift() + 0.1;
+      timelineStart = paintTime - elapsed / speed;
+      for (const [animation, offset] of animations) {
+        if (animation.playState !== 'idle') animation.startTime = timelineStart + offset / speed;
+      }
+    }
+    try {
+      while (cues.length && cues[0].time <= elapsed) {
+        const cue = cues.shift();
+        cueTime = cue.time;
+        cue.run();
+      }
+    } finally {
+      cueTime = 0;
+      if (!finishedScene) nextFrame = requestAnimationFrame(advance);
+    }
   }
   function tween(element, frames, ms, easing = 'linear') {
     if (!element.animate || still) return;
     const animation = element.animate(frames, { duration: ms / speed, easing, fill: 'forwards' });
-    if (typeof timelineStart === 'number') animation.startTime = timelineStart + cueTime / speed;
-    animations.push(animation);
+    animation.startTime = timelineStart + cueTime / speed;
+    animations.set(animation, cueTime);
     return animation;
   }
   function cut(subject, name) {
@@ -712,6 +726,11 @@ export function playArenaAction(arena, recap, options = {}) {
     }
   }
   const timing = combatTiming(recap, still ? 40 : score.contact, still);
+  const paintPoints = [...new Set([
+    timing.contact,
+    ...timing.beats.map(({ time }) => time),
+    ...(score.family === 'cast' && !still ? [timing.windup + score.release] : []),
+  ])].sort((a, b) => a - b);
   function startMove() {
     articulate();
     if (!still) {
@@ -840,5 +859,7 @@ export function playArenaAction(arena, recap, options = {}) {
     Math.max(timing.windup + (still ? 360 : duration), timing.last + (still ? 275 : 555)),
     cancel,
   );
+  document.addEventListener('visibilitychange', onVisibility);
+  nextFrame = requestAnimationFrame(advance);
   return handle;
 }
