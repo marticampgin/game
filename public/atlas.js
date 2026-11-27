@@ -96,7 +96,22 @@ export function mountAtlas(host, { onClose } = {}) {
     transform();
   }
   function overview() {
-    center({ x: MAP_WIDTH / 2, y: MAP_HEIGHT / 2 }, fitScale());
+    const elements = [...world.querySelectorAll('.rb-node, .rb-region')];
+    if (!elements.length) return;
+    // Region titles can extend beyond the nominal world. Reserve the toolbar's
+    // row and fit the actual ink bounds, including centers offset by -50%.
+    const left = Math.min(...elements.map(el => el.offsetLeft - el.offsetWidth / 2));
+    const right = Math.max(...elements.map(el => el.offsetLeft + el.offsetWidth / 2));
+    const top = Math.min(...elements.map(el => el.offsetTop - el.offsetHeight / 2));
+    const bottom = Math.max(...elements.map(el => el.offsetTop + el.offsetHeight / 2));
+    const toolbar = get('.rb-map-controls');
+    const inset = 12;
+    const headroom = toolbar.offsetTop + toolbar.offsetHeight + inset;
+    zoom = Math.min(fitScale(), (map.clientWidth - 2 * inset) / (right - left),
+      (map.clientHeight - headroom - inset) / (bottom - top));
+    x = (map.clientWidth - (right + left) * zoom) / 2;
+    y = (map.clientHeight + headroom - inset - (bottom + top) * zoom) / 2;
+    transform();
   }
   function focusReward(id, scale) {
     const point = graph.points.get(id);

@@ -317,7 +317,7 @@ body[data-screen='battle'] > .topbar {
   height: 12%;
   left: 15%;
   bottom: -1%;
-  background: radial-gradient(ellipse, #140b17ae 20%, #23121c5c 51%, transparent 72%);
+  background: radial-gradient(ellipse closest-side, #1c101ee6 9%, #211624ab 34%, #2818285c 65%, transparent);
   border: 1px solid transparent;
   border-radius: 50%;
 }
