@@ -631,6 +631,30 @@ export function playArenaAction(arena, recap, options = {}) {
     else startMove();
   }
 
+  // The back row shares screen space with the turn rail and announcement.
+  // Position the receipt after the announcement changes on this same beat.
+  function placeLabel(subject, label) {
+    const box = visibleBounds(subject);
+    const w = label.offsetWidth, h = label.offsetHeight;
+    const gap = 14; // includes the rise during the fade
+    const hud = [...(arena.closest('.battle-shell')?.querySelectorAll('.scene-callout,.turn-rail,.round-meta') ?? [])].map(boxFor);
+    const cx = centerX(box), side = cx < arena.clientWidth / 2 ? 1 : -1;
+    const offset = box.w * 0.36 + w / 2;
+    const candidates = [
+      [cx, box.y + box.h * 0.1],
+      [cx + side * offset, box.y + box.h * 0.54],
+      [cx - side * offset, box.y + box.h * 0.54],
+      [cx + side * offset, Math.max(box.y + box.h * 0.65, ...hud.map(r => r.y + r.h + h + gap))],
+    ];
+    for (const [x, y] of candidates) {
+      const left = Math.max(4, Math.min(arena.clientWidth - w - 4, x - w / 2));
+      const bottom = Math.max(h + gap, Math.min(arena.clientHeight - 6, y));
+      label.style.left = (left + w / 2) + 'px';
+      label.style.top = bottom + 'px';
+      if (!hud.some(r => left < r.x + r.w + 4 && left + w > r.x - 4 &&
+        bottom + 4 > r.y && bottom - h - gap < r.y + r.h)) break;
+    }
+  }
   const recoil = new Map();
   const reactions = new Map();
   function react(event) {
@@ -706,8 +730,7 @@ export function playArenaAction(arena, recap, options = {}) {
     const text = badge(event);
     if (text || status) {
       labels.get(subject)?.remove();
-      const box = visibleBounds(subject),
-        label = part(scene, 'arena-fx-label');
+      const label = part(scene, 'arena-fx-label');
       label.dataset.kind = event.type;
       if (status) {
         label.classList.add('arena-status-label');
@@ -731,8 +754,6 @@ export function playArenaAction(arena, recap, options = {}) {
         }
       }
       const hold = status ? 660 : still ? 250 : 550;
-      label.style.left = centerX(box) + 'px';
-      label.style.top = Math.max(status ? 58 : 24, box.y + box.h * 0.1) + 'px';
       labels.set(subject, label);
       tween(
         label,
@@ -757,9 +778,14 @@ export function playArenaAction(arena, recap, options = {}) {
   });
   timing.beats.forEach((beat, index) => {
     at(beat.time, () => {
-      if (beat.event) react(beat.event);
-      for (const event of beat.events) options.onImpact?.(event);
       options.onBeat?.(beat, index, timing.beats.length);
+      if (beat.event) {
+        react(beat.event);
+        const subject = seats.get(beat.event.targetId);
+        const label = labels.get(subject);
+        if (label?.isConnected) placeLabel(subject, label);
+      }
+      for (const event of beat.events) options.onImpact?.(event);
     });
   });
   at(

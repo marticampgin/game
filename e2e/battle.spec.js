@@ -52,13 +52,13 @@ test('title menu, real solo turns, previews, cooldowns, reload and victory', asy
   await page.locator('.draft-confirm').click();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Choose an action' })).toBeVisible();
-  await page.locator('[data-action="blood-cleave"]').click();
+  await page.locator('button[data-action="blood-cleave"]').click();
   await expect(page.locator('.preview')).toContainText('health damage');
   await page.locator('[data-execute="blood-cleave"]').click();
   await firstCard.waitFor();
   await firstCard.click();
   await page.locator('.draft-confirm').click();
-  await expect(page.locator('[data-action="blood-cleave"]')).toBeDisabled();
+  await expect(page.locator('button[data-action="blood-cleave"]')).toBeDisabled();
   await page.locator('[data-ui="atlas"]').click();
   await expect(page.getByRole('heading', { name: 'Reward Atlas' })).toBeVisible();
   await page.locator('.rb-tool-back').click();
@@ -66,7 +66,10 @@ test('title menu, real solo turns, previews, cooldowns, reload and victory', asy
 
   // Drive every remaining player decision through the visible controls.
   for (let turn = 0; turn < 110; turn++) {
-    await page.locator('.result, .reward-card, .action-grid').first().waitFor();
+    // The previous hand stays visible and inert until its effects finish.
+    const skip = page.getByRole('button', {name:'Skip effects'});
+    if (await skip.isVisible()) await skip.click();
+    await page.locator('.battle-shell:not(.resolving) :is(.result, .reward-card, .action-grid)').first().waitFor();
     if (await page.locator('.result').count()) break;
     if (await firstCard.count()) {
       await firstCard.click();
@@ -74,12 +77,12 @@ test('title menu, real solo turns, previews, cooldowns, reload and victory', asy
       if (await page.getByRole('heading', { name: 'Replace a slot' }).count())
         await page.locator('[data-replace]').first().click();
     } else {
-      const cleave = page.locator('[data-action="blood-cleave"]');
+      const cleave = page.locator('button[data-action="blood-cleave"]');
       if ((await cleave.count()) && (await cleave.isEnabled())) await cleave.click();
       else {
-        const attack = page.locator('[data-action="attack"]');
+        const attack = page.locator('button[data-action="attack"]');
         if (await attack.isEnabled()) await attack.click();
-        else await page.locator('[data-action="defend"]').click();
+        else await page.locator('button[data-action="defend"]').click();
       }
       await page.locator('[data-execute]').click();
     }
