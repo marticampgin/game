@@ -115,3 +115,14 @@
 .journal-row[data-kind="shield"]::before { background: #a5c5dc; }
 .journal-row[data-kind="revival"]::before, .journal-row[data-kind="heal"]::before { background: #a7cc8e; }
 .battle-journal .journal-row .recap-split { color: #cbb9a8; font: 400 13px/1.35 var(--body,sans-serif); text-transform: none; }
+@media (min-width: 900px) {
+  .journal-turn h4 .seat-crest { vertical-align: -1px; margin-right: 4px; }
+  .battle-journal .journal-row.main-action {
+    padding: 4px 6px;
+    margin: 2px 0 2px -1px;
+    color: #ffe6b7;
+    background: linear-gradient(90deg, #3e3036, transparent);
+    border-left: 2px solid #c29866;
+  }
+  .battle-journal .journal-row.main-action::before { display: none; }
+}

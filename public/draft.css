@@ -195,3 +195,6 @@
   .draft-facts { margin-top: 3px; }
   .loot-draft .draft-confirm { max-width: 100%; min-height: 35px; }
 }
+@media (min-width: 900px) {
+  .draft-facts .offer-summary { display: none; }
+}

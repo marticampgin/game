@@ -1,4 +1,4 @@
-import { esc } from './art.js';
+import { esc, seatCrest } from './art.js';
 import { effectTextHTML } from './resolution.js';
 
 function liveTurn(view) {
@@ -45,7 +45,7 @@ function eventRow(event, group, view) {
 function roundsHTML(view) {
   return logRounds(view).map((round,index) => '<details class="journal-round" data-round="' + esc(round.number) +
     '"' + (index === 0 ? ' open' : '') + '><summary>Round ' + esc(round.number) + '</summary>' +
-    round.groups.reverse().map(group => '<section class="journal-turn"><h4>' + esc(group.title) +
+    round.groups.reverse().map(group => '<section class="journal-turn"><h4>' + seatCrest(view.players.findIndex(p => p.id === group.actorId)) + esc(group.title) +
       '</h4><ol>' + group.rows.map(e => eventRow(e,group,view)).join('') + '</ol></section>').join('') +
     '</details>').join('');
 }

@@ -65,7 +65,7 @@ function handoff(view, after, action, viewerId, historical = false) {
 
 function handoffHTML(parts, historical = false) {
   return '<div class="recap-handoff' + (historical ? ' was' : '') + '">' + rewardIcon({icon:'clock'}) + '<span>' +
-    (historical ? 'Then' : 'Next') + '</span><div><strong>' + esc(parts[0]) + '</strong><small>' +
+    (historical ? 'Then' : 'Now') + '</span><div><strong>' + esc(parts[0]) + '</strong><small>' +
     esc(parts[1]) + '</small></div></div>';
 }
 

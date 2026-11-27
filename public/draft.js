@@ -30,7 +30,7 @@ function review(reward, lines, player) {
   return `<section class="draft-review" id="draft-inspection" aria-label="Selected reward">
     <div class="draft-review-copy">
       <p class="draft-rule"><strong>${esc(reward.name)}</strong><span class="draft-kind">${categories[reward.category]}</span> ${esc(reward.description)}</p>
-      ${facts.length ? `<ul class="draft-facts">${facts.map(text => `<li>${esc(text)}</li>`).join('')}</ul>` : ''}
+      ${facts.length ? `<ul class="draft-facts">${facts.map((text, i) => `<li${i === 0 && lines.length ? ' class="offer-summary"' : ''}>${esc(text)}</li>`).join('')}</ul>` : ''}
       ${glossary.length ? `<details class="draft-glossary"><summary>How ${glossary.map(tag => STATUSES[tag].name).join(', ')} ${glossary.length === 1 ? 'works' : 'work'}</summary>
         <dl>${glossary.map(tag => `<div><dt>${STATUSES[tag].name}</dt><dd>${esc(STATUSES[tag].description)}</dd></div>`).join('')}</dl></details>` : ''}
     </div>
