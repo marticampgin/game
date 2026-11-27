@@ -2,7 +2,7 @@
 
 [Watch the 18-second turn recording](arena-turn.mp4). Moss inspects Golden Shell, takes it, aims Bastion Bash at Rowan and crosses the ring. The next bot, Aster, announces Time Bolt against Flint before the projectile travels. The recording ends with the battle log open. It comes from a live 1440 × 900 Chromium session at normal bot speed, with sound off.
 
-The recording begins in round 11 of the eight-seat solo seed `ring-at-dusk-3`. The shared match engine played the earlier turns through its normal bot commands. The captured draft, target selection and confirmation used the game controls. The scripted lineup makes the same match reproducible.
+The recording begins in round 11 of the eight-seat solo seed `ring-at-dusk-3`. The shared match engine played the earlier turns through its normal bot commands. The captured draft, target selection and confirmation used the game controls. In seat order, the lineup is Moss (Guardian), Cinder (Berserker), Ember (Chronomancer), Rowan (Guardian), Juniper (Alchemist), Aster (Chronomancer), Flint (Guardian) and Vesper (Berserker).
 
 | View | Draft | Action |
 | --- | --- | --- |
@@ -23,4 +23,3 @@ The recording begins in round 11 of the eight-seat solo seed `ring-at-dusk-3`. T
 - Automated checks cover target selection, item replacement, repeated names, long loadouts, keyboard use, action cancellation, reduced motion, knockouts, revivals, hidden choices, bot takeover and skin persistence. All 36 browser tests passed in each of Chromium, Firefox and WebKit. All 72 Node rules and server tests passed.
 - Twelve seeded duels and twelve seeded eight-seat simulations played to completion. The seed prefix was `arena-qa`.
 - The phone captures used a touch-enabled browser viewport. Physical-device frame pacing, thumb reach and players’ ability to recognize an attack at a glance still need a hands-on playtest. On the smallest screens, the critical pose and lowered weapon are easier to distinguish than individual chips in the armor.
-
