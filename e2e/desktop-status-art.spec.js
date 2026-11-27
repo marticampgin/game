@@ -6,9 +6,9 @@ import { STATUSES } from '../src/game/catalog.js';
 const names = ['Ash', 'Ember', 'Flint', 'Rue', 'Birch', 'Nyx', 'Dusk', 'Yew'];
 const classes = ['guardian', 'berserker', 'alchemist', 'chronomancer'];
 
-function ready(count) {
+function ready(count, seed = 'status-art') {
   const players = names.slice(0, count).map((id, i) => ({ id, name:id, classId:classes[i % classes.length], bot:false }));
-  const state = createMatch({ seed:'status-art', players });
+  const state = createMatch({ seed, players });
   return applyCommand(state, state.activeId, { type:'pick', rewardId:state.offers[0] });
 }
 
@@ -91,3 +91,32 @@ test('all eight status shapes remain readable and stationary in reduced motion o
     expect(row.anchored).toBe(true);
   });
 });
+
+for (const [width, height, receiverId, seed] of [
+  [1280, 720, 'Rue', 'rear-status-9'],
+  [1280, 720, 'Birch', 'rear-status-5'],
+  [1440, 900, 'Rue', 'rear-status-9'],
+]) {
+  test('turn-start damage stays clear of the live HUD at rear seat ' + receiverId + ' on ' + width + 'px PC', async ({page}) => {
+    await page.setViewportSize({width, height});
+    const state = ready(8, seed);
+    expect(state.queue[0]).toBe(receiverId);
+    const caster = state.players.find(p => p.id === state.activeId);
+    const receiver = state.players.find(p => p.id === receiverId);
+    executeEffects(state, caster, receiver, [{kind:'status', key:'burn', amount:5}], {label:'Ember'});
+    await mount(page, state);
+    await page.locator('[data-action="defend"]').click();
+    await page.locator('[data-execute="defend"]').click();
+    const read = await page.locator('.arena-status-label[data-status="burn"]').evaluate(label => {
+      const rect = label.getBoundingClientRect();
+      const blockedBy = ['.scene-callout', '.turn-rail'].filter(selector => {
+        const hud = document.querySelector(selector).getBoundingClientRect();
+        return rect.left < hud.right && rect.right > hud.left && rect.top < hud.bottom && rect.bottom > hud.top;
+      });
+      return {blockedBy, text:label.innerText, phase:document.querySelector('.scene-callout').innerText};
+    });
+    expect(read.phase).toBe(receiverId + ' · Turn start');
+    expect(read.text).toContain('−5 HP');
+    expect(read.blockedBy).toEqual([]);
+  });
+}
