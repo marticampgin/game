@@ -1,10 +1,11 @@
-import { CLASSES, REWARDS } from '../src/game/catalog.js';
+import { fighterModel } from './fighter-kit.js';
+import { REWARDS } from '../src/game/catalog.js';
 
 const genericIcons = new Set([
   'shield', 'axe', 'clock', 'flask', 'crystal', 'fire', 'sword', 'heart', 'ring', 'chest',
   'frost', 'bolt', 'leaf', 'dagger', 'skull', 'feather', 'crown', 'lantern', 'rune', 'coin',
 ]);
-export const classArt = id => '/assets/' + (Object.hasOwn(CLASSES, id) ? id : 'guardian') + '.png';
+export const classArt = player => fighterModel(typeof player === 'string' ? { classId: player } : player);
 export function rewardIcon(reward) {
   const src = Object.hasOwn(REWARDS, reward?.id)
     ? '/assets/rewards/' + reward.id + '.png'

@@ -1,3 +1,6 @@
+import { motionScore } from './combat-motion.js';
+import { fighterKit } from './fighter-kit.js';
+
 // Short, locally synthesized contact sounds. Tonal partials carry the material;
 // a filtered noise transient gives the metal, glass and wood a distinct attack.
 function tone(wave, from, to, length, gain, delay = 0) {
@@ -57,12 +60,13 @@ function instrument({ action, role, effect, event, first }) {
   if (effect === 'dust') return 'pulse';
   if (effect === 'guard' || effect === 'ward') return 'ward';
   if (effect === 'miasma') return 'venom';
-  if (action === 'menders-bell' && first) return 'bell';
+  const move = first ? motionScore(action, role) : undefined;
+  if (move?.prop === 'bell') return 'bell';
   if (effect === 'heal' || effect === 'revival') return effect;
   if (event?.type === 'elimination') return 'fall';
-  if (action === 'bastion-bash' && first) return 'bash';
-  if (action === 'attack' && first && role === 'guardian') return 'hammer';
-  if ((action === 'venom-flask' || action === 'spark-bottle') && first) return 'glass';
+  if (move?.track === 'bash') return 'bash';
+  if (move?.track === 'swing' && fighterKit(role).weapon === 'hammer') return 'hammer';
+  if (move?.gesture === 'throw') return 'glass';
   if (effect === 'arcane' || effect === 'echo' || effect === 'shock') return 'clock';
   if (effect === 'fire' || effect === 'frost') return effect;
   if (effect === 'doom' || effect === 'eclipse') return 'bell';

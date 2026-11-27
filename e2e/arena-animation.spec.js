@@ -187,13 +187,19 @@ test('the restored battle renders another seat’s registered cosmetic and falls
   ]});
   // Install a test cosmetic just as a future shipped skin would register at
   // app startup. The roster, public projection, restoration and rendering are real.
-  await page.route('**/animation.js',async route=>{
+  await page.route('**/fighter-kit.js',async route=>{
     const response=await route.fetch();
     await route.fulfill({response,body:(await response.text())+
-      "\nregisterFighterSkin('guardian','festival-2','/assets/skins/test-festival.png');"});
+      "\nregisterFighterSkin('guardian','festival-2',{ sheet:'/assets/skins/test-festival.png', portrait:'/assets/skins/festival-head.webp', model:'/assets/skins/festival-full.png' });"});
   });
   await page.route('**/assets/skins/test-festival.png',route=>route.fulfill({
     path:fileURLToPath(new URL('../public/assets/skins/guardian-founder.png',import.meta.url)),contentType:'image/png',
+  }));
+  await page.route('**/assets/skins/festival-head.webp',route=>route.fulfill({
+    path:fileURLToPath(new URL('../public/assets/portrait-guardian.webp',import.meta.url)),contentType:'image/webp',
+  }));
+  await page.route('**/assets/skins/festival-full.png',route=>route.fulfill({
+    path:fileURLToPath(new URL('../public/assets/guardian.png',import.meta.url)),contentType:'image/png',
   }));
   await page.addInitScript(saved=>{
     if (!sessionStorage.getItem('rift-solo')) sessionStorage.setItem('rift-solo',JSON.stringify(saved));
@@ -205,6 +211,10 @@ test('the restored battle renders another seat’s registered cosmetic and falls
   await expect(rival).toHaveAttribute('data-skin','festival-2');
   await expect(rival.locator('.arena-cel')).toHaveCSS('background-image',/test-festival\.png/);
   await expect(page.locator('[data-seat="me"] .arena-sprite')).toHaveAttribute('data-skin','founder');
+  const railButton=page.locator('.turn-rail [data-inspect="rival"]');
+  await expect(railButton.locator('img')).toHaveAttribute('src','/assets/skins/festival-head.webp');
+  await railButton.click();
+  await expect(page.locator('.inspect-top img')).toHaveAttribute('src','/assets/skins/festival-full.png');
   const visibleIds=await page.evaluate(async()=>{
     const {viewMatch}=await import('/src/game/index.js');
     const {state,viewerId}=JSON.parse(sessionStorage.getItem('rift-solo'));

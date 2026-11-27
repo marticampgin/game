@@ -1,3 +1,6 @@
+import { CLASSES, REWARDS } from '../src/game/catalog.js';
+import { fighterKit } from './fighter-kit.js';
+
 // Each landmark is [milliseconds, progress to opponent, forward offset in body
 // widths, lift in body heights, lean in degrees]. The planted foot is the pivot.
 const tracks = {
@@ -94,10 +97,10 @@ const tracks = {
   ],
   scavenge: [
     [0, 0, 0, 0, 0],
-    [145, 0, 0.03, -0.03, 5],
-    [320, 0, 0.09, -0.1, 13],
-    [490, 0, 0.14, -0.11, 15],
-    [685, 0, 0.04, 0.018, -4],
+    [145, 0, 0.008, -0.002, 1],
+    [320, 0, 0.018, -0.005, 2],
+    [490, 0, 0.024, -0.006, 3],
+    [685, 0, 0.008, 0.003, -1],
     [935, 0, 0, 0, 0],
   ],
   sip: [
@@ -125,55 +128,111 @@ const tracks = {
   ],
 };
 
-const score = (family, effect, track, clip, contact, release = contact) =>
-  Object.freeze({ family, effect, track, clip, contact, release, path: tracks[track] });
+// A move combines a body clip, travel track and impact/release landmarks.
+// Repeated weapons, spells and consumables reuse these beats with a new element or prop.
+const score = (family, gesture, effect, track, clip, contact, release = contact) =>
+  Object.freeze({ family, gesture, effect, track, clip, contact, release, path: tracks[track] });
 
-const swing = score('melee', 'slash', 'swing', 'attack', 425);
-const axe = score('melee', 'cleave', 'swing', 'attack', 425);
-const sigils = {
-  'bastion-bash': score('melee', 'bastion', 'bash', 'signature', 495),
-  'blood-cleave': score('melee', 'cleave', 'cleave', 'signature', 530),
-  'hollow-needle': score('melee', 'slash', 'needle', 'attack', 308),
-  'time-bolt': score('cast', 'arcane', 'dial', 'signature', 728, 450),
-  'venom-flask': score('cast', 'venom', 'throw', 'signature', 785, 405),
-  'spark-bottle': score('cast', 'shock', 'throw', 'cast', 753, 405),
-  'cinder-orb': score('cast', 'fire', 'kindle', 'cast', 766, 450),
-  combustion: score('cast', 'fire', 'summon', 'cast', 685, 475),
-  whiteout: score('cast', 'frost', 'summon', 'cast', 808, 465),
-  'grave-bell': score('cast', 'doom', 'ring', 'cast', 738, 320),
-  defend: score('support', 'guard', 'brace', 'brace', 315),
-  'ward-lantern': score('support', 'ward', 'summon', 'cast', 500),
-  'menders-bell': score('support', 'heal', 'ring', 'utility', 320),
-  'red-tonic': score('support', 'heal', 'sip', 'utility', 420),
-  antidote: score('support', 'heal', 'sip', 'utility', 450),
-  'reverse-polarity': score('support', 'heal', 'summon', 'cast', 500),
-  'pocket-eclipse': score('support', 'eclipse', 'dial', 'cast', 490),
-  'widows-brew': score('support', 'venom', 'sip', 'utility', 460),
-  scavenge: score('support', 'loot', 'scavenge', 'utility', 490),
-  interrupted: score('interrupted', 'cleave', 'stagger', 'hurt', 110),
+const moves = {
+  swing:     score('melee', 'attack', 'slash', 'swing', 'attack', 425),
+  bash:      score('melee', 'attack', 'bastion', 'bash', 'attack', 495),
+  cleave:    score('melee', 'attack', 'cleave', 'cleave', 'attack', 530),
+  thrust:    score('melee', 'attack', 'slash', 'needle', 'attack', 308),
+  bolt:      score('cast', 'cast', 'arcane', 'dial', 'cast', 728, 450),
+  throw:     score('cast', 'throw', 'arcane', 'throw', 'cast', 785, 405),
+  orb:       score('cast', 'cast', 'fire', 'kindle', 'cast', 766, 450),
+  eruption:  score('cast', 'cast', 'fire', 'summon', 'cast', 685, 475),
+  wave:      score('cast', 'cast', 'frost', 'summon', 'cast', 808, 465),
+  knell:     score('cast', 'cast', 'doom', 'ring', 'cast', 738, 320),
+  brace:     score('support', 'guard', 'guard', 'brace', 'brace', 315),
+  invoke:    score('support', 'cast', 'arcane', 'summon', 'cast', 500),
+  ring:      score('support', 'use', 'heal', 'ring', 'consume', 320),
+  drink:     score('support', 'drink', 'arcane', 'sip', 'consume', 420),
+  use:       score('support', 'use', 'arcane', 'ring', 'consume', 425),
+  scavenge:  score('support', 'scavenge', 'loot', 'scavenge', 'utility', 490),
+  stagger:   score('interrupted', 'hurt', 'cleave', 'stagger', 'hurt', 110),
 };
-const fallbackSupport = score('support', 'arcane', 'summon', 'cast', 500);
-const signatures = {
-  guardian: 'bastion-bash',
-  berserker: 'blood-cleave',
-  chronomancer: 'time-bolt',
-  alchemist: 'venom-flask',
-};
+const coreMoves = { defend: 'brace', scavenge: 'scavenge', interrupted: 'stagger' };
+const elemental = { burn: 'fire', chill: 'frost', freeze: 'frost', poison: 'venom', shock: 'shock', doom: 'doom', curse: 'doom' };
+export const effectRows = [
+  'slash',
+  'cleave',
+  'bastion',
+  'arcane',
+  'venom',
+  'fire',
+  'frost',
+  'doom',
+  'heal',
+  'guard',
+  'shock',
+  'loot',
+  'revival',
+  'fracture',
+  'dust',
+  'bleed',
+  'thorns',
+  'eclipse',
+  'ward',
+  'echo',
+  'miasma',
+];
+export const missiles = ['arcane', 'venom', 'fire', 'frost', 'doom', 'shock'];
+
+function weaponStrike(role) {
+  const weapon = fighterKit(role).weapon;
+  if (weapon === 'dagger') return moves.thrust;
+  return weapon === 'saber' ? { ...moves.swing, effect: 'cleave' } : moves.swing;
+}
+
+function inferMove(reward, self) {
+  if (reward.category === 'consumable') {
+    if (!self) return 'throw';
+    return reward.icon === 'flask' || reward.icon === 'heart' ? 'drink' : 'use';
+  }
+  if (self) return reward.category === 'item' ? 'use' : 'invoke';
+  const hit = reward.effects?.find(e => e.kind === 'hit' || e.kind === 'consumeHit');
+  if (hit?.scale === 'armor') return 'bash';
+  if (hit?.scale === 'attack' || reward.tags?.includes('physical')) return 'weapon';
+  if (hit?.kind === 'consumeHit') return 'eruption';
+  if (reward.icon === 'flask') return 'throw';
+  if (reward.icon === 'fire') return 'orb';
+  return 'bolt';
+}
+
+export function rewardMotion(reward, role, self = reward.target === 'self') {
+  const art = reward.presentation || {};
+  const move = art.move ?? inferMove(reward, self);
+  const base = move === 'weapon' ? weaponStrike(role) : moves[move];
+  if (!base) throw new Error('Unknown animation move for ' + reward.id + ': ' + move);
+  const effects = reward.effects || [];
+  const status = effects.find(e => e.kind === 'status' || e.kind === 'consumeHit');
+  const element = elemental[status?.key];
+  let effect = art.effect;
+  if (!effect && base.family !== 'melee') {
+    if (effects.some(e => e.kind === 'shield')) effect = 'ward';
+    else if (effects.some(e => ['heal', 'cleanse', 'purify'].includes(e.kind))) effect = 'heal';
+    else effect = element;
+  }
+  effect ??= base.effect;
+  if (!effectRows.includes(effect)) throw new Error('Unknown impact art for ' + reward.id + ': ' + effect);
+  return {
+    ...base, move, effect,
+    missile: missiles.includes(effect) ? effect : 'arcane',
+    prop: art.prop ?? (base.gesture === 'drink' ? 'flask' : undefined),
+  };
+}
 
 export function motionScore(actionId, role, self = false) {
-  return Object.hasOwn(sigils, actionId)
-    ? sigils[actionId]
-    : self
-      ? fallbackSupport
-      : role === 'berserker'
-        ? axe
-        : swing;
+  if (Object.hasOwn(coreMoves, actionId)) return moves[coreMoves[actionId]];
+  if (actionId === 'attack') return weaponStrike(role);
+  if (Object.hasOwn(REWARDS, actionId)) return rewardMotion(REWARDS[actionId], role);
+  // Replays may refer to removed rewards.
+  return self ? moves.invoke : weaponStrike(role);
 }
 
 export function actorClip(score, actionId, role) {
-  if (score.clip === 'signature' && signatures[role] !== actionId)
-    return score.family === 'melee' ? 'attack' : 'cast';
-  return score.clip;
+  return Object.hasOwn(CLASSES, role) && CLASSES[role].ability === actionId ? 'signature' : score.clip;
 }
 
 export const impactCauses = {

@@ -1,7 +1,7 @@
 import { statusCue, statusIcon } from './status-effects.js';
 import { combatTiming, directOutcome } from './combat-timing.js';
 import { fighterLayout, healthBand, resolveFighterSkin } from './fighter-kit.js';
-import { actorClip, impactCauses, motionScore } from './combat-motion.js';
+import { actorClip, effectRows, impactCauses, missiles, motionScore } from './combat-motion.js';
 export { healthBand, registerFighterSkin, resolveFighterSkin } from './fighter-kit.js';
 
 const readySheets = new Set();
@@ -134,30 +134,6 @@ export function preloadArenaSkins(players = []) {
   );
 }
 
-const effectRows = [
-  'slash',
-  'cleave',
-  'bastion',
-  'arcane',
-  'venom',
-  'fire',
-  'frost',
-  'doom',
-  'heal',
-  'guard',
-  'shock',
-  'loot',
-  'revival',
-  'fracture',
-  'dust',
-  'bleed',
-  'thorns',
-  'eclipse',
-  'ward',
-  'echo',
-  'miasma',
-];
-const missiles = ['arcane', 'venom', 'fire', 'frost', 'doom', 'shock'];
 export function actionVisual(actionId, classId, self = false) {
   const score = motionScore(actionId, classId, self);
   return { motion: score.family, effect: score.effect };
@@ -445,7 +421,7 @@ export function playArenaAction(arena, recap, options = {}) {
   }
   function articulate() {
     if (flipbook(art, clip, actorFrames)) return;
-    const guard = score.track === 'bash' || score.track === 'brace';
+    const guard = score.track === 'bash' || score.track === 'brace' || clip === 'consume';
     const windup = guard
       ? 'guard'
       : score.family === 'melee'
@@ -579,7 +555,7 @@ export function playArenaAction(arena, recap, options = {}) {
     };
   }
   function launch() {
-    const kind = score.effect;
+    const kind = score.missile;
     const travel = score.contact - score.release;
     const el = part(scene, 'arena-fx-missile');
     const size = Math.max(26, Math.min(68, start.h * (score.track === 'throw' ? 0.3 : 0.39)));
@@ -654,16 +630,16 @@ export function playArenaAction(arena, recap, options = {}) {
 
   function stageCasting() {
     const hand = castPoint();
-    if (action === 'combustion') {
-      at(score.release, () => imprint('fire', centerX(end), end.y + end.h * 0.75, end.h * 0.58, 300));
-    } else if (action === 'whiteout') {
+    if (score.move === 'eruption') {
+      at(score.release, () => imprint(score.effect, centerX(end), end.y + end.h * 0.75, end.h * 0.58, 300));
+    } else if (score.move === 'wave') {
       at(score.release - 205, () => {
-        imprint('frost', hand.x, hand.y, start.h * 0.47, 265);
+        imprint(score.effect, hand.x, hand.y, start.h * 0.47, 265);
         const shard = part(scene, 'arena-fx-missile');
         const size = start.h * 0.28;
         shard.style.setProperty(
           '--projectile-x',
-          (missiles.indexOf('frost') / (missiles.length - 1)) * 100 + '%',
+          (missiles.indexOf(score.missile) / (missiles.length - 1)) * 100 + '%',
         );
         positioned(shard, hand.x - size / 2, hand.y - size / 2, size, size);
         tween(
@@ -680,12 +656,12 @@ export function playArenaAction(arena, recap, options = {}) {
         at(score.release + (score.contact - score.release) * t, () => {
           const x = hand.x + (centerX(end) - hand.x) * t;
           const y = start.y + start.h + (end.y + end.h - start.y - start.h) * t;
-          imprint('frost', x, y - end.h * 0.19, end.h * (0.43 + t * 0.24), 280);
+          imprint(score.effect, x, y - end.h * 0.19, end.h * (0.43 + t * 0.24), 280);
         });
       }
-    } else if (action === 'grave-bell') {
-      at(170, () => imprint('doom', hand.x, hand.y, start.h * 0.52, 445));
-      at(score.release + 105, () => imprint('doom', centerX(end), centerY(end), end.h * 0.57, 355));
+    } else if (score.move === 'knell') {
+      at(170, () => imprint(score.effect, hand.x, hand.y, start.h * 0.52, 445));
+      at(score.release + 105, () => imprint(score.effect, centerX(end), centerY(end), end.h * 0.57, 355));
     } else {
       if (score.track !== 'throw') {
         at(Math.round(score.release * 0.47), () =>
@@ -715,7 +691,7 @@ export function playArenaAction(arena, recap, options = {}) {
       if (propIcons[action]) heldIcon(propIcons[action], 80, Math.min(duration - 45, score.contact + 180));
       if (score.track === 'bash' && role !== 'guardian') heldIcon('shield', 65, score.contact + 165);
       if (score.track === 'scavenge') gatherCoins();
-      if (action === 'pocket-eclipse')
+      if (score.effect === 'eclipse')
         at(230, () => imprint('eclipse', centerX(start), centerY(start), start.h * 0.85, 560));
     }
   }
