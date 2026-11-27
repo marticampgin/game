@@ -8,18 +8,25 @@ const roles = ['guardian', 'berserker', 'chronomancer', 'alchemist'];
 const skins = new Map();
 const localSheet = /^\/assets\/skins\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.(png|webp)$/;
 const readySheets = new Set();
-export function registerFighterSkin(classId, id, sheet, motions, footwork) {
+export function registerFighterSkin(classId, id, sheet, motions, footwork, ambient) {
   if (
     !roles.includes(classId) ||
     !isSkinId(id) ||
     !localSheet.test(sheet) ||
-    [motions, footwork].some((url) => url !== undefined && !localSheet.test(url))
+    [motions, footwork, ambient].some((url) => url !== undefined && !localSheet.test(url))
   ) {
     throw new Error('A skin needs a known class, a simple ID and local sprite sheets.');
   }
   skins.set(
     classId + '/' + id,
-    Object.freeze({ classId, id, sheet, ...(motions ? { motions } : {}), ...(footwork ? { footwork } : {}) }),
+    Object.freeze({
+      classId,
+      id,
+      sheet,
+      ...(motions ? { motions } : {}),
+      ...(footwork ? { footwork } : {}),
+      ...(ambient ? { ambient } : {}),
+    }),
   );
 }
 for (const role of roles)
@@ -29,6 +36,7 @@ for (const role of roles)
     '/assets/skins/' + role + '-founder.png',
     '/assets/skins/' + role + '-motions.webp',
     '/assets/skins/' + role + '-footwork.webp',
+    '/assets/skins/' + role + '-ambient.webp',
   );
 
 export function resolveFighterSkin(classId, skinId = 'founder') {
@@ -71,6 +79,13 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     (n, c) => (31 * n + c.charCodeAt(0)) >>> 0,
     0,
   );
+  const checkSeed = Math.imul(seed, 0x9e3779b1) >>> 0;
+  const ambient = skin.ambient
+    ? ' data-ambient-src="' +
+      skin.ambient +
+      '"' +
+      (readySheets.has(skin.ambient) ? ' data-ambient-ready' : '')
+    : '';
   const steps = skin.footwork ? ' data-footwork-src="' + skin.footwork + '"' : '';
   const motion = skin.motions
     ? ' data-motion-src="' + skin.motions + '"' + (readySheets.has(skin.motions) ? ' data-motion-ready' : '')
@@ -81,6 +96,15 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     ');' +
     (skin.motions ? '--motion-skin:url(' + skin.motions + ');' : '') +
     (skin.footwork ? '--footwork-skin:url(' + skin.footwork + ');' : '') +
+    (skin.ambient
+      ? '--check-skin:url(' +
+        skin.ambient +
+        ');--check-time:' +
+        (9600 + (checkSeed % 4700)) +
+        'ms;--check-delay:-' +
+        (checkSeed % 8700) +
+        'ms;'
+      : '') +
     '--idle-delay:-' +
     (seed % 5300) +
     'ms;' +
@@ -101,9 +125,12 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     (reducedMotion ? ' data-still' : '') +
     motion +
     steps +
+    ambient +
     ' style="' +
     style +
-    '"><span class="arena-cel"></span></span>'
+    '"><span class="arena-cel"></span>' +
+    (skin.ambient ? '<span class="arena-check-cel"></span>' : '') +
+    '</span>'
   );
 }
 const fxSheet = '/assets/skins/arena-effects.png';
@@ -116,7 +143,7 @@ export function preloadArenaSkins(players = []) {
     missileSheet,
     ...players.flatMap((p) => {
       const skin = resolveFighterSkin(p.classId, p.skinId);
-      return [skin.sheet, skin.motions, skin.footwork].filter(Boolean);
+      return [skin.sheet, skin.motions, skin.footwork, skin.ambient].filter(Boolean);
     }),
   ]);
   return Promise.all(
@@ -138,6 +165,9 @@ export function preloadArenaSkins(players = []) {
               document
                 .querySelectorAll('[data-motion-src="' + url + '"]')
                 .forEach((el) => el.setAttribute('data-motion-ready', ''));
+              document
+                .querySelectorAll('[data-ambient-src="' + url + '"]')
+                .forEach((el) => el.setAttribute('data-ambient-ready', ''));
               resolve(true);
             };
             image.onerror = () => {

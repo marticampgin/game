@@ -65,9 +65,8 @@ async function perform(page, role, action) {
         const stepStyle = getComputedStyle(actor.querySelector('.arena-step-cel'));
         const baseOpacity = parseFloat(getComputedStyle(actor.querySelector('.arena-cel')).opacity);
         trace.minCoverage = Math.min(trace.minCoverage, baseOpacity + parseFloat(stepStyle.opacity));
-        trace.steps.add(Math.round(parseFloat(stepStyle.backgroundPositionX) * 3 / 100));
-      }
-      else if (!trace.cells.includes(number)) trace.cells.push(number);
+        trace.steps.add(Math.round((parseFloat(stepStyle.backgroundPositionX) * 3) / 100));
+      } else if (!trace.cells.includes(number)) trace.cells.push(number);
       if (scene.dataset.stage === 'impact' && trace.impact === null) trace.impact = number;
       if (world.querySelector('[data-travelling]')) trace.floorLeft = true;
       for (const el of scene.querySelectorAll('[data-effect]'))
@@ -112,10 +111,51 @@ test('desktop weapon swing, shield drive and bottle throw use different illustra
     expect(sample.floorLeft).toBe(travels);
     if (travels) {
       expect(sample.steps.length).toBeGreaterThanOrEqual(2);
-      expect(sample.minCoverage).toBeGreaterThanOrEqual(.99);
+      expect(sample.minCoverage).toBeGreaterThanOrEqual(0.99);
     }
     if (action === 'venom-flask') expect(sample.fx).toContain('guard');
     await expect(page.locator('[data-travelling],.arena-fx,[data-playing="hidden"]')).toHaveCount(0);
   }
   expect(errors).toEqual([]);
+});
+
+test('idle equipment checks are staggered by seat and respect reduced motion', async ({ page }) => {
+  const state = readySeat('guardian');
+  await page.addInitScript(
+    (state) => sessionStorage.setItem('rift-solo', JSON.stringify({ state, viewerId: 'guardian' })),
+    state,
+  );
+  await page.goto('/');
+  const record = await page.evaluate(async (players) => {
+    await (await import('/animation.js')).preloadArenaSkins(players);
+    const checks = Array.from(document.querySelectorAll('[data-seat] .arena-check-cel'));
+    return checks.map((el) => {
+      const cycle = el.getAnimations().find((a) => a.animationName === 'arena-equipment-check');
+      const timing = cycle.effect.getTiming();
+      cycle.pause();
+      cycle.currentTime = timing.delay + timing.duration * 0.89;
+      return {
+        delay: timing.delay,
+        duration: timing.duration,
+        alpha: parseFloat(getComputedStyle(el).opacity),
+        column: parseFloat(getComputedStyle(el).backgroundPositionX),
+      };
+    });
+  }, state.players);
+  expect(record).toHaveLength(4);
+  expect(new Set(record.map((r) => r.delay)).size).toBe(4);
+  for (const row of record) {
+    expect(row.duration).toBeGreaterThanOrEqual(9500);
+    expect(row.alpha).toBe(1);
+    expect(row.column).toBeGreaterThan(30);
+    expect(row.column).toBeLessThan(85);
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(
+    await page
+      .locator('[data-seat] .arena-check-cel')
+      .evaluateAll((nodes) =>
+        nodes.every((el) => el.getAnimations().length === 0 && Number(getComputedStyle(el).opacity) === 0),
+      ),
+  ).toBe(true);
 });

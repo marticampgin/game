@@ -274,9 +274,79 @@ body.reduce-motion .arena-sprite[data-pose='idle'] {
   pointer-events: none;
   image-rendering: pixelated;
   background: var(--footwork-skin) 0% 0% / 400% 300% no-repeat;
-  opacity: .008;
+  opacity: 0.008;
   will-change: opacity;
 }
-[data-facing='left'] .arena-step-cel { transform: scaleX(-1); }
-.arena-sprite[data-tier='wounded'] > .arena-step-cel { background-position-y: 50%; }
-.arena-sprite[data-tier='critical'] > .arena-step-cel { background-position-y: 100%; }
+[data-facing='left'] .arena-step-cel {
+  transform: scaleX(-1);
+}
+.arena-sprite[data-tier='wounded'] > .arena-step-cel {
+  background-position-y: 50%;
+}
+.arena-sprite[data-tier='critical'] > .arena-step-cel {
+  background-position-y: 100%;
+}
+.arena-check-cel {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  image-rendering: pixelated;
+  background: var(--check-skin) 0 0 / 1200% 300% no-repeat;
+}
+[data-facing='left'] .arena-check-cel {
+  transform: scaleX(-1);
+}
+.arena-sprite[data-tier='wounded'] > .arena-check-cel {
+  background-position-y: 50%;
+}
+.arena-sprite[data-tier='critical'] > .arena-check-cel {
+  background-position-y: 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.reduce-motion)
+    .arena-sprite[data-ambient-ready][data-pose='idle']:not([data-still])
+    > .arena-check-cel {
+    animation: arena-equipment-check var(--check-time) linear var(--check-delay) infinite;
+  }
+  body:not(.reduce-motion)
+    .arena-sprite[data-motion-ready][data-ambient-ready][data-pose='idle']:not([data-still])
+    > .arena-cel {
+    animation:
+      arena-illustrated-idle var(--idle-time) steps(12, end) var(--idle-delay) infinite,
+      arena-rest-during-check var(--check-time) linear var(--check-delay) infinite;
+  }
+}
+@keyframes arena-equipment-check {
+  0%,
+  77% {
+    opacity: 0;
+    background-position-x: 0%;
+  }
+  79% {
+    opacity: 1;
+    background-position-x: 0%;
+    animation-timing-function: steps(11, end);
+  }
+  96% {
+    opacity: 1;
+    background-position-x: 100%;
+  }
+  98%,
+  100% {
+    opacity: 0;
+    background-position-x: 100%;
+  }
+}
+@keyframes arena-rest-during-check {
+  0%,
+  77%,
+  98%,
+  100% {
+    opacity: 1;
+  }
+  79%,
+  96% {
+    opacity: 0;
+  }
+}
