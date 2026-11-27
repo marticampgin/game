@@ -34,6 +34,11 @@
   font: 600 clamp(13px,1.06vw,17px)/1.1 var(--battle-font,serif);
 }
 .arena-status-title .status-icon { width: 18px; height: 18px; }
+.arena-group-label .arena-fx-source { max-width: 12em; }
+.arena-group-conditions {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 1px 5px; max-width: 170px;
+}
+.arena-group-conditions .status-icon { width: 16px; height: 16px; }
 .arena-status-value { color: #fff2db; font: 600 clamp(12px,.9vw,15px)/1.12 var(--body,sans-serif); }
 .arena-status-label .arena-fx-source {
   max-width: 14em;

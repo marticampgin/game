@@ -92,6 +92,89 @@ test('all eight status shapes remain readable and stationary in reduced motion o
   });
 });
 
+test('a crowded round keeps a single named result on each affected fighter, including shield changes and last stands', async ({ page }) => {
+  const state = ready(8);
+  await mount(page, state);
+  const results = await page.evaluate(async names => {
+    const { playArenaAction } = await import('/animation.js');
+    const { mountEffectStrip } = await import('/effect-strip.js');
+    const world = document.querySelector('.arena-world');
+    const packet = (type, targetId, fields) => ({ type, targetId, timing:'round', round:4, ...fields });
+    const events = [
+      packet('damage', 'Ember', { cause:'burn', amount:5, healthDamage:3, shieldDamage:2 }),
+      packet('damage', 'Ember', { cause:'poison', amount:4, healthDamage:4 }),
+      packet('heal', 'Ember', { amount:6 }), packet('shield', 'Ember', { amount:3 }),
+      ...names.flatMap((id, i) => [packet('damage', id, { cause:'burn', amount:8, healthDamage:8 }),
+        i % 2 ? packet('revival', id, { amount:3 }) : packet('elimination', id)]),
+    ].map((e, i) => ({ ...e, id:i + 1 }));
+    const action = { actorId:'Yew', actorName:'Yew', targetId:'Yew', actionId:'defend', actionName:'Defend', events };
+    const strip = mountEffectStrip(document.querySelector('.turn-resolution'), action, names.map(id => ({ id, name:id })));
+    const beats = [], order = [];
+    await playArenaAction(world, action, {
+      effectsOnly:true, speed:4,
+      onBeat(beat, i, total) {
+        strip(beat, i, total);
+        beats.push({ cues:0, mixed:!beat.event });
+      },
+      onCue() { beats.at(-1).cues++; },
+      onImpact(event) {
+        order.push(event.id);
+        const beat = beats.at(-1);
+        if (beat.labels) return;
+        beat.labels = Object.fromEntries([...world.querySelectorAll('[data-group-target]')].map(el => [
+          el.dataset.groupTarget, { text:el.innerText, icons:[...el.querySelectorAll('.status-icon')].map(icon => icon.dataset.statusIcon) },
+        ]));
+        beat.strip = document.querySelector('.effect-receipt:last-child').innerText;
+        beat.ashPose = world.querySelector('[data-seat="Ash"] .arena-sprite').dataset.pose;
+        beat.emberPose = world.querySelector('[data-seat="Ember"] .arena-sprite').dataset.pose;
+      },
+    }).finished;
+    return { beats, order };
+  }, names);
+  expect(results.order).toEqual(Array.from({ length:20 }, (_, i) => i + 1));
+  expect(results.beats).toHaveLength(8);
+  expect(results.beats.every(b => b.cues === 1)).toBe(true);
+  const [opening, revival] = results.beats;
+  expect(Object.keys(opening.labels)).toEqual(['Ember', 'Ash']);
+  expect(opening.labels.Ember.icons).toEqual(['burn', 'poison']);
+  expect(opening.labels.Ember.text).toContain('−7 HP · −2 shield');
+  expect(opening.labels.Ember.text).toContain('+6 HP · +3 shield');
+  expect(opening.labels.Ash.text).toContain('Fallen');
+  expect(opening.strip).toContain('Ember · Burn · Poison · −7 HP · −2 shield · +6 HP · +3 shield');
+  expect(opening.ashPose).toBe('fallen');
+  expect(revival.labels.Ember.text).toContain('Revived at 3 HP');
+  expect(revival.emberPose).toBe('victory');
+});
+
+test('Blood Moon reaches all eight seats in one readable round beat before the personal turn', async ({ page }) => {
+  await page.setViewportSize({ width:1280, height:720 });
+  const state = ready(8);
+  state.round = 11;
+  state.queue = [];
+  state.nextEvent = { id:'blood-moon', name:'Blood Moon', round:12 };
+  await mount(page, state);
+  await page.locator('[data-action="defend"]').click();
+  await page.locator('[data-execute="defend"]').click();
+  const labels = page.locator('.arena-group-label');
+  await expect(labels).toHaveCount(8);
+  const read = await labels.evaluateAll(labels => {
+    const obstacles = [...document.querySelectorAll('.turn-rail, .scene-callout, .round-meta')].map(e => e.getBoundingClientRect());
+    const covered = [];
+    for (const label of labels) {
+      const a = label.getBoundingClientRect();
+      if (obstacles.some(b => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)) covered.push(label.dataset.groupTarget);
+      obstacles.push(a);
+    }
+    return {
+      covered, receipts:labels.map(el => [el.dataset.groupTarget, el.querySelector('.arena-status-title')?.textContent]),
+      indicator:document.querySelector('.effect-receipt:last-child').innerText,
+    };
+  });
+  expect(read.covered).toEqual([]);
+  expect(read.receipts).toEqual(names.map(name => [name, '+2 Curse']));
+  expect(read.indicator).toMatch(/\+2 Curse\s+8 contenders/);
+});
+
 for (const [width, height, receiverId, seed] of [
   [1280, 720, 'Rue', 'rear-status-9'],
   [1280, 720, 'Birch', 'rear-status-5'],

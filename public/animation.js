@@ -1,5 +1,6 @@
 import { stageCombatProps, useExposures } from './combat-props.js';
 import { statusCue, statusIcon } from './status-effects.js';
+import { groupedTargets } from './effect-strip.js';
 import { combatTiming, directOutcome } from './combat-timing.js';
 import { fighterLayout, healthBand, resolveFighterSkin } from './fighter-kit.js';
 import { actorClip, effectRows, impactCauses, missiles, motionScore } from './combat-motion.js';
@@ -337,9 +338,9 @@ export function playArenaAction(arena, recap, options = {}) {
     at(duration, () => el.remove());
     return el;
   }
-  function statusBurst(subject, cue) {
+  function statusBurst(subject, cue, scale) {
     const box = visibleBounds(subject);
-    const size = Math.max(54, Math.min(210, box.h * cue.scale));
+    const size = Math.max(54, Math.min(210, box.h * cue.scale)) * scale;
     const el = part(scene, 'arena-fx-burst arena-status-burst');
     el.dataset.effect = cue.effect;
     el.dataset.status = cue.id;
@@ -633,11 +634,12 @@ export function playArenaAction(arena, recap, options = {}) {
 
   // The back row shares screen space with the turn rail and announcement.
   // Position the receipt after the announcement changes on this same beat.
-  function placeLabel(subject, label) {
+  function placeLabel(subject, label, occupied = []) {
     const box = visibleBounds(subject);
     const w = label.offsetWidth, h = label.offsetHeight;
     const gap = 14; // includes the rise during the fade
     const hud = [...(arena.closest('.battle-shell')?.querySelectorAll('.scene-callout,.turn-rail,.round-meta') ?? [])].map(boxFor);
+    const obstacles = [...hud, ...occupied];
     const cx = centerX(box), side = cx < arena.clientWidth / 2 ? 1 : -1;
     const offset = box.w * 0.36 + w / 2;
     const candidates = [
@@ -646,28 +648,32 @@ export function playArenaAction(arena, recap, options = {}) {
       [cx - side * offset, box.y + box.h * 0.54],
       [cx + side * offset, Math.max(box.y + box.h * 0.65, ...hud.map(r => r.y + r.h + h + gap))],
     ];
+    if (occupied.length) candidates.push(
+      [cx - side * offset, Math.max(box.y + box.h * 0.65, ...hud.map(r => r.y + r.h + h + gap))],
+      [cx, box.y + box.h + h + 22],
+    );
     for (const [x, y] of candidates) {
       const left = Math.max(4, Math.min(arena.clientWidth - w - 4, x - w / 2));
       const bottom = Math.max(h + gap, Math.min(arena.clientHeight - 6, y));
       label.style.left = (left + w / 2) + 'px';
       label.style.top = bottom + 'px';
-      if (!hud.some(r => left < r.x + r.w + 4 && left + w > r.x - 4 &&
+      if (!obstacles.some(r => left < r.x + r.w + 4 && left + w > r.x - 4 &&
         bottom + 4 > r.y && bottom - h - gap < r.y + r.h)) break;
     }
   }
   const recoil = new Map();
   const reactions = new Map();
-  function react(event) {
+  function react(event, group, audible = true, targetCount = 1) {
     const subject = seats.get(event.targetId);
     if (!subject) return;
     const direct = directOutcome(event, recap);
-    const status = statusCue(event);
+    const status = statusCue(event) || (!group?.fate && group?.cues[0]);
     const kind = effectFor(event, score, direct);
     const full = event === timing.primary || event.type === 'revival' || event.type === 'elimination';
-    const wardHit = !still && (direct || status) && event.type === 'damage' && (kind === 'guard' || kind === 'fracture');
+    const wardHit = !group && !still && (direct || status) && event.type === 'damage' && (kind === 'guard' || kind === 'fracture');
     // A ward records its own result just after physical contact; it never erases
     // the bottle breaking, blade hitting, or spell that caused that result.
-    if (status) statusBurst(subject, status);
+    if (status) statusBurst(subject, status, targetCount > 3 ? 0.76 : 1);
     else contactBurst(subject, wardHit ? score.effect : kind, event.amount, full);
     if (wardHit) at(108, () => contactBurst(subject, kind, event.amount, false));
     const blocked = event.type === 'damage' && event.shieldDamage && !event.healthDamage;
@@ -728,11 +734,27 @@ export function playArenaAction(arena, recap, options = {}) {
       );
     }
     const text = badge(event);
-    if (text || status) {
+    if (text || status || group) {
       labels.get(subject)?.remove();
       const label = part(scene, 'arena-fx-label');
       label.dataset.kind = event.type;
-      if (status) {
+      if (group) {
+        label.classList.add('arena-status-label', 'arena-group-label');
+        label.dataset.groupTarget = group.id;
+        label.style.setProperty('--status-ink', group.cues[0]?.ink || '#eed6ab');
+        const name = subject.seat.querySelector('.fighter-title')?.textContent;
+        part(label, 'arena-fx-source').textContent = name;
+        if (group.cues.length) {
+          const row = part(label, 'arena-group-conditions');
+          for (const [i, cue] of group.cues.entries()) {
+            const condition = part(row, 'arena-status-title');
+            condition.innerHTML = statusIcon(cue.id);
+            if (i < 2) condition.append(cue.title);
+          }
+        }
+        for (const line of group.values) part(label, 'arena-status-value').textContent = line;
+        if (group.fate) part(label, 'arena-status-title').textContent = group.fate;
+      } else if (status) {
         label.classList.add('arena-status-label');
         label.dataset.status = status.id;
         label.dataset.change = status.change;
@@ -753,7 +775,7 @@ export function playArenaAction(arena, recap, options = {}) {
           part(label, 'arena-fx-source').textContent = name ? cause + ' · ' + name : cause;
         }
       }
-      const hold = status ? 660 : still ? 250 : 550;
+      const hold = group ? 715 : status ? 660 : still ? 250 : 550;
       labels.set(subject, label);
       tween(
         label,
@@ -767,7 +789,8 @@ export function playArenaAction(arena, recap, options = {}) {
       );
       at(hold, () => label.remove());
     }
-    options.onCue?.({ action, role, effect: status?.sound ?? (wardHit ? score.effect : kind), event, first: event === timing.primary });
+    if (audible) options.onCue?.({ action, role, effect: status?.sound ?? (wardHit ? score.effect : kind), event, first: event === timing.primary });
+    return labels.get(subject);
   }
   at(timing.contact, () => {
     scene.dataset.stage = 'impact';
@@ -778,12 +801,21 @@ export function playArenaAction(arena, recap, options = {}) {
   });
   timing.beats.forEach((beat, index) => {
     at(beat.time, () => {
-      options.onBeat?.(beat, index, timing.beats.length);
+      const targets = beat.event ? null : groupedTargets(beat.events);
+      options.onBeat?.(targets ? { ...beat, targets } : beat, index, timing.beats.length);
       if (beat.event) {
-        react(beat.event);
-        const subject = seats.get(beat.event.targetId);
-        const label = labels.get(subject);
-        if (label?.isConnected) placeLabel(subject, label);
+        const label = react(beat.event);
+        if (label?.isConnected) placeLabel(seats.get(beat.event.targetId), label);
+      } else {
+        const accent = targets.find(t => t.fate) || targets.find(t => t.lead.type === 'damage') || targets[0];
+        const occupied = [];
+        for (const target of targets) {
+          const label = react(target.lead, target, target === accent, targets.length);
+          if (label?.isConnected) {
+            placeLabel(seats.get(target.id), label, occupied);
+            occupied.push(boxFor(label));
+          }
+        }
       }
       for (const event of beat.events) options.onImpact?.(event);
     });
