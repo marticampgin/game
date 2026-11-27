@@ -1,0 +1,60 @@
+/* Artwork occupies the central 100 × 120 of a 208 × 166 animation cel.
+   Extending the transparent sheet beyond a fighter's footprint lets the
+   weapon swing without moving their feet, nameplate or touch target. */
+.arena-sprite {
+  position:absolute; display:block; width:173.33334%; height:138.33334%;
+  top:-20%; left:-36.66667%; pointer-events:none;
+  --skin-band:0%; --idle-time:3.6s;
+}
+.arena-sprite[data-class="berserker"] { --idle-time:2.7s; }
+.arena-sprite[data-class="chronomancer"] { --idle-time:4.2s; }
+.arena-sprite[data-class="alchemist"] { --idle-time:3.1s; }
+.arena-sprite[data-tier="wounded"] { --skin-band:37.5%; }
+.arena-sprite[data-tier="critical"] { --skin-band:75%; }
+.arena-cel {
+  display:block; height:100%; width:100%; image-rendering:pixelated;
+  background-image:var(--skin); background-repeat:no-repeat; background-size:400% 900%;
+  background-position:var(--pose-x,0%) calc(var(--skin-band) + var(--pose-y,0%));
+}
+[data-facing="left"] .arena-cel { transform:scaleX(-1); }
+.arena-sprite[data-pose="idle"]:not([data-still]) > .arena-cel {
+  animation:arena-idle-frames var(--idle-time) steps(1,end) infinite;
+  animation-delay:var(--idle-delay);
+}
+@keyframes arena-idle-frames {
+  0%,100% {background-position-x:0%} 24% {background-position-x:33.333333%}
+  48% {background-position-x:0%} 72% {background-position-x:66.666667%} 82% {background-position-x:100%}
+}
+.arena-sprite[data-pose="fallen"] { filter:saturate(.45) brightness(.83); }
+.arena-sprite[data-playing="hidden"] {visibility:hidden;}
+.arena-fx {
+  position:absolute; inset:0; z-index:99; pointer-events:none; overflow:clip;
+  /* Isolate effects from stage flex/grid positioning and scrolling. */
+  display:block; contain:layout paint;
+}
+.arena-fx-actor,.arena-fx-burst,.arena-fx-missile,.arena-fx-label { position:absolute; display:block; pointer-events:none; }
+.arena-fx-actor { transform-origin:50% 100%; filter:drop-shadow(1px 3px 1px #22142899); }
+.arena-fx-burst,.arena-fx-missile {
+  background-repeat:no-repeat; image-rendering:pixelated;
+  filter:drop-shadow(0 1px 1px #1b1029af);
+}
+.arena-fx-burst {
+  background-image:url('/assets/skins/arena-effects.png'); background-size:600% 1400%;
+  background-position:0% var(--effect-row); animation:arena-effect-cels var(--effect-time,330ms) steps(1,end) forwards;
+}
+@keyframes arena-effect-cels {
+  0% {background-position-x:0%} 12% {background-position-x:20%} 26% {background-position-x:40%}
+  43% {background-position-x:60%} 65% {background-position-x:80%} 83%,100% {background-position-x:100%}
+}
+.arena-fx-missile { background-image:url('/assets/skins/arena-projectiles.png'); background-size:600% 100%; background-position:var(--projectile-x) 0; }
+.arena-fx-label {
+  transform:translate(-50%,-100%); white-space:nowrap; padding:1px 4px; background:#251b28d6;
+  border-radius:2px; color:#ffb7a2; text-shadow:0 1px #221124; font:700 clamp(10px,1.02vw,15px)/1.18 var(--body,sans-serif);
+}
+.arena-fx-label[data-kind="shield"] {color:#a5e2ff;}
+.arena-fx-label[data-kind="heal"],.arena-fx-label[data-kind="revival"] {color:#aff1b2;}
+.arena-fx-burst.arena-fx-still {animation:none!important;background-position-x:60%;}
+body.reduce-motion .arena-sprite[data-pose="idle"] > .arena-cel {animation:none!important;}
+@media (prefers-reduced-motion:reduce) {
+  .arena-sprite[data-pose="idle"] > .arena-cel {animation:none!important;}
+}
