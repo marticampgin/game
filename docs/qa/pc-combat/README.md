@@ -14,6 +14,8 @@ The four clips show a Guardian scavenging in a duel, an injured Berserker drinki
 
 In the original eight-seat replay, separate ticks replaced one another roughly every 280 ms. The default spacing is now 680 ms. A short trail keeps the last three results in view. Skip effects goes straight to the resolved turn, and reduced motion shows stationary receipts. The automated desktop checks also cover both sides of the ring, shielded damage, Scavenge’s bonus reward and labels near the turn portraits.
 
+During a seeded eight-seat game, Flint shield-bashed Juniper as the arena entered round twelve. Blood Moon gave every fighter two Curse stacks together, then Juniper took her personal Burn tick. The round indicator, damage total, target HP and next event all update during that sequence. The screenshot shows the simultaneous applications on all eight seats. [Blood Moon at 1440 × 900](blood-moon.webp)
+
 ## What changed under review
 
 - In the first unlabelled recordings, the shield travelled through the opponent and the extended saber slid backward. The near shield rim now stops against the body. A separate counterstep retracts the weapon, transfers weight and catches the landing. A second review caught an empty frame at the change of sheet. Overlapping the painted layers kept all three melee attackers visible in a third frame-by-frame review.

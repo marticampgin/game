@@ -181,3 +181,9 @@
     box-shadow: inset 0 0 0 1px #201924;
   }
 }
+
+@media (min-width: 960px) {
+  .command-deck:has(.action-choice:nth-child(5), .action-pages) {
+    padding-block: clamp(4px, .36vw, 7px);
+  }
+}

@@ -4,7 +4,7 @@ import { bonusDraftContinuation } from './combat-timing.js';
 import { statusCue } from './status-effects.js';
 import { renderArena } from './arena-render.js';
 import { clearRewardFlight, dealOffers, deliverReward, pickedEmblem } from './draft-motion.js';
-import { battleHTML, buildHTML, turnRail } from './battle.js';
+import { battleHTML, buildHTML, nextEventButton, roundCaption, turnRail } from './battle.js';
 import { historyHTML, filterHistory, refreshHistory } from './history.js';
 import { planBotStep } from './pacing.js';
 import { actionVisual, healthBand, playArenaAction, preloadArenaSkins } from './animation.js';
@@ -234,13 +234,18 @@ function refreshBattle() {
       if (heading) heading.textContent = 'Action played';
       if (confirm) confirm.textContent = action.actionName;
     }
-    let shownOwner = old.activeId;
+    let shownOwner = old.activeId, shownRound = old.round;
     const handle = playArenaAction(arena, action, {
       effectsOnly: !!continuation,
       onBeat(beat, index, total) {
         if (!showBeat) return;
         showBeat(beat, index, total);
         const event = beat.events[0];
+        if (event.round === v.round && shownRound !== event.round) {
+          shownRound = event.round;
+          shell.querySelector('.round-meta').innerHTML = roundCaption(v);
+          shell.querySelector('.battle-bottom > div').innerHTML = nextEventButton(v);
+        }
         if (event.timing === 'round') callout.textContent = 'Round ' + event.round + ' begins';
         if (event.timing !== 'turn') return;
         const owner = old.players.find(p => p.id === event.turnOwnerId);
@@ -269,6 +274,8 @@ function refreshBattle() {
         else if (event.type === 'revival') value = event.amount;
         else if (event.type === 'elimination') value = 0;
         hp.set(p.id, value);
+        const option = shell.querySelector('#target-select option[value="' + CSS.escape(p.id) + '"]');
+        if (option) option.textContent = p.name + ' (' + value + ' / ' + p.maxHp + ')';
         if (p.id === old.activeId) {
           const station = shell.querySelector('.command-player');
           if (station) {

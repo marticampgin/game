@@ -10,6 +10,10 @@ import { resolutionHTML } from './resolution.js';
 const tool = (id, label, icon) =>
   `<button class="tool-btn" data-ui="${id}" title="${label}" aria-label="${label}">${glyph(icon)}<span>${label}</span></button>`;
 
+export const roundCaption = view => 'Round ' + esc(view.round) + '<i>◆</i>' + esc(view.age);
+export const nextEventButton = view => view.nextEvent && view.phase !== 'finished'
+  ? tool('event', 'Next event · Round ' + view.nextEvent.round + ' · ' + view.nextEvent.name, 'cycle') : '';
+
 function actionSelection(view, player, actionId, targetId) {
   const actions = getActions(view, player.id);
   const action = actions.find((a) => a.id === actionId && !a.disabled) || actions.find((a) => !a.disabled);
@@ -138,7 +142,7 @@ export function battleHTML(view, viewerId, ui) {
     <button class="arena-brand" data-ui="leave" aria-label="Riftbound main menu"><img src="/assets/ring-emblem.webp" alt="">Riftbound</button>
     <h1>The Shattered Ring</h1><nav class="battle-tools" aria-label="Match tools">${tool('history', 'Battle log', 'scroll')}
       <button class="tool-btn" data-ui="build" aria-label="Your inventory" title="Your inventory">${glyph('book')}<span>Inventory</span></button></nav>
-    <div class="round-meta">Round ${view.round}<i>◆</i>${esc(view.age)}</div></header>
+    <div class="round-meta">${roundCaption(view)}</div></header>
     <section class="turn-board ${drafting ? 'drafting' : ''} ${ui.draftHidden ? 'shop-hidden' : ''}" aria-label="Battlefield">
       <div class="arena-world" data-count="${view.players.length}"><span class="torch-embers west" aria-hidden="true"></span><span class="torch-embers east" aria-hidden="true"></span>${view.players.map((p, i) => combatant(p, i, view, viewerId, selection, intent)).join('')}</div>
       ${turnRail(view, viewerId)}
@@ -151,7 +155,7 @@ export function battleHTML(view, viewerId, ui) {
     </section>
     ${dock ? '<section class="turn-controls metal-edge" aria-label="Turn controls">' + dock + '</section>' : ''}
     <div class="turn-resolution">${resolutionHTML(view, viewerId, ui.recap)}</div>
-    <footer class="battle-bottom"><div>${view.nextEvent && !end ? tool('event', 'Next event · Round ' + view.nextEvent.round + ' · ' + view.nextEvent.name, 'cycle') : ''}</div>
+    <footer class="battle-bottom"><div>${nextEventButton(view)}</div>
       <nav aria-label="Arena tools">${tool('atlas', 'Atlas', 'book')}${tool('battle-sound', ui.sound ? 'Mute sound' : 'Enable sound', ui.sound ? 'sound' : 'mute')}${tool('battle-settings', 'Settings and rules', 'settings')}${tool('leave', end ? 'Main menu' : 'Leave match', 'back')}</nav></footer>
   </div>`;
 }
