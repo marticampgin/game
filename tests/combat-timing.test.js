@@ -72,7 +72,7 @@ test('a consumed Burn and pre-strike Bleed never claim contact from the actual w
 
 test('a round-wide condition lands together before the next fighter takes a personal tick', () => {
   const wave = Array.from({length:8}, (_, i) => ({
-    type:'status', cause:'curse', statusChange:'applied', amount:2, targetId:'p' + i, timing:'round', round:11,
+    type:'status', cause:'curse', statusChange:'applied', amount:2, actorId:'p' + i, targetId:'p' + i, timing:'round', round:11,
   }));
   const burn = {type:'damage', cause:'burn', amount:3, targetId:'p6', timing:'turn'};
   const result = combatTiming({actorId:'p2',targetId:'p6',events:[...wave, burn]}, 495, false);

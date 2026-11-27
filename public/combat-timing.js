@@ -18,7 +18,8 @@ function sameTick(a, b) {
 function sameRoundApplication(a, b) {
   return a.timing === 'round' && b.timing === 'round' && a.type === 'status' && b.type === 'status' &&
     a.statusChange === 'applied' && b.statusChange === a.statusChange && !!statusCue(a) &&
-    a.cause === b.cause && a.actorId === b.actorId && a.round === b.round && a.amount === b.amount;
+    a.cause === b.cause && a.round === b.round && a.amount === b.amount &&
+    (a.actorId === b.actorId || (a.actorId === a.targetId && b.actorId === b.targetId));
 }
 
 function beatFor(events) {
