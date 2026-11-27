@@ -39,14 +39,15 @@
   filter:drop-shadow(0 1px 1px #1b1029af);
 }
 .arena-fx-burst {
-  background-image:url('/assets/skins/arena-effects.png'); background-size:600% 1400%;
-  background-position:0% var(--effect-row); animation:arena-effect-cels var(--effect-time,330ms) steps(1,end) forwards;
+  background-image:url('/assets/skins/arena-effects.png'); background-size:1600% 2000%;
+  background-position:0% var(--effect-row); animation:arena-effect-cels var(--effect-time,330ms) steps(15,end) forwards;
 }
 @keyframes arena-effect-cels {
-  0% {background-position-x:0%} 12% {background-position-x:20%} 26% {background-position-x:40%}
-  43% {background-position-x:60%} 65% {background-position-x:80%} 83%,100% {background-position-x:100%}
+  from {background-position-x:0%}
+  to {background-position-x:100%}
 }
-.arena-fx-missile { background-image:url('/assets/skins/arena-projectiles.png'); background-size:600% 100%; background-position:var(--projectile-x) 0; }
+.arena-fx-missile { background-image:url('/assets/skins/arena-projectiles.png'); background-size:600% 800%; background-position:var(--projectile-x) 0; animation:arena-projectile-cels .28s steps(7,end) infinite; }
+@keyframes arena-projectile-cels {to {background-position-y:100%;}}
 .arena-fx-label {
   transform:translate(-50%,-100%); white-space:nowrap; padding:1px 4px; background:#251b28d6;
   border-radius:2px; color:#ffb7a2; text-shadow:0 1px #221124; font:700 clamp(10px,1.02vw,15px)/1.18 var(--body,sans-serif);

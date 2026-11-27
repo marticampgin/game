@@ -15,7 +15,7 @@ test('every founder sheet has twelve poses in each of three damage bands',async(
     assert.ok(html.includes('data-class="'+classId+'"'));
     assert.ok(html.includes(sheet));
   }
-  for(const [name,width,height] of [['arena-effects',384,896],['arena-projectiles',192,32]]) {
+  for(const [name,width,height] of [['arena-effects',1024,1280],['arena-projectiles',192,256]]) {
     const image=await readFile(new URL('../public/assets/skins/'+name+'.png',import.meta.url));
     assert.deepEqual([image.readUInt32BE(16),image.readUInt32BE(20)],[width,height]);
   }

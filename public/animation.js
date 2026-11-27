@@ -60,7 +60,7 @@ export function preloadArenaSkins(players=[]) {
   }));
 }
 
-const effectRows=['slash','cleave','bastion','arcane','venom','fire','frost','doom','heal','guard','shock','loot','revival','fracture'];
+const effectRows=['slash','cleave','bastion','arcane','venom','fire','frost','doom','heal','guard','shock','loot','revival','fracture','dust','bleed','thorns','eclipse','ward','echo'];
 const missiles=['arcane','venom','fire','frost','doom','shock'];
 const actionEffects={
   'bastion-bash':['melee','bastion'], 'blood-cleave':['melee','cleave'], 'hollow-needle':['melee','slash'],
