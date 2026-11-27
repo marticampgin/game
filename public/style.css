@@ -764,3 +764,6 @@ body.reduce-motion *:after {
   .dialog-head { padding-inline: 22px 14px; }
   #dialog .primary, #dialog .tool-btn { font: 600 16px/1.25 var(--display); }
 }
+@media (min-width: 900px) {
+  .setting-line input { width: 19px; height: 19px; border-color: #c39b76; }
+}

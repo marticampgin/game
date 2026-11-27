@@ -1,5 +1,5 @@
 import { CLASSES, REWARDS, STATUSES, currentAttack, getActions } from '/src/game/index.js';
-import { classArt, rewardIcon, glyph, esc } from './art.js';
+import { classArt, rewardIcon, seatCrest, glyph, esc } from './art.js';
 import { actionDock } from './command.js';
 import { fighterSpriteHTML } from './animation.js';
 import { draftHTML } from './draft.js';
@@ -50,7 +50,7 @@ function combatant(p, index, view, viewerId, selection, intent) {
     data-seat="${esc(p.id)}" data-facing="${x > 50 ? 'left' : 'right'}" style="--x:${x.toFixed(2)}%;--y:${y.toFixed(2)}%;--depth:${Math.round(y)};--scale:${(0.76 + (y - 35) * 0.0073).toFixed(3)}">
     <button type="button" class="fighter-main" data-${targetable ? 'aim' : 'inspect'}="${esc(p.id)}" aria-label="${targetable ? 'Target' : 'View'} ${esc(p.name)}" aria-describedby="vitals-${esc(p.id)}" ${targetable ? 'aria-pressed="' + !!marked + '"' : ''}>
       <span class="foot-ring" aria-hidden="true"></span><span class="fighter-art">${fighterSpriteHTML(p)}</span>
-      <span class="fighter-panel" id="vitals-${esc(p.id)}"><strong class="fighter-title">${esc(p.name)}</strong>
+      <span class="fighter-panel" id="vitals-${esc(p.id)}"><strong class="fighter-title">${seatCrest(index)}${esc(p.name)}</strong>
         <span class="vital-bar" aria-hidden="true"><i style="width:${hp}%"></i></span>
         <span class="fighter-hp">${p.alive ? p.hp + ' / ' + p.maxHp : 'Out'}</span>
         <span class="sr-turn">${esc(details)}${p.shield ? ' · ' + p.shield + ' shield' : ''}</span>
@@ -89,8 +89,8 @@ function turnRail(view, viewerId) {
         const seatHint = code.startsWith('#') ? ' · Seat ' + (seat + 1) : '';
         const label =
           (end ? '' : i === 0 ? 'Acting · ' : i === 1 ? 'Up next · ' : 'Turn ' + (i + 1) + ' · ') + p.name + seatHint;
-        return `<li><button data-inspect="${esc(id)}" aria-label="${esc(label)}" title="${esc(label + (id === viewerId ? ' · You' : ''))}">
-          <img src="/assets/portrait-${esc(p.classId)}.webp" alt=""><span class="rail-name" aria-hidden="true">${esc(shortName)}</span><span class="rail-code" aria-hidden="true">${esc(code)}</span>
+        return `<li><button data-inspect="${esc(id)}" aria-label="${esc(label)}" title="${esc(label + (id === viewerId ? ' · You' : ''))}" ${!end && i === 0 ? 'aria-current="step"' : ''}>
+          <img src="/assets/portrait-${esc(p.classId)}.webp" alt="">${seatCrest(seat)}<span class="rail-name" aria-hidden="true">${esc(shortName)}</span><span class="rail-code" aria-hidden="true">${esc(code)}</span>
         </button></li>`;
       })
       .join('')}</ol></nav>`;
@@ -148,7 +148,7 @@ export function battleHTML(view, viewerId, ui) {
     </section>
     ${dock ? '<section class="turn-controls metal-edge" aria-label="Turn controls">' + dock + '</section>' : ''}
     <div class="turn-resolution">${resolutionHTML(view, viewerId, ui.recap)}</div>
-    <footer class="battle-bottom"><div>${view.nextEvent && !end ? tool('event', 'Round ' + view.nextEvent.round + ' · ' + view.nextEvent.name, 'cycle') : ''}</div>
+    <footer class="battle-bottom"><div>${view.nextEvent && !end ? tool('event', 'Next event · Round ' + view.nextEvent.round + ' · ' + view.nextEvent.name, 'cycle') : ''}</div>
       <nav aria-label="Arena tools">${tool('atlas', 'Atlas', 'book')}${tool('battle-sound', ui.sound ? 'Mute sound' : 'Enable sound', ui.sound ? 'sound' : 'mute')}${tool('battle-settings', 'Settings and rules', 'settings')}${tool('leave', end ? 'Main menu' : 'Leave match', 'back')}</nav></footer>
   </div>`;
 }

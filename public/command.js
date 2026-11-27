@@ -1,16 +1,16 @@
 import { CLASSES, previewAction } from '/src/game/index.js';
-import { actionIcon, esc, glyph } from './art.js';
+import { actionIcon, seatCrest, esc, glyph } from './art.js';
 
 const PAGE_SIZE = 6;
 
-function portrait(player) {
-  return `<img src="/assets/portrait-${CLASSES[player.classId].id}.webp" alt="" draggable="false">`;
+function portrait(player, view) {
+  return `<img src="/assets/portrait-${CLASSES[player.classId].id}.webp" alt="" draggable="false">${seatCrest(view.players.findIndex(p => p.id === player.id))}`;
 }
 
-function playerStation(player) {
+function playerStation(player, view) {
   const percent = Math.max(0, Math.min(100, player.hp * 100 / player.maxHp));
   return `<button type="button" class="command-player" data-ui="build" aria-label="Inspect ${esc(player.name)}'s build">
-    <span class="command-portrait">${portrait(player)}</span>
+    <span class="command-portrait">${portrait(player, view)}</span>
     <span class="command-player-info"><strong>${esc(player.name)}</strong>
     <span class="command-hp">HP <b>${player.hp} / ${player.maxHp}</b></span>
     <span class="command-health" aria-hidden="true"><i style="width:${percent}%"></i></span></span></button>`;
@@ -49,13 +49,13 @@ export function actionDock(view, player, selection, { actionPage = 0, acquiredRe
     : 'Choose a living rival to preview this action.';
   const note = [acquiredReward ? 'Took ' + acquiredReward : '', view.remainingActions > 1 ? view.remainingActions + ' actions left' : ''].filter(Boolean).join(' · ');
   return `<section class="command-deck" aria-label="Action command deck">
-    ${playerStation(player)}<div class="command-hand"><header class="dock-heading command-heading"><div>
+    ${playerStation(player, view)}<div class="command-hand"><header class="dock-heading command-heading"><div>
       <h2>Choose an action</h2>${note ? `<small>${esc(note)}</small>` : ''}</div>${pageNav(page, actions.length)}</header>
       <div class="action-grid" role="group" aria-label="Available actions" style="--command-count:${visible.length};--phone-columns:${visible.length > 4 ? 3 : visible.length}">
         ${visible.map(option => actionButton(option, action.id)).join('')}</div>
     </div><div class="target-panel"><div class="aim-line">${action.target === 'enemy'
-      ? `<label for="target-select">Target</label><span class="command-target">${target ? `<span class="command-target-art">${portrait(target)}</span>` : ''}<select id="target-select">${target ? '' : '<option value="" selected>Choose a rival</option>'}${rivals.map(p => `<option value="${esc(p.id)}" ${p.id === target?.id ? 'selected' : ''}>${esc(p.name)} (${p.hp} / ${p.maxHp})</option>`).join('')}</select></span>`
-      : `<span>Target</span><span class="command-target"><span class="command-target-art">${portrait(player)}</span><strong>Yourself</strong></span>`}</div>
+      ? `<label for="target-select">Target</label><span class="command-target">${target ? `<span class="command-target-art">${portrait(target, view)}</span>` : ''}<select id="target-select">${target ? '' : '<option value="" selected>Choose a rival</option>'}${rivals.map(p => `<option value="${esc(p.id)}" ${p.id === target?.id ? 'selected' : ''}>${esc(p.name)} (${p.hp} / ${p.maxHp})</option>`).join('')}</select></span>`
+      : `<span>Target</span><span class="command-target"><span class="command-target-art">${portrait(player, view)}</span><strong>Yourself</strong></span>`}</div>
       <div class="command-estimate">${preview !== action.description ? `<p class="action-description">${esc(action.description)}</p>` : ''}
       <p class="preview" aria-live="polite">${esc(preview)}</p></div>
       <button type="button" class="primary confirm-action" data-execute="${esc(action.id)}" data-target="${esc(target?.id)}" ${target ? '' : 'disabled'}>Use ${esc(action.name)} ${glyph('right')}</button>

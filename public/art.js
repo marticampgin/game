@@ -12,6 +12,12 @@ export function rewardIcon(reward) {
   return '<img class="reward-art" src="' + src + '" alt="" draggable="false">';
 }
 
+// The seat stays fixed when initiative, health and turn order change.
+export function seatCrest(seat) {
+  if (!Number.isInteger(seat) || seat < 0 || seat >= 8) return '';
+  return '<span aria-hidden="true" class="seat-crest" data-crest="' + seat + '" style="--crest:' + seat + '"></span>';
+}
+
 const basicActions = new Set(['attack', 'defend', 'scavenge']);
 
 export function actionIcon(id) {

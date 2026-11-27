@@ -87,3 +87,31 @@ for (const [width, height] of [[1280, 720], [1440, 900], [1920, 1080]]) {
     });
   }
 }
+
+test('keeps the same crest for each contender on the field, turn rail and target picker', async ({ page }) => {
+  const state = createMatch({ seed: 'eight-guardians', players: Array.from({ length: 8 }, (_, i) => ({
+    id: 'p' + i, name: i < 2 ? 'Rowan' : 'Guardian ' + i, classId: 'guardian', bot: false,
+  })) });
+  await page.goto('/');
+  await page.evaluate(save => sessionStorage.setItem('rift-solo', JSON.stringify(save)), { state, viewerId: state.activeId });
+  await page.reload();
+  const rail = page.getByRole('navigation', { name: 'Turn order' });
+  const signatures = new Set();
+  for (const player of state.players) {
+    const crest = page.locator('[data-seat="' + player.id + '"] .seat-crest');
+    await expect(crest).toBeVisible();
+    const value = await crest.getAttribute('data-crest');
+    signatures.add(value);
+    await expect(rail.locator('[data-inspect="' + player.id + '"] .seat-crest')).toHaveAttribute('data-crest', value);
+  }
+  expect(signatures.size).toBe(8);
+  await expect(rail.locator('[aria-current=step]')).toHaveAttribute('data-inspect', state.activeId);
+  await page.locator('[data-draft-select]').first().click();
+  await page.locator('[data-pick]').click();
+  const target = state.players.find(p => p.id !== state.activeId);
+  await page.locator('[data-aim="' + target.id + '"]').click();
+  const identity = id => page.locator('[data-seat="' + id + '"] .seat-crest').getAttribute('data-crest');
+  await expect(page.locator('.command-portrait .seat-crest')).toHaveAttribute('data-crest', await identity(state.activeId));
+  await expect(page.locator('.command-target-art .seat-crest')).toHaveAttribute('data-crest', await identity(target.id));
+  await expect(page.locator('[data-ui=event]')).toContainText('Next event');
+});

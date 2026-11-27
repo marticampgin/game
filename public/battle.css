@@ -821,3 +821,46 @@ body[data-screen='battle'] > .topbar {
     top: 56px;
   }
 }
+.seat-crest { display: none; }
+@media (min-width: 900px) {
+  .seat-crest {
+    --crest-size: 13px;
+    display: inline-block;
+    width: var(--crest-size);
+    height: var(--crest-size);
+    pointer-events: none;
+    background: url('/assets/seat-crests.png') no-repeat;
+    background-size: calc(8 * var(--crest-size)) var(--crest-size);
+    background-position: calc(-1 * var(--crest) * var(--crest-size)) 0;
+    image-rendering: pixelated;
+  }
+  .fighter-title .seat-crest { margin-right: 2px; vertical-align: -1px; }
+  .turn-rail .seat-crest, .command-portrait .seat-crest, .command-target-art .seat-crest {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    --crest-size: 14px;
+    background-color: #211824d9;
+    border-radius: 2px;
+  }
+  .command-portrait .seat-crest { top: auto; bottom: 4px; left: 4px; --crest-size: 19px; }
+  .command-target-art .seat-crest { top: auto; bottom: 0; left: 0; --crest-size: 11px; }
+  .acting .foot-ring {
+    border: 2px solid #a8eadb;
+    box-shadow: 0 0 0 1px #213a3a, inset 0 0 6px #80d6c98f, 0 1px 5px #0f252c;
+  }
+  .acting .foot-ring::before, .acting .foot-ring::after {
+    content: '';
+    position: absolute;
+    top: calc(50% - 5px);
+    width: 8px;
+    height: 10px;
+    background: #dbfff0;
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+  }
+  .acting .foot-ring::before { left: -9px; }
+  .acting .foot-ring::after { right: -9px; transform: scaleX(-1); }
+  .acting .fighter-title { color: #d2ffed; }
+  .turn-rail button[aria-current="step"] { border-color: #a8eadb; box-shadow: 0 0 0 1px #4b847c; }
+  .turn-rail li:has([aria-current="step"])::after { border-top-color: #b0f3df; }
+}
