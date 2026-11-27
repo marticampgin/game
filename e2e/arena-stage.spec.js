@@ -29,11 +29,9 @@ for (const viewport of [
 ]) {
   test.describe(viewport.width + 'px arena', () => {
     test.use({ viewport });
-    test('keeps every roster size on the same floor through inspection, targeting and drafting', async ({
-      page,
-    }) => {
-      await page.goto('/');
-      for (const count of [2, 3, 4, 5, 6, 7, 8]) {
+    for (const count of [2, 3, 4, 5, 6, 7, 8]) {
+      test('keeps ' + count + ' seats on the same floor through inspection, targeting and drafting', async ({ page }) => {
+        await page.goto('/');
         const save = ring(count);
         await page.evaluate((s) => sessionStorage.setItem('rift-solo', JSON.stringify(s)), save);
         await page.reload();
@@ -62,7 +60,7 @@ for (const viewport of [
         expect(
           await page.evaluate(() => window.startingSprite === document.querySelector('.arena-sprite')),
         ).toBe(true);
-      }
-    });
+      });
+    }
   });
 }
