@@ -98,7 +98,7 @@
 }
 .arena-fx-burst {
   background-image: url('/assets/skins/arena-effects.png');
-  background-size: 1600% 2000%;
+  background-size: 1600% 2100%;
   background-position: 0% var(--effect-row);
   animation: arena-effect-cels var(--effect-time, 330ms) steps(15, end) forwards;
 }
@@ -261,4 +261,10 @@ body.reduce-motion .arena-sprite[data-pose='idle'] {
   .arena-sprite[data-pose='idle'] {
     animation: none !important;
   }
+}
+.combatant .fighter-panel {
+  transition: opacity 100ms ease-out;
+}
+.combatant[data-travelling] .fighter-panel {
+  opacity: 0.1;
 }

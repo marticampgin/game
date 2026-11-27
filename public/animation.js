@@ -46,6 +46,7 @@ const poses = [
 ];
 function pose(element, name) {
   delete element.dataset.track;
+  element.style.removeProperty('--clip-row');
   const index = poses.indexOf(name);
   element.dataset.pose = name;
   element.style.setProperty('--pose-x', ((index % 4) / 3) * 100 + '%');
@@ -152,6 +153,7 @@ const effectRows = [
   'eclipse',
   'ward',
   'echo',
+  'miasma',
 ];
 const missiles = ['arcane', 'venom', 'fire', 'frost', 'doom', 'shock'];
 export function actionVisual(actionId, classId, self = false) {
@@ -183,7 +185,7 @@ function effectFor(event, profile, primary) {
   if (event.type === 'elimination') return 'doom';
   if (event.type === 'revival') return 'revival';
   if (event.type === 'heal') return 'heal';
-  if (event.type === 'shield') return 'guard';
+  if (event.type === 'shield') return primary && profile.effect === 'ward' ? 'ward' : 'guard';
   return impactCauses[event.cause] ?? profile.effect;
 }
 export function impactScale(amount) {
@@ -353,8 +355,8 @@ export function playArenaAction(arena, recap, options = {}) {
     else if (!originals.has(element)) originals.set(element, element.dataset.pose);
     pose(element, name);
   }
-  function imprint(kind, x, y, size, duration, parent = scene) {
-    const el = part(parent, 'arena-fx-burst');
+  function imprint(kind, x, y, size, duration) {
+    const el = part(scene, 'arena-fx-burst');
     el.dataset.effect = kind;
     positioned(el, x - size / 2, y - size / 2, size, size);
     el.style.setProperty('--effect-row', (effectRows.indexOf(kind) / (effectRows.length - 1)) * 100 + '%');
@@ -365,7 +367,8 @@ export function playArenaAction(arena, recap, options = {}) {
   }
   function contactBurst(subject, kind, amount, full = true) {
     const box = bounds(subject);
-    const size = Math.max(34, Math.min(205, box.h * impactScale(amount) * (full ? 0.91 : 0.58)));
+    const emphasis = full ? (kind === 'venom' ? 1.19 : 0.91) : 0.58;
+    const size = Math.max(34, Math.min(205, box.h * impactScale(amount) * emphasis));
     return imprint(kind, centerX(box), centerY(box), size, still ? 245 : full ? 370 : 305);
   }
   function heldIcon(icon, fromMs, untilMs) {
@@ -460,7 +463,13 @@ export function playArenaAction(arena, recap, options = {}) {
     }
     tween(ghost, body, duration);
     if (melee) {
-      actor.seat.dataset.travelling = '';
+      const launch = score.path.find((point) => point[1] > 0);
+      at(launch[0], () => {
+        actor.seat.dataset.travelling = '';
+      });
+      at(duration - 90, () => {
+        delete actor.seat.dataset.travelling;
+      });
       const floor = part(scene, 'arena-fx-shadow');
       positioned(
         floor,

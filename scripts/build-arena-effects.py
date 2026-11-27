@@ -16,6 +16,7 @@ PALETTES = {
     'dust': ('#605063', '#ac8275', '#d4ac83'), 'bleed': ('#6a3353', '#b75763', '#e99a86'),
     'thorns': ('#55434e', '#a18265', '#d9b687'), 'eclipse': ('#50446a', '#ba85ba', '#eed4cc'),
     'ward': ('#7a6649', '#e7ba72', '#fff0be'), 'echo': ('#6f6a9b', '#aec2e4', '#eaeae1'),
+    'miasma': ('#466449', '#add361', '#e7efa8'),
 }
 MISSILES = ['arcane', 'venom', 'fire', 'frost', 'doom', 'shock']
 TAU = 2 * math.pi
@@ -111,7 +112,7 @@ def plume(draw, phase, colors, kind):
         t = min(1, max(0, (phase - (i%3)*.045)*1.14))
         side = (-1 if i%2 else 1)
         x=32 + side*(3 + (i%5)*5)*t
-        if kind=='venom':
+        if kind=='miasma':
             y=42 - math.sin(t*math.pi)*((i%4)*5+9) + t*4
             r=max(1,round((1-t)*3))
             draw.ellipse((x-r,y-r,x+r,y+r),fill=mid,outline=dark)
@@ -143,6 +144,36 @@ def plume(draw, phase, colors, kind):
             draw.line((x,y,x+side*2,y-3),fill=mid,width=2)
 
 
+def shattered_flask(draw, phase, colors):
+    dark,mid,light=colors
+    # The belly of the bottle breaks sideways at the chest. A raised sheet of
+    # liquid opens into droplets and three bright glass shards fall across it.
+    spread=min(1,phase/.30)
+    if phase < .53:
+        profile=[(-24,-10),(-17,-5),(-21,-18),(-13,-14),(-8,-6),(-6,-19),(-1,-12),
+                 (3,-2),(9,-14),(12,-12),(12,-4),(25,-15),(22,-5),(17,4),(26,2),
+                 (21,11),(13,16),(0,13),(-9,16),(-20,11),(-16,6),(-25,4)]
+        scale=.24+.75*math.sin(spread*math.pi/2)
+        base=27+phase*15
+        pts=[(round(32+x*scale),round(base+y*scale)) for x,y in profile]
+        draw.polygon(pts,fill=mid,outline=dark)
+        rim=[(round(32+x*scale),round(base+y*scale)) for x,y in profile[:15]]
+        draw.line(rim,fill=light,width=1)
+        if phase<.22: star(draw,32,round(base),round(5*(1-phase/.22)),light)
+    for i in range(13):
+        side=1 if i%2 else -1
+        x=32+side*(12+(i*7)%19)*phase
+        t=phase*1.06
+        y=28+38*t*t-(15+(i*11)%40)*t
+        size=max(1,round((3.4-(i%3)*.55)*(1-.58*phase)))
+        if i in (2,7,9):
+            draw.polygon([(x-2,y-2),(x+side*4,y-4+7*t),(x,y+3)],fill='#e3c68e',outline='#827f79')
+            draw.point((round(x),round(y-1)),fill='#fff1c6')
+        else:
+            draw.ellipse((x-size,y-size*1.25,x+size,y+size),fill=mid,outline=dark)
+            draw.point((round(x),round(y-size)),fill=light)
+
+
 def splinters(draw,phase,colors,kind):
     dark,mid,light=colors
     for i in range(8):
@@ -167,6 +198,7 @@ def impact(kind, frame, colors):
     draw=ImageDraw.Draw(image)
     phase=(frame+.35)/CELLS
     if kind in ('slash','cleave'): blade(draw,phase,colors,kind=='cleave')
+    elif kind=='venom': shattered_flask(draw,phase,colors)
     elif kind in ('bastion','fracture'): strike(draw,phase,colors,kind=='fracture')
     elif kind in ('arcane','guard','ward','doom','eclipse','echo'): dial(draw,phase,colors,kind)
     elif kind in ('shock','frost','thorns'): splinters(draw,phase,colors,kind)

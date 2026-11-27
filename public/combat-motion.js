@@ -175,7 +175,7 @@ export const impactCauses = {
   burn: 'fire',
   'arena-fire': 'fire',
   bleed: 'bleed',
-  poison: 'venom',
+  poison: 'miasma',
   doom: 'doom',
   curse: 'doom',
   shock: 'shock',
