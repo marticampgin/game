@@ -107,6 +107,10 @@
 .command-deck .confirm-action svg { display: none }
 .command-deck .confirm-action:disabled { opacity: .58 }
 .command-deck :is(button,select):focus-visible { outline: 2px solid #ffe3ad; outline-offset: 2px }
+.reward-flight { position: fixed; inset: 0; z-index: 140; pointer-events: none; overflow: hidden; }
+.reward-flight img, .reward-flight i { position: absolute; left: 0; top: 0; }
+.reward-flight img { object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 2px #271828) drop-shadow(0 0 3px #dfae6888); }
+.reward-flight i { width: 6px; height: 6px; background: #fff0bd; box-shadow: 0 -8px #edba71, 0 8px #edba71, -8px 0 #edba71, 8px 0 #edba71; }
 @media (min-width: 761px) {
   .command-deck { grid-template-columns: minmax(0,.79fr) minmax(0,1.54fr) minmax(0,1.3fr); }
   .command-deck .action-grid { column-gap: clamp(5px,1vw,18px); }
