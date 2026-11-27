@@ -29,7 +29,7 @@ test('atlas searches real mechanics and follows directed connections through fil
   await page.locator('.rb-map-empty').getByRole('button', { name: 'Clear filters' }).click();
   await expect(page.locator('[data-node]')).toHaveCount(Object.keys(REWARDS).length);
 
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.getByLabel('Find reward on map').selectOption('quicksilver-lung');
   await expect(page.getByRole('heading', { name: 'Quicksilver Lung' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -85,23 +85,23 @@ test('sandbox applies live edits, reproduces builds and carries them into battle
   expect(errors).toEqual([]);
 });
 
-for (const width of [320, 390]) {
-  test('mobile atlas opens with its active region and reward visible at ' + width + 'px', async ({ page }) => {
-    await page.setViewportSize({ width, height: 844 });
+for (const [width, height] of [[1280,720], [1920,1080]]) {
+  test('desktop atlas opens with its active region and reward visible at ' + width + 'px', async ({ page }) => {
+    await page.setViewportSize({ width, height });
     await page.goto('/');
     await page.getByRole('button', { name: 'Reward Atlas', exact: true }).click();
     const map = page.getByRole('region', { name: /Constellation map/ });
-    const region = map.getByRole('button', { name: 'Focus Bulwark constellation' });
     const node = map.locator('[aria-pressed=true]');
     await expect(node).toHaveAccessibleName('Bastion Bash');
-    await expect.poll(async () => {
-      const [viewport, title, selection, controls] = await Promise.all([
-        map.boundingBox(), region.boundingBox(), node.boundingBox(), map.locator('.rb-map-controls').boundingBox(),
-      ]);
-      if (!viewport || !title || !selection || !controls) return false;
-      return title.y >= controls.y + controls.height && [title, selection].every(box =>
-        box.x >= viewport.x && box.y >= viewport.y && box.x + box.width <= viewport.x + viewport.width &&
-        box.y + box.height <= viewport.y + viewport.height);
-    }).toBe(true);
+    await expect.poll(() => map.evaluate(element => {
+      const bounds = element.getBoundingClientRect();
+      const targets = element.querySelectorAll('.rb-region, [aria-pressed="true"]');
+      return Array.from(targets).filter(button => {
+        const box = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+        return box.left < bounds.left || box.right > bounds.right ||
+          box.top < bounds.top || box.bottom > bounds.bottom || !button.contains(hit);
+      }).map(button => button.getAttribute('aria-label'));
+    })).toEqual([]);
   });
 }

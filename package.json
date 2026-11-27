@@ -12,7 +12,7 @@
     "dev": "node --watch server/index.js",
     "test": "node --test",
     "test:e2e": "playwright test",
-    "test:turn:webkit": "playwright test --browser=webkit e2e/arena- e2e/battle-layout.spec.js e2e/draft-turn.spec.js e2e/history-pacing.spec.js e2e/turn-recap.spec.js e2e/turn-room-matrix.spec.js",
+    "test:turn:webkit": "playwright test --browser=webkit e2e/desktop- e2e/arena- e2e/battle-layout.spec.js e2e/draft-turn.spec.js e2e/history-pacing.spec.js e2e/turn-recap.spec.js e2e/turn-room-matrix.spec.js",
     "simulate": "node scripts/simulate.js"
   },
   "devDependencies": {
