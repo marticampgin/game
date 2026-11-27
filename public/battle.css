@@ -232,10 +232,13 @@ body[data-screen='battle'] > .topbar {
   position: relative;
 }
 .turn-rail button {
-  display: block;
-  width: clamp(26px, 2.8vw, 44px);
-  aspect-ratio: 1;
-  padding: 1px;
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0,1fr) auto;
+  width: clamp(44px, 4.2vw, 65px);
+  height: clamp(32px, 3.3vw, 45px);
+  padding: 1px 1px 0;
+  overflow: hidden;
   border: 1px solid #b58964;
   border-radius: 5px 1px;
   box-shadow: 0 1px 3px #140b15;
@@ -246,9 +249,21 @@ body[data-screen='battle'] > .topbar {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 30%;
+  object-position: 50% 28%;
   border-radius: 3px 0;
 }
+.rail-name, .rail-code {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  color: #f8e8d2;
+  background: #281d28;
+  font: 600 clamp(11px,.86vw,13px)/1.08 var(--body);
+  text-align: center;
+  white-space: nowrap;
+}
+.rail-code { display: none; }
+.turn-rail li:first-child :is(.rail-name,.rail-code) { color: #ffe3a7; }
 .turn-rail li:first-child button {
   border-color: #ffcb72;
   box-shadow: 0 0 0 1px #cf9a60;
@@ -556,8 +571,21 @@ body[data-screen='battle'] > .topbar {
     padding: 2px;
   }
   .turn-rail button {
-    width: 24px;
+    width: clamp(24px,6.6vw,31px);
+    height: 27px;
+    padding: 0;
   }
+  .rail-name { display: none; }
+  .rail-code {
+    display: block;
+    position: absolute;
+    bottom: 0;
+    background: #20141eeb;
+    font-size: 10px;
+    line-height: 10px;
+    letter-spacing: .02em;
+  }
+  .turn-rail img { grid-row: 1/-1; object-position: 50% 24%; }
   .round-meta {
     left: 4px;
     top: calc(100% + 7px);
@@ -731,7 +759,7 @@ body[data-screen='battle'] > .topbar {
 
 @media (max-width: 360px) {
   .turn-rail {
-    top: 27px;
+    top: 24px;
   }
   .draft-handle {
     top: 56px;

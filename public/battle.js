@@ -67,19 +67,28 @@ function turnRail(view, viewerId) {
     const words = name.normalize('NFC').match(/[\p{L}\p{N}]+/gu) || [];
     const first = [...(words[0] || '')];
     const last = [...(words.at(-1) || '')];
-    const short = (n) => (words.length > 1 ? first.slice(0, 1).concat(last.slice(0, n - 1)) : first.slice(0, n)).join('');
-    return { name: first.slice(0, 7).join(''), codes: [short(2), short(3)].map(code => code.toLocaleUpperCase()) };
+    const short = (length) => {
+      const letters = words.length > 1 ? first.slice(0, 1).concat(last.slice(0, length - 1)) : first.slice(0, length);
+      return letters.join('').toUpperCase();
+    };
+    const names = [first.slice(0, 7).join('')];
+    if (words.length > 1 && /\p{L}/u.test(words.at(-1))) names.push(last.slice(0, 7).join(''));
+    return { names, codes: [short(2), short(3)] };
   });
+  const uniqueLabel = (seat, key) => plates[seat][key].find(candidate =>
+    candidate && plates.every((other, index) => index === seat ||
+      !other[key].some(value => candidate.toUpperCase() === value.toUpperCase()))
+  );
   return `<nav class="turn-rail" aria-label="${end ? 'Final roster' : 'Turn order'}"><span>${end ? 'Roster' : 'Upcoming'}</span>
     <ol>${order
       .map((id, i) => {
         const seat = view.players.findIndex(p => p.id === id);
         const p = view.players[seat];
-        const plate = plates[seat];
-        const code = plate.codes.find(code => code && !plates.some((other, index) => index !== seat && other.codes.includes(code))) || '#' + (seat + 1);
-        const shortName = plate.name && !plates.some((other, index) => index !== seat && other.name.toLocaleLowerCase() === plate.name.toLocaleLowerCase()) ? plate.name : code;
+        const code = uniqueLabel(seat, 'codes') || '#' + (seat + 1);
+        const shortName = uniqueLabel(seat, 'names') || code;
+        const seatHint = code.startsWith('#') ? ' · Seat ' + (seat + 1) : '';
         const label =
-          (end ? '' : i === 0 ? 'Acting · ' : i === 1 ? 'Up next · ' : 'Turn ' + (i + 1) + ' · ') + p.name;
+          (end ? '' : i === 0 ? 'Acting · ' : i === 1 ? 'Up next · ' : 'Turn ' + (i + 1) + ' · ') + p.name + seatHint;
         return `<li><button data-inspect="${esc(id)}" aria-label="${esc(label)}" title="${esc(label + (id === viewerId ? ' · You' : ''))}">
           <img src="/assets/portrait-${esc(p.classId)}.webp" alt=""><span class="rail-name" aria-hidden="true">${esc(shortName)}</span><span class="rail-code" aria-hidden="true">${esc(code)}</span>
         </button></li>`;
