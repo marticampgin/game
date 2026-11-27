@@ -1,6 +1,8 @@
 import { randomBytes, randomInt } from 'node:crypto';
 import { applyCommand, CLASSES, createMatch, viewMatch } from '../src/game/index.js';
 import { planBotStep } from '../public/pacing.js';
+import { resolveFighterSkin } from '../public/fighter-kit.js';
+import { isSkinId } from '../src/game/skin-id.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const BOT_NAMES = ['Brasswick', 'Morrow', 'Belladonna', 'Holloway', 'Orin', 'Sable', 'Vesper'];
@@ -26,18 +28,30 @@ function chooseClass(value) {
   return value;
 }
 
+function chooseSkin(classId, value) {
+  if (value === undefined || value === 'founder') return undefined;
+  if (!isSkinId(value) || resolveFighterSkin(classId, value).id !== value) {
+    throw new RoomError(400, 'Choose an installed skin for this class.');
+  }
+  return value;
+}
+
 function sampleClasses(count) {
   const pool = [...CLASS_IDS];
   return Array.from({ length: Math.min(count, pool.length) }, () => pool.splice(randomInt(pool.length), 1)[0]);
 }
 
-function addSeat(room, name, requestedClass, bot = false) {
+function addSeat(room, name, { classId: requestedClass, skinId: requestedSkin }, bot = false) {
   const draft = room.mode === 'draft' ? sampleClasses(3) : [];
   const classId = room.mode === 'free'
     ? chooseClass(requestedClass ?? CLASS_IDS[0])
     : draft[0] ?? sampleClasses(1)[0];
+  // The skin preference belongs to the selected class. Random/draft may assign
+  // another class, whose starting appearance is its own founder.
+  const preferredClass = requestedSkin === undefined ? classId : chooseClass(requestedClass ?? classId);
+  const skinId = chooseSkin(preferredClass, requestedSkin);
   const id = 'p' + (room.nextSeat++);
-  const seat = { id, name, classId, bot };
+  const seat = { id, name, classId, bot, ...(skinId && preferredClass === classId ? { skinId } : {}) };
   const token = bot ? null : randomBytes(32).toString('base64url');
   room.seats.push(seat);
   if (token) room.sessions.set(token, { id, draft });
@@ -134,7 +148,7 @@ export function createRooms({ botDelay, idleTimeout = 24 * 60 * 60 * 1000 } = {}
         code, capacity, mode, fillBots, seats: [], nextSeat: 1, sessions: new Map(), game: null,
         revision: 1, timer: null, pendingBot: null, fastBots: false, touched: Date.now(),
       };
-      const { token, seat } = addSeat(room, name, input.classId);
+      const { token, seat } = addSeat(room, name, input);
       room.hostId = seat.id;
       rooms.set(code, room);
       return createdView(room, token);
@@ -142,7 +156,7 @@ export function createRooms({ botDelay, idleTimeout = 24 * 60 * 60 * 1000 } = {}
     join(code, input) {
       const room = findRoom(code);
       if (room.game || room.seats.length >= room.capacity) throw new RoomError(409, 'This room has started or is full.');
-      const { token } = addSeat(room, playerName(input.name), input.classId);
+      const { token } = addSeat(room, playerName(input.name), input);
       room.revision++;
       room.touched = Date.now();
       return createdView(room, token);
@@ -175,10 +189,18 @@ export function createRooms({ botDelay, idleTimeout = 24 * 60 * 60 * 1000 } = {}
         return { ok: true };
       }
       if (operation === 'class') {
-        if (room.game || room.mode === 'random') throw new RoomError(409, 'Class selection is locked.');
+        const seat = room.seats.find(seat => seat.id === session.id);
+        if (room.game || (room.mode === 'random' && (input.classId !== seat.classId || input.skinId === undefined))) {
+          throw new RoomError(409, 'Class selection is locked.');
+        }
         const classId = chooseClass(input.classId);
         if (room.mode === 'draft' && !session.draft.includes(classId)) throw new RoomError(400, 'Choose one of your three drafted classes.');
-        room.seats.find(seat => seat.id === session.id).classId = classId;
+        if (classId !== seat.classId || input.skinId !== undefined) {
+          const skinId = chooseSkin(classId, input.skinId);
+          if (skinId) seat.skinId = skinId;
+          else delete seat.skinId;
+          seat.classId = classId;
+        }
       } else if (operation === 'start') {
         if (room.hostId !== session.id) throw new RoomError(403, 'Only the host can start the match.');
         if (room.game) throw new RoomError(409, 'The match is already in progress.');
@@ -187,7 +209,7 @@ export function createRooms({ botDelay, idleTimeout = 24 * 60 * 60 * 1000 } = {}
         room.fastBots = input.fastBots ?? false;
         let botIndex = 0;
         while (room.fillBots && room.seats.length < room.capacity) {
-          addSeat(room, BOT_NAMES[botIndex++], sampleClasses(1)[0], true);
+          addSeat(room, BOT_NAMES[botIndex++], { classId: sampleClasses(1)[0] }, true);
         }
         room.game = createMatch({ seed: randomInt(0x100000000), players: room.seats });
         scheduleBot(room);

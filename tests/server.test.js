@@ -4,6 +4,7 @@ import { after, before, test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createArenaServer } from '../server/index.js';
 import { CLASSES } from '../src/game/index.js';
+import { registerFighterSkin } from '../public/fighter-kit.js';
 
 let server;
 let base;
@@ -103,6 +104,49 @@ test('validates settings, JSON and invitation codes without changing the lobby',
   const other = await create();
   await request(pathFor(host), other.token, undefined, 401);
   await request('/api/rooms/notacode', host.token, undefined, 404);
+});
+
+test('installed class skins survive room creation, joining, class selection and match projection', async () => {
+  const id = 'tourney-fixture';
+  registerFighterSkin('guardian', id, '/assets/skins/guardian-founder.png');
+  await request('/api/rooms', null, { name:'Moss', classId:'berserker', skinId:id }, 400);
+  const host = await create({ capacity:2, fillBots:false, skinId:id });
+  assert.equal(host.room.seats[0].skinId, id);
+  await join(host, { classId:'guardian', skinId:'missing' }, 400);
+  const guest = await join(host, { classId:'guardian', skinId:id });
+  assert.deepEqual(guest.room.seats.map(p => p.skinId), [id, id]);
+  const unchanged = await interact(guest, 'class', { classId:'guardian' });
+  assert.equal(unchanged.room.seats[1].skinId, id);
+  await interact(guest, 'class', { classId:'berserker', skinId:id }, 400);
+  assert.deepEqual((await interact(host)).room.seats, unchanged.room.seats);
+  const changed = await interact(guest, 'class', { classId:'berserker' });
+  assert.equal(Object.hasOwn(changed.room.seats[1], 'skinId'), false);
+  await interact(guest, 'class', { classId:'guardian', skinId:id });
+  const reset = await interact(guest, 'class', { classId:'guardian', skinId:'founder' });
+  assert.equal(Object.hasOwn(reset.room.seats[1], 'skinId'), false);
+  await interact(host, 'start', { fastBots:true });
+  const resumed = await interact(guest);
+  assert.equal(resumed.room.fastBots,true);
+  assert.deepEqual(resumed.game.players.map(p => p.skinId), [id, undefined]);
+  await interact(host, 'class', { classId:'guardian', skinId:'founder' }, 409);
+});
+
+test('random and draft class assignments constrain the available cosmetics', async () => {
+  const id = 'ceremonial-fixture';
+  for (const cls of Object.keys(CLASSES)) registerFighterSkin(cls, id, '/assets/skins/' + cls + '-founder.png');
+  for (const mode of ['random', 'draft']) {
+    const host = await create({ mode, skinId:id });
+    const seat = host.room.seats[0];
+    assert.equal(seat.skinId, seat.classId === 'guardian' ? id : undefined);
+    const allowed = mode === 'random' ? seat.classId : host.room.draft[2];
+    const forbidden = Object.keys(CLASSES).find(cls => mode === 'random' ? cls !== allowed : !host.room.draft.includes(cls));
+    const changed = await interact(host, 'class', { classId:allowed, skinId:id });
+    assert.equal(changed.room.seats[0].skinId,id);
+    await interact(host, 'class', { classId:forbidden, skinId:id }, mode === 'random' ? 409 : 400);
+    await interact(host, 'class', { classId:allowed, skinId:{} }, 400);
+    assert.deepEqual((await interact(host)).room.seats, changed.room.seats);
+    await interact(host, 'leave', {});
+  }
 });
 
 test('eight clients racing for seven vacancies cannot overfill a room', async () => {
