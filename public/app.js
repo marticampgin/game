@@ -1,5 +1,6 @@
 import { applyCommand, REWARDS, viewMatch } from '/src/game/index.js';
 import { renderArena } from './arena-render.js';
+import { clearRewardFlight, dealOffers, deliverReward, pickedEmblem } from './draft-motion.js';
 import { battleHTML, buildHTML } from './battle.js';
 import { historyHTML, filterHistory, refreshHistory } from './history.js';
 import { planBotStep } from './pacing.js';
@@ -107,6 +108,7 @@ function impactSound(event) {
   }
 }
 function setScreen(next) {
+  clearRewardFlight();
   const oldPlayback = playback;
   playback = null;
   oldPlayback?.cancel();
@@ -149,6 +151,7 @@ function showLobby(code, session, view) {
     onBack: () => {
       clearInvite();
       menu();
+      app.querySelector('[data-ui="lobby"]')?.focus();
     },
     onMatch: startBattle,
     onError: notice,
@@ -213,6 +216,7 @@ function refreshBattle() {
     !pref.reduce &&
     !matchMedia('(prefers-reduced-motion: reduce)').matches
   ) {
+    clearRewardFlight();
     const old = shownView;
     const shell = app.querySelector('.battle-shell');
     shell.classList.add('resolving');
@@ -267,6 +271,8 @@ function refreshBattle() {
 }
 
 function renderBattle(v) {
+  const freshOffers = v.offers.length && (shownView?.globalTurn !== v.globalTurn ||
+    shownView?.offers.join('|') !== v.offers.join('|'));
   shownView = v;
   const key = v.globalTurn + '/' + v.activeId;
   if (key !== turnKey) {
@@ -312,6 +318,7 @@ function renderBattle(v) {
       recap: { expanded: !!pinnedAction, actionId: pinnedAction?.id, pinnedAction },
     }),
   );
+  if (freshOffers) dealOffers(app);
   app.querySelector('.turn-rail ol').scrollLeft = railScroll;
   const chain = app.querySelector('.recap-events');
   if (chain) chain.scrollTop = chainScroll;
@@ -402,6 +409,7 @@ async function poll() {
 async function command(cmd) {
   if (busy || playback || screen !== 'battle') return;
   const start = epoch;
+  const emblem = cmd.type === 'pick' ? pickedEmblem(app, cmd.rewardId) : null;
   busy = true;
   clearTimeout(timer);
   try {
@@ -419,6 +427,7 @@ async function command(cmd) {
     if (modal.open) modal.close();
     pendingFocus = cmd.type === 'pick' ? '.turn-controls h2' : cmd.type === 'act' ? '.recap-toggle' : '';
     refreshBattle();
+    if (emblem) deliverReward(app, match.viewerId, emblem);
   } catch (e) {
     if (epoch === start) notice(e.message);
   } finally {
@@ -461,9 +470,11 @@ function dialog(html) {
   contents.innerHTML =
     '<div class="dialog-head"><button class="icon-button" aria-label="Close dialog" data-ui="close">' +
     glyph('close') +
-    '</button></div>' +
-    html;
-  modal.setAttribute('aria-label', contents.querySelector('h2')?.textContent || 'Arena details');
+    '</button></div><div class="dialog-body">' + html + '</div>';
+  const heading = contents.querySelector('h2');
+  heading.id = 'dialog-title';
+  contents.querySelector('.dialog-head').prepend(heading);
+  modal.setAttribute('aria-labelledby', heading.id);
   if (!modal.open) modal.showModal();
 }
 function settings() {
@@ -486,10 +497,8 @@ async function openTool(tool) {
         setScreen('battle');
         refreshBattle();
         schedule();
-      } else {
-        menu();
-        app.querySelector('[data-ui="' + tool + '"]')?.focus({ preventScroll: true });
-      }
+      } else menu();
+      app.querySelector('[data-ui="' + tool + '"]')?.focus({ preventScroll: true });
     };
     dispose = (tool === 'atlas' ? mod.mountAtlas : mod.mountSandbox)(app, {
       onClose: close,

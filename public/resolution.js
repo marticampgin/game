@@ -143,7 +143,17 @@ function history(view, viewerId, actions, requestedId) {
 /** Reads the same public outcome records sent to each seat, including spectators. */
 export function resolutionHTML(view, viewerId, { expanded = false, actionId, pinnedAction } = {}) {
   const latest = view.lastAction;
-  if (!latest) return '';
+  if (!latest) {
+    const active = view.players.find(p => p.id === view.activeId);
+    const next = view.players.find(p => p.id === view.upcoming?.[1]);
+    if (!active) return '';
+    return '<section class="turn-recap opening-turn" aria-label="Opening turn"><div class="recap-strip">' +
+      '<div class="recap-action-art">' + rewardIcon({icon:'sword'}) + '</div>' +
+      '<div class="recap-who"><span class="recap-label">First move</span> <span class="recap-route"><span>' +
+      esc(active.name) + '</span></span></div>' +
+      (next ? '<div class="recap-handoff">' + rewardIcon({icon:'clock'}) +
+        '<span>On deck</span><strong>' + esc(next.name) + '</strong></div>' : '') + '</div></section>';
+  }
   let actions = view.recentActions?.length ? view.recentActions : [latest];
   if (expanded && pinnedAction && !actions.some(a => a.id === pinnedAction.id)) actions = [pinnedAction, ...actions];
   const icon = actionIcon(latest.actionId);

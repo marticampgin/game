@@ -23,6 +23,7 @@
   padding: 6px 13px;
 }
 .recap-action-art { display: grid; place-items: center; }
+.opening-turn .recap-strip { grid-template-columns: 24px fit-content(48%) 1fr; }
 .recap-action-art img { width: 23px; height: 23px; object-fit: contain; image-rendering: pixelated; }
 .recap-outcome { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 7px; min-width: 0; }
 .recap-who, .recap-outcome p, .recap-handoff, .recap-route {

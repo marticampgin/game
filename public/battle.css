@@ -8,7 +8,7 @@
   white-space: nowrap;
 }
 body[data-screen='battle'] {
-  --battle-font: Georgia, 'Times New Roman', serif;
+  --battle-font: var(--display);
   --brass: #b68150;
   --pale-brass: #edbc83;
   background: #130f16;
@@ -51,7 +51,7 @@ body[data-screen='battle'] > .topbar {
   justify-content: center;
   gap: clamp(10px, 1.5vw, 28px);
   font-size: clamp(23px, 2.25vw, 39px);
-  font-weight: 700;
+  font-weight: 600;
   color: #f9e3c4;
   text-shadow: 0 2px #110c12;
 }
@@ -60,9 +60,8 @@ body[data-screen='battle'] > .topbar {
   content: '';
   width: clamp(14px, 4.2vw, 85px);
   height: 7px;
-  background:
-    linear-gradient(90deg, transparent, #a67445) left center/100% 1px no-repeat,
-    linear-gradient(45deg, transparent 35%, #e7b274 36% 61%, transparent 62%) right center/8px 7px no-repeat;
+  background: #cf9f6c;
+  clip-path: polygon(0 40%,72% 40%,77% 5%,82% 40%,87% 40%,92% 0,100% 50%,92% 100%,87% 60%,82% 60%,77% 95%,72% 60%,0 60%);
 }
 .battle-heading h1::after {
   transform: scaleX(-1);
@@ -76,7 +75,7 @@ body[data-screen='battle'] > .topbar {
   border: 0;
   background: transparent;
   color: #dc99ff;
-  font: 700 clamp(22px, 2.15vw, 38px) / 1 var(--battle-font);
+  font: 600 clamp(22px, 2.15vw, 38px) / 1 var(--battle-font);
   text-transform: uppercase;
   letter-spacing: 0.035em;
   text-shadow: 0 0 14px #9542bf55;
@@ -121,7 +120,7 @@ body[data-screen='battle'] > .topbar {
   display: flex;
   align-items: center;
   gap: 10px;
-  font: bold clamp(13px, 1.3vw, 21px) / 1.1 var(--battle-font);
+  font: 600 clamp(13px, 1.3vw, 21px) / 1.1 var(--battle-font);
   background: #211723c7;
   text-shadow: 0 1px 2px #150e14;
   pointer-events: none;
@@ -355,7 +354,7 @@ body[data-screen='battle'] > .topbar {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font: 700 clamp(13px, 1.14vw, 20px) / 1.12 var(--battle-font);
+  font: 600 clamp(13px, 1.14vw, 20px) / 1.12 var(--battle-font);
 }
 .vital-bar {
   width: 100%;
@@ -707,6 +706,59 @@ body[data-screen='battle'] > .topbar {
 @media (min-width: 701px) {
   .turn-board.drafting:not(.shop-hidden) .arena-world:not([data-count='2']) {
     --unit: clamp(66px, min(9.4vw, calc((100svh - 414px) * 0.25)), 137px);
+  }
+}
+
+@media (min-width: 960px) {
+  .battle-shell {
+    --desktop-controls: clamp(151px, 11.7vw, 186px);
+    --desktop-stage: clamp(310px, calc(100svh - clamp(52px, 6.6svh, 68px) - var(--desktop-controls) - 82px), 970px);
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+  .battle-shell .turn-board { display: block; background: #221823; }
+  /* The arena camera and every feet position are identical in each turn phase.
+     Drafting uncovers the near lip of the same stonework behind the offers. */
+  .battle-shell .turn-board .arena-world,
+  .battle-shell .turn-board.drafting:not(.shop-hidden) .arena-world,
+  .battle-shell .turn-board.drafting.shop-hidden .arena-world {
+    height: var(--desktop-stage);
+    background: var(--ring-image) center top / 100% calc(var(--desktop-stage) * 1.09) no-repeat;
+  }
+  .battle-shell .turn-board .arena-world:not([data-count='2']) {
+    --unit: clamp(88px, min(10.6vw, 16svh), 169px);
+  }
+  .battle-shell .turn-board.drafting:not(.shop-hidden) .arena-world:not([data-count='2']) {
+    --unit: clamp(88px, min(10.6vw, 16svh), 169px);
+  }
+  .battle-shell .turn-board.drafting:not(.shop-hidden) .draft-stage {
+    padding: 0 clamp(10px, 1.6vw, 30px) 5px;
+    background:
+      linear-gradient(transparent 8%, #211822 69%),
+      var(--ring-image) center calc(-1 * var(--desktop-stage)) / 100% calc(var(--desktop-stage) * 1.09) no-repeat;
+  }
+  .turn-controls:has(.watch) {
+    display: grid;
+    align-content: center;
+    min-height: var(--desktop-controls);
+  }
+  .battle-bottom { margin-top: auto; }
+  .turn-rail {
+    padding: 3px 7px;
+    background: linear-gradient(90deg, transparent, #211822c9 16%, #211822e0);
+  }
+  .turn-rail button {
+    width: clamp(50px, 3.8vw, 61px);
+    height: clamp(51px, 4.1vw, 60px);
+    border-radius: 4px;
+  }
+  .turn-rail img {
+    image-rendering: pixelated;
+    object-position: center 26%;
+  }
+  .draft-handle {
+    top: clamp(72px, 5.2vw, 81px);
   }
 }
 .turn-board.drafting.shop-hidden .arena-world {
