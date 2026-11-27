@@ -160,14 +160,14 @@ body.reduce-motion .arena-sprite[data-pose='idle'] > .arena-cel {
   --motion-band: 0%;
 }
 .arena-sprite[data-motion-ready][data-tier='wounded'] {
-  --motion-band: 35.714286%;
+  --motion-band: 35%;
 }
 .arena-sprite[data-motion-ready][data-tier='critical'] {
-  --motion-band: 71.428571%;
+  --motion-band: 70%;
 }
 .arena-sprite[data-motion-ready]:is([data-pose='idle'], [data-track]) > .arena-cel {
   background-image: var(--motion-skin);
-  background-size: 1200% 1500%;
+  background-size: 1200% 2100%;
   background-position: 0% calc(var(--motion-band) + var(--clip-row, 0%));
 }
 .arena-sprite[data-motion-ready][data-pose='idle']:not([data-still]) > .arena-cel {

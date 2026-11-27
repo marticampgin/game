@@ -18,7 +18,8 @@ export function registerFighterSkin(classId, id, sheet, motions) {
   }
   skins.set(classId + '/' + id, Object.freeze({ classId, id, sheet, ...(motions ? { motions } : {}) }));
 }
-for (const role of roles) registerFighterSkin(role, 'founder', '/assets/skins/' + role + '-founder.png');
+for (const role of roles)
+  registerFighterSkin(role, 'founder', '/assets/skins/' + role + '-founder.png', '/assets/skins/' + role + '-motions.webp');
 
 export function resolveFighterSkin(classId, skinId = 'founder') {
   const role = roles.includes(classId) ? classId : 'guardian';
@@ -218,7 +219,7 @@ function positioned(el, x, y, w, h) {
 }
 
 const running = new WeakMap();
-const clipRows = ['idle', 'attack', 'signature', 'cast', 'utility'];
+const clipRows = ['idle', 'attack', 'signature', 'cast', 'utility', 'brace', 'hurt'];
 const propIcons = {
   'red-tonic': 'tonic',
   antidote: 'antidote',
@@ -274,15 +275,14 @@ export function playArenaAction(arena, recap, options = {}) {
     stage: 'windup',
   });
 
-  function bounds(subject) {
-    // Read the stable footprint, even while the painted layer recoils. Recompute
-    // for bursts so an intervening resize still anchors them on the correct body.
+  function boxFor(element) {
     const rect = arena.getBoundingClientRect();
-    const r = (subject.sprite.closest('.fighter-art') ?? subject.seat).getBoundingClientRect();
+    const r = element.getBoundingClientRect();
     const kx = arena.clientWidth / (rect.width || 1),
       ky = arena.clientHeight / (rect.height || 1);
     return { x: (r.left - rect.left) * kx, y: (r.top - rect.top) * ky, w: r.width * kx, h: r.height * ky };
   }
+  const bounds = (subject) => boxFor(subject.sprite.closest('.fighter-art') ?? subject.seat);
   const start = bounds(actor),
     end = bounds(target);
   const horizontal = centerX(end) - centerX(start);
@@ -296,13 +296,15 @@ export function playArenaAction(arena, recap, options = {}) {
   ghost.append(art);
   actor.sprite.dataset.playing = 'hidden';
 
+  // A retaliation can land while the attacker is still retreating. Reactions
+  // follow the visible body instead of bursting over the empty seat marker.
+  const visibleBounds = (subject) => subject === actor && !still ? boxFor(ghost) : bounds(subject);
+  const clipAnimations = new Map();
   const originals = new Map(),
     labels = new Map();
   const animations = [],
     timers = [];
-  let finishedScene = false,
-    resolve,
-    clipAnimation;
+  let finishedScene = false, resolve;
   const finished = new Promise((done) => {
     resolve = done;
   });
@@ -351,8 +353,8 @@ export function playArenaAction(arena, recap, options = {}) {
   }
   function cut(subject, name) {
     const element = subject === actor ? art : subject.sprite;
-    if (subject === actor) clipAnimation?.cancel();
-    else if (!originals.has(element)) originals.set(element, element.dataset.pose);
+    clipAnimations.get(element)?.cancel();
+    if (subject !== actor && !originals.has(element)) originals.set(element, element.dataset.pose);
     pose(element, name);
   }
   function imprint(kind, x, y, size, duration) {
@@ -366,7 +368,7 @@ export function playArenaAction(arena, recap, options = {}) {
     return el;
   }
   function contactBurst(subject, kind, amount, full = true) {
-    const box = bounds(subject);
+    const box = visibleBounds(subject);
     const emphasis = full ? (kind === 'venom' ? 1.19 : 0.91) : 0.58;
     const size = Math.max(34, Math.min(205, box.h * impactScale(amount) * emphasis));
     return imprint(kind, centerX(box), centerY(box), size, still ? 245 : full ? 370 : 305);
@@ -402,25 +404,25 @@ export function playArenaAction(arena, recap, options = {}) {
 
   const clip = actorClip(score, action, role);
   const duration = score.path.at(-1)[0];
+  function flipbook(element, track, frames) {
+    if(still || !element.hasAttribute('data-motion-ready') || !clipRows.includes(track))return false;
+    element.dataset.track=track;
+    element.dataset.pose='perform';
+    element.style.setProperty('--clip-row',(clipRows.indexOf(track) / 20 * 100)+'%');
+    const length=frames.at(-1);
+    const atlas=element.querySelector('.arena-cel');
+    const sequence=frames.map((ms,i)=>({
+      offset:ms/length,backgroundPositionX:(i/11*100)+'%',easing:'steps(1,end)',
+    }));
+    clipAnimations.get(element)?.cancel();
+    clipAnimations.set(element,tween(atlas,sequence,length));
+    return true;
+  }
   function articulate() {
-    const lead = score.family === 'cast' ? score.release : score.contact;
-    if (!still && art.hasAttribute('data-motion-ready') && clipRows.includes(clip)) {
-      art.dataset.track = clip;
-      art.dataset.pose = 'perform';
-      art.style.setProperty('--clip-row', (clipRows.indexOf(clip) / 14) * 100 + '%');
-      const frames = [0, 0.2, 0.37, 0.53, 0.67, 0.8, 0.91, 1].map((t) => t * lead);
-      for (const t of [0.14, 0.37, 0.68, 1]) frames.push(lead + t * (duration - lead));
-      clipAnimation = tween(
-        art.querySelector('.arena-cel'),
-        frames.map((ms, i) => ({
-          offset: ms / duration,
-          backgroundPositionX: (i / 11) * 100 + '%',
-          easing: 'steps(1,end)',
-        })),
-        duration,
-      );
-      return;
-    }
+    const lead=score.family==='cast' ? score.release : score.contact;
+    const frames=[0,.20,.37,.53,.67,.80,.91,1].map(t=>t*lead);
+    for(const t of [.14,.37,.68,1])frames.push(lead+t*(duration-lead));
+    if(flipbook(art,clip,frames))return;
     const guard = score.track === 'bash' || score.track === 'brace';
     const windup = guard
       ? 'guard'
@@ -588,6 +590,7 @@ export function playArenaAction(arena, recap, options = {}) {
   }
 
   const recoil = new Map();
+  const reactions = new Map();
   function react(event, index) {
     const subject = seats.get(event.targetId);
     if (!subject) return;
@@ -608,11 +611,31 @@ export function playArenaAction(arena, recap, options = {}) {
       shield: 'guard',
     }[event.type];
     // A caster drinking a tonic or bracing a shield finishes its own authored motion.
-    if (reaction && (subject !== actor || event.type === 'elimination' || event.type === 'revival'))
+    if (reaction && (subject !== actor || event.type === 'elimination' || event.type === 'revival')) {
+      reactions.set(subject, event);
       cut(subject, reaction);
+      // Return the feet under the body before the victor's weapon returns home.
+      // A subsequent impact or knockout owns the pose and supersedes this recovery.
+      const body=subject===actor?art:subject.sprite;
+      const illustrated=reaction==='hurt' && flipbook(body,'hurt',[0,22,50,74,98,125,158,194,235,283,338,402]);
+      if (illustrated) {
+        at(410,()=>{ if(reactions.get(subject)===event)cut(subject,'idle'); });
+      } else if (!still && reaction !== 'fallen') {
+        if (reaction === 'hurt')
+          at(142, () => {
+            if (reactions.get(subject) === event) cut(subject, 'guard');
+          });
+        at(280, () => {
+          if (reactions.get(subject) === event) cut(subject, 'settle');
+        });
+        at(402, () => {
+          if (reactions.get(subject) === event) cut(subject, 'idle');
+        });
+      }
+    }
     if (!still && event.type === 'damage' && subject !== actor) {
       const source = seats.get(event.actorId);
-      const from = source ? centerX(bounds(source)) : centerX(start);
+      const from = source ? centerX(visibleBounds(source)) : centerX(start);
       const sign = centerX(bounds(subject)) >= from ? 1 : -1;
       const reach =
         (blocked ? 0.36 : 1) *
@@ -636,7 +659,7 @@ export function playArenaAction(arena, recap, options = {}) {
     const text = badge(event);
     if (text) {
       labels.get(subject)?.remove();
-      const box = bounds(subject),
+      const box = visibleBounds(subject),
         label = part(scene, 'arena-fx-label');
       label.dataset.kind = event.type;
       label.textContent = text;

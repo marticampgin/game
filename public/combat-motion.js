@@ -136,7 +136,7 @@ const sigils = {
   combustion: score('cast', 'fire', 'summon', 'cast', 685, 475),
   whiteout: score('cast', 'frost', 'summon', 'cast', 808, 465),
   'grave-bell': score('cast', 'doom', 'ring', 'cast', 738, 320),
-  defend: score('support', 'guard', 'brace', 'utility', 315),
+  defend: score('support', 'guard', 'brace', 'brace', 315),
   'ward-lantern': score('support', 'ward', 'summon', 'cast', 500),
   'menders-bell': score('support', 'heal', 'ring', 'utility', 320),
   'red-tonic': score('support', 'heal', 'sip', 'utility', 420),

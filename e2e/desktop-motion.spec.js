@@ -1,0 +1,107 @@
+import { expect, test } from '@playwright/test';
+import { createMatch, applyCommand } from '../src/game/index.js';
+
+const roles = ['guardian', 'berserker', 'chronomancer', 'alchemist'];
+function readySeat(role) {
+  const players = roles.map((classId) => ({ id: classId, classId, name: classId, bot: false }));
+  let match;
+  for (let seed = 0; seed < 200; seed++) {
+    match = createMatch({ seed: 'desktop-choreography-' + seed, players });
+    if (match.activeId === role) break;
+  }
+  return applyCommand(match, role, { type: 'pick', rewardId: match.offers[0] });
+}
+
+async function perform(page, role, action) {
+  const state = readySeat(role);
+  await page.evaluate((save) => sessionStorage.setItem('rift-solo', JSON.stringify(save)), {
+    state,
+    viewerId: role,
+  });
+  await page.reload();
+  await page.locator('[data-action="' + action + '"]').click();
+  await page.locator('[data-aim="berserker"]').click();
+  const loaded = await page.evaluate(
+    async (players) => (await (await import('/animation.js')).preloadArenaSkins(players)).every(Boolean),
+    state.players,
+  );
+  expect(loaded).toBe(true);
+
+  await page.evaluate(() => {
+    const world = document.querySelector('.arena-world');
+    const trace = (window.motionTrace = {
+      seen: false,
+      finished: false,
+      cells: [],
+      clip: null,
+      score: null,
+      impact: null,
+      floorLeft: false,
+      fx: [],
+    });
+    let raf;
+    function sample() {
+      const scene = world.querySelector('.arena-fx');
+      if (!scene) {
+        if (trace.seen) {
+          trace.finished = true;
+          observed.disconnect();
+          cancelAnimationFrame(raf);
+        }
+        return;
+      }
+      const actor = scene.querySelector('.arena-fx-actor .arena-sprite');
+      if (!actor) return;
+      trace.seen = true;
+      trace.clip = actor.dataset.track;
+      trace.score = scene.dataset.choreography;
+      const number = Math.round(
+        (parseFloat(getComputedStyle(actor.querySelector('.arena-cel')).backgroundPositionX) * 11) / 100,
+      );
+      if (!trace.cells.includes(number)) trace.cells.push(number);
+      if (scene.dataset.stage === 'impact' && trace.impact === null) trace.impact = number;
+      if (world.querySelector('[data-travelling]')) trace.floorLeft = true;
+      for (const el of scene.querySelectorAll('[data-effect]'))
+        if (!trace.fx.includes(el.dataset.effect)) trace.fx.push(el.dataset.effect);
+    }
+    const observed = new MutationObserver(sample);
+    observed.observe(world, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-stage', 'data-track', 'data-travelling'],
+    });
+    raf = requestAnimationFrame(function tick() {
+      sample();
+      if (!trace.finished) raf = requestAnimationFrame(tick);
+    });
+  });
+  await page.locator('[data-execute="' + action + '"]').click();
+  await expect.poll(() => page.evaluate(() => window.motionTrace.finished), { timeout: 10000 }).toBe(true);
+  return page.evaluate(() => window.motionTrace);
+}
+
+test('desktop weapon swing, shield drive and bottle throw use different illustrated actor sequences', async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  for (const [role, action, score, clip, effect, travels] of [
+    ['guardian', 'attack', 'swing', 'attack', 'slash', true],
+    ['guardian', 'bastion-bash', 'bash', 'signature', 'bastion', true],
+    ['alchemist', 'venom-flask', 'throw', 'signature', 'venom', false],
+  ]) {
+    const sample = await perform(page, role, action);
+    await info.attach(action + '-motion', { body: JSON.stringify(sample), contentType: 'application/json' });
+    expect(sample.score).toBe(score);
+    expect(sample.clip).toBe(clip);
+    expect(sample.cells.length).toBeGreaterThanOrEqual(6);
+    expect(sample.impact).toBeGreaterThanOrEqual(6);
+    expect(sample.fx).toContain(effect);
+    expect(sample.floorLeft).toBe(travels);
+    await expect(page.locator('[data-travelling],.arena-fx,[data-playing="hidden"]')).toHaveCount(0);
+  }
+  expect(errors).toEqual([]);
+});
