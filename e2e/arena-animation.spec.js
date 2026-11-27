@@ -73,48 +73,68 @@ for(const scenario of [
     const {role,other,action,effect}=scenario;
     await page.locator('[data-action="'+action+'"]').click();
     await page.locator('[data-aim="'+other+'"]').click();
-    await page.evaluate(({role,other})=>{
-      window.travel={effects:[],stages:[],ghost:[],projectile:[],landings:[]};
-      const origin=document.querySelector('[data-seat="'+role+'"] .fighter-art').getBoundingClientRect();
-      const dest=document.querySelector('[data-seat="'+other+'"] .fighter-art').getBoundingClientRect();
-      const cx=r=>r.x+r.width/2;
-      const trace=window.travel;
-      trace.from=cx(origin);trace.to=cx(dest);
-      const health=document.querySelector('[data-seat="'+other+'"] .fighter-hp');
-      const readHp=()=>Number.parseInt(health.textContent,10);
-      const fighter=health.closest('[data-seat]').querySelector('.arena-sprite');
-      trace.beforeHp=readHp();trace.windupHp=[];trace.impactHp=[];trace.impactBands=[];
-      const loop=()=>{
-        const scene=document.querySelector('.arena-fx');
-        if(scene) {
-          trace.seen=true;
-          trace.stages.push(scene.dataset.stage);
-          if(scene.dataset.stage==='windup')trace.windupHp.push(readHp());
-          if(scene.dataset.stage==='impact') {
-            trace.impactHp.push(readHp());
-            trace.impactBands.push(fighter.dataset.tier);
-          }
-          trace.ghost.push(cx(scene.querySelector('.arena-fx-actor').getBoundingClientRect()));
-          const projectile=scene.querySelector('.arena-fx-missile');
-          if(projectile)trace.projectile.push(cx(projectile.getBoundingClientRect()));
-          for(const burst of scene.querySelectorAll('.arena-fx-burst')) {
-            trace.effects.push(burst.dataset.effect);
-            trace.landings.push(cx(burst.getBoundingClientRect()));
-          }
-        } else if(trace.seen) {trace.done=true;return;}
-        requestAnimationFrame(loop);
+    await page.evaluate(({role,other,action,effect})=>{
+      const seat=id=>document.querySelector('[data-seat="'+id+'"]');
+      const center=element=>{
+        const rect=element.getBoundingClientRect();
+        return rect.left+rect.width/2;
       };
-      requestAnimationFrame(loop);
-    },{role,other});
-    await page.locator('[data-execute="'+action+'"]').click();
-    // This cel lasts 340ms; capture it on an animation frame before it resolves.
-    await page.waitForFunction(effect=>document.querySelector('.arena-fx-burst[data-effect="'+effect+'"]')?.getBoundingClientRect().width>0,effect);
-    await page.screenshot({path:info.outputPath('impact-'+role+'.png')});
-    await page.waitForFunction(()=>window.travel.done===true);
-    const track=await page.evaluate(()=>window.travel);
+      const readHp=()=>Number.parseInt(seat(other).querySelector('.fighter-hp').textContent,10);
+      const trace=window.travel={
+        from:center(seat(role).querySelector('.fighter-art')),to:center(seat(other).querySelector('.fighter-art')),
+        beforeHp:readHp(),confirmClicks:0,seen:false,done:false,
+        stages:[],ghost:[],projectile:[],landings:[],windupHp:[],impactHp:[],impactBands:[],
+      };
+      const button=document.querySelector('[data-execute="'+action+'"]');
+      button.addEventListener('click',()=>{trace.confirmClicks++;},{capture:true});
+      function sample() {
+        const scene=document.querySelector('.arena-fx[data-action="'+action+'"]');
+        if(!scene) {
+          if(trace.seen) {
+            trace.done=true;
+            observer.disconnect();
+            cancelAnimationFrame(frame);
+          }
+          return;
+        }
+        trace.seen=true;
+        trace.stages.push(scene.dataset.stage);
+        if(scene.dataset.stage==='windup')trace.windupHp.push(readHp());
+        if(scene.dataset.stage==='impact') {
+          trace.impactHp.push(readHp());
+          trace.impactBands.push(seat(other).querySelector('.arena-sprite').dataset.tier);
+        }
+        const actor=scene.querySelector('.arena-fx-actor'),missile=scene.querySelector('.arena-fx-missile');
+        if(actor)trace.ghost.push(center(actor));
+        if(missile)trace.projectile.push(center(missile));
+        for(const burst of scene.querySelectorAll('.arena-fx-burst[data-effect="'+effect+'"]')) {
+          if(burst.getBoundingClientRect().width>0)trace.landings.push(center(burst));
+        }
+      }
+      // DOM updates capture short-lived cels and health changes even if the
+      // automation driver is busy returning from click. Frames measure travel
+      // between those discrete updates on the actual rendered elements.
+      const observer=new MutationObserver(sample);
+      observer.observe(document.querySelector('.battle-shell'),{subtree:true,childList:true,attributes:true,
+        attributeFilter:['data-stage','data-tier','data-pose']});
+      let frame=requestAnimationFrame(function tick(){
+        sample();
+        if(!trace.done)frame=requestAnimationFrame(tick);
+      });
+    },{role,other,action,effect});
+    let track;
+    try {
+      await page.locator('[data-execute="'+action+'"]').click();
+      // Completion is latched. The driver can arrive after the entire animation.
+      await expect.poll(()=>page.evaluate(()=>window.travel.done),{timeout:10000}).toBe(true);
+    } finally {
+      track=await page.evaluate(()=>window.travel);
+      await info.attach('arena-motion-evidence',{body:JSON.stringify(track),contentType:'application/json'});
+    }
+    expect(track.confirmClicks).toBe(1);
     expect(track.stages).toContain('windup');
     expect(track.stages).toContain('impact');
-    expect(track.effects).toContain(effect);
+    expect(track.landings.length,'visible '+effect+' contact samples').toBeGreaterThan(0);
     expect([...new Set(track.windupHp)]).toEqual([track.beforeHp]);
     expect(Math.min(...track.impactHp)).toBeLessThan(track.beforeHp);
     expect(track.impactBands).toContain('wounded');
