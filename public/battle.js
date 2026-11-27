@@ -21,25 +21,18 @@ function actionSelection(view, player, actionId, targetId) {
 
 // Coordinates describe the fighters' feet on the floor, in painter's order by depth.
 // All clients use roster order, including after a contender is knocked out.
-function seatPosition(index, count) {
-  if (count === 8)
-    return [
-      [26, 84],
-      [11, 64],
-      [26, 45],
-      [44, 40],
-      [63, 40],
-      [82, 47],
-      [90, 67],
-      [70, 85],
-    ][index];
-  if (count === 2) return index === 0 ? [24, 76] : [76, 53];
-  const angle = ((124 + (index * 360) / count) * Math.PI) / 180;
-  return [50 + 38 * Math.cos(angle), 61 + 23 * Math.sin(angle)];
-}
+const ringSeats = {
+  2: [[24,76],[76,53]],
+  3: [[30,80],[47,41],[80,66]],
+  4: [[31,82],[15,55],[60,41],[83,71]],
+  5: [[32,82],[12,60],[41,41],[72,43],[85,73]],
+  6: [[28,83],[11,59],[39,40],[62,40],[88,59],[73,83]],
+  7: [[30,83],[11,64],[24,44],[48,40],[72,42],[88,63],[65,84]],
+  8: [[31,84],[11,64],[24,45],[44,40],[63,40],[82,47],[90,67],[70,85]],
+};
 
 function combatant(p, index, view, viewerId, selection, intent) {
-  const [x, y] = seatPosition(index, view.players.length);
+  const [x, y] = ringSeats[view.players.length][index];
   const active = p.id === view.activeId && view.phase !== 'finished';
   const mine = p.id === viewerId;
   const targetable = !mine && p.alive && selection?.action?.target === 'enemy';
@@ -69,13 +62,27 @@ function combatant(p, index, view, viewerId, selection, intent) {
 function turnRail(view, viewerId) {
   const end = view.phase === 'finished';
   const order = end ? view.order : view.upcoming.slice(0, view.players.filter((p) => p.alive).length);
+  // Use the original seats to keep a contender's nameplate stable as turn order changes.
+  const plates = view.players.map(({ name }) => {
+    const words = name.normalize('NFC').match(/[\p{L}\p{N}]+/gu) || [];
+    const first = [...(words[0] || '')];
+    const last = [...(words.at(-1) || '')];
+    const short = (n) => (words.length > 1 ? first.slice(0, 1).concat(last.slice(0, n - 1)) : first.slice(0, n)).join('');
+    return { name: first.slice(0, 7).join(''), codes: [short(2), short(3)].map(code => code.toLocaleUpperCase()) };
+  });
   return `<nav class="turn-rail" aria-label="${end ? 'Final roster' : 'Turn order'}"><span>${end ? 'Roster' : 'Upcoming'}</span>
     <ol>${order
       .map((id, i) => {
-        const p = view.players.find((p) => p.id === id);
+        const seat = view.players.findIndex(p => p.id === id);
+        const p = view.players[seat];
+        const plate = plates[seat];
+        const code = plate.codes.find(code => code && !plates.some((other, index) => index !== seat && other.codes.includes(code))) || '#' + (seat + 1);
+        const shortName = plate.name && !plates.some((other, index) => index !== seat && other.name.toLocaleLowerCase() === plate.name.toLocaleLowerCase()) ? plate.name : code;
         const label =
           (end ? '' : i === 0 ? 'Acting · ' : i === 1 ? 'Up next · ' : 'Turn ' + (i + 1) + ' · ') + p.name;
-        return `<li><button data-inspect="${esc(id)}" aria-label="${esc(label)}" title="${esc(label + (id === viewerId ? ' · You' : ''))}"><img src="/assets/portrait-${esc(p.classId)}.webp" alt=""></button></li>`;
+        return `<li><button data-inspect="${esc(id)}" aria-label="${esc(label)}" title="${esc(label + (id === viewerId ? ' · You' : ''))}">
+          <img src="/assets/portrait-${esc(p.classId)}.webp" alt=""><span class="rail-name" aria-hidden="true">${esc(shortName)}</span><span class="rail-code" aria-hidden="true">${esc(code)}</span>
+        </button></li>`;
       })
       .join('')}</ol></nav>`;
 }

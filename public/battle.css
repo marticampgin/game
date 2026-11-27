@@ -676,6 +676,11 @@ body[data-screen='battle'] > .topbar {
     linear-gradient(transparent, #1c142aa8),
     var(--ring-image) center bottom / 100% 500% no-repeat;
 }
+@media (min-width: 701px) {
+  .turn-board.drafting:not(.shop-hidden) .arena-world:not([data-count='2']) {
+    --unit: clamp(66px, min(9.4vw, calc((100svh - 414px) * 0.25)), 137px);
+  }
+}
 .turn-board.drafting.shop-hidden .arena-world {
   height: clamp(345px, calc(100svh - 188px), 860px);
 }

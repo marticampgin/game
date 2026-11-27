@@ -14,6 +14,15 @@ function ring(seats) {
   return { state, viewerId: state.activeId };
 }
 
+function obstructedVitals() {
+  return Array.from(document.querySelectorAll('.fighter-title, .fighter-hp')).flatMap((label) => {
+    const box = label.getBoundingClientRect();
+    const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+    const seat = label.closest('[data-seat]');
+    return top?.closest('[data-seat]') === seat ? [] : [seat.dataset.seat + ' ' + label.className];
+  });
+}
+
 for (const viewport of [
   { width: 1366, height: 768 },
   { width: 390, height: 844 },
@@ -39,11 +48,13 @@ for (const viewport of [
           });
         });
         expect(placement, 'draft obstructs a seat in a ' + count + '-player match').toBe(true);
+        expect(await page.evaluate(obstructedVitals), count + '-seat draft nameplates').toEqual([]);
         await page.getByRole('button', { name: 'View arena', exact: true }).click();
         await expect(page.locator('.draft-stage')).toHaveCount(0);
         await page.getByRole('button', { name: 'Show rewards', exact: true }).click();
         await page.locator('[data-draft-select="iron-shard"]').click();
         await page.locator('[data-pick="iron-shard"]').click();
+        expect(await page.evaluate(obstructedVitals), count + '-seat battle nameplates').toEqual([]);
         for (const p of save.state.players.filter((p) => p.id !== save.viewerId)) {
           await page.locator('[data-aim="' + p.id + '"]').click();
           await expect(page.locator('.confirm-action')).toHaveAttribute('data-target', p.id);
