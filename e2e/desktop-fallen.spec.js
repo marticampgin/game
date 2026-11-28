@@ -26,7 +26,7 @@ for (const count of [2,8]) for (const reduced of [false,true]) {
     const sprite = page.locator('[data-seat="p1"] .arena-sprite');
     await expect(sprite).toHaveAttribute('data-collapse-ready','');
     const skin = await sprite.getAttribute('data-skin');
-    await page.evaluate(() => {
+    await page.evaluate(delayFall => {
       window.fallColumns = [];
       window.winnerCues = [];
       function paint() {
@@ -34,6 +34,10 @@ for (const count of [2,8]) for (const reduced of [false,true]) {
         if (body?.hasAttribute('data-collapsing')) {
           const cel = getComputedStyle(body.querySelector('.arena-cel'));
           window.fallColumns.push([cel.backgroundPositionX,cel.backgroundPositionY]);
+          if (delayFall) {
+            const nextPaint = performance.now() + 92;
+            while (performance.now() < nextPaint) { /* A late desktop paint during the landing. */ }
+          }
         }
         const champion = document.querySelector('.champion .arena-cel');
         if (champion?.getAnimations().some(animation => animation.id === 'fighter-celebrate')) {
@@ -42,7 +46,7 @@ for (const count of [2,8]) for (const reduced of [false,true]) {
         if (!window.endPoseSampling) requestAnimationFrame(paint);
       }
       requestAnimationFrame(paint);
-    });
+    },count === 2 && !reduced);
     await page.locator('[data-aim="p1"]').click();
     await page.locator('[data-execute="attack"]').click();
     await expect(page.locator('[data-seat="p1"].fallen')).toBeAttached();
