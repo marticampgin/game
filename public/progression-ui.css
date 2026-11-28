@@ -187,3 +187,16 @@
   .pg-screen { padding-bottom:14px; }
   .pg-mastery-list .pg-mastery-row { padding-block:7px; }
 }
+
+.pg-preview-controls { gap:9px; padding:10px 12px 11px; }
+.pg-preview-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:5px 8px; }
+.pg-preview-toolbar .pg-control-line { justify-content:flex-start; gap:2px; }
+.pg-gesture-hand { display:grid; grid-template-columns:repeat(var(--gestures),minmax(0,1fr)); align-items:stretch; gap:4px; }
+.pg-screen .pg-gesture {
+  display:grid; justify-items:center; align-content:start; gap:3px; min-width:0; padding:5px 2px;
+  border:1px solid #735948; border-image:var(--plate-iron) 8 / 5px / 0 stretch; border-radius:0;
+  background:linear-gradient(#372b36,#251d27); color:#eddbc2; font:600 clamp(12px,1.04vw,16px)/1.12 var(--body);
+}
+.pg-screen .pg-gesture:hover,.pg-screen .pg-gesture:focus-visible { border-image-source:var(--plate-lit); background:var(--control-selected); }
+.pg-gesture :is(img,.pg-icon) { width:clamp(24px,2.4vw,36px); height:clamp(24px,2.4vw,36px); object-fit:contain; image-rendering:pixelated; }
+.pg-gesture span { min-width:0; }

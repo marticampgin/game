@@ -1,6 +1,6 @@
 import { applyCommand, botCommand, CLASSES, createMatch, eligible, EVENTS, REWARDS, sandboxEdit, STATUSES, viewMatch } from '../src/game/index.js';
 import { rewardIcon } from './art.js';
-import { fighterPortrait, fighterSkins, healthBand, resolveFighterSkin } from './fighter-kit.js';
+import { fighterPortrait, fighterSkins, fighterLayout, healthBand, resolveFighterSkin } from './fighter-kit.js';
 import { createSkinPreview } from './skin-preview.js';
 import { wornGear } from './worn-gear.js';
 import { escapeHTML, option, titleCase, toolPage } from './atlas-ui.js';
@@ -48,17 +48,16 @@ export function makeExperiment(presetId, seed, count = 2, fitting) {
   for (const edit of preset.edits) state = sandboxEdit(state, { playerId: heroId, ...edit });
   if (fitting) {
     const hero = state.players.find(p => p.id === heroId);
-    const tier = Object.hasOwn(healthLevels,fitting.tier) ? fitting.tier : 'healthy';
+    const tier = Object.hasOwn(conditions,fitting.tier) ? fitting.tier : 'healthy';
     if (healthBand(hero) !== tier) {
-      const hp = Math.max(1,Math.round(hero.maxHp * healthLevels[tier]));
+      const hp = Math.max(1,Math.round(hero.maxHp * conditions[tier].previewRatio));
       state = sandboxEdit(state,{type:'stat',playerId:heroId,stat:'hp',value:hp});
     }
   }
   return state;
 }
 
-const healthLevels = {healthy:1, wounded:.5, critical:.18};
-const healthNames = {healthy:'Healthy', wounded:'Wounded', critical:'Critical'};
+const conditions = Object.fromEntries(fighterLayout.health.map(band => [band.id,band]));
 const saveKey = 'rift-practice-bench-v1';
 
 function initialBench(fitting) {
@@ -221,7 +220,7 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
     if (key === yard.dataset.requested) return;
     const error = get('.bench-art-error');
     error.hidden = true;
-    const result = await model.show(player,key,skin.name + ' outfit, ' + healthNames[band].toLowerCase());
+    const result = await model.show(player,key,skin.name + ' outfit, ' + conditions[band].name.toLowerCase());
     if (result === 'failed') {
       error.querySelector('span').textContent = skin.name + ' could not load.';
       error.hidden = false;
@@ -237,7 +236,7 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
     get('.bench-outfits').innerHTML = fighterSkins(player.classId).map(outfit =>
       '<button type="button" data-outfit="' + outfit.id + '" aria-pressed="' + (outfit.id === skin.id) + '"' + (frozen ? ' disabled' : '') +
       '><img src="' + fighterPortrait({classId:player.classId,skinId:outfit.id}) + '" alt=""><span>' + escapeHTML(outfit.name) + '</span></button>').join('');
-    get('.bench-vital-controls [role="group"]').innerHTML = Object.entries(healthNames).map(([id,name]) =>
+    get('.bench-vital-controls [role="group"]').innerHTML = fighterLayout.health.map(({id,name}) =>
       '<button type="button" data-health="' + id + '" aria-pressed="' + (id === band) + '"' + (frozen ? ' disabled' : '') + '>' + name + '</button>').join('');
     get('.bench-pilot-info').textContent = player.bot ? 'Bot-controlled rival' : 'Your fighter';
     get('[data-choose-class]').disabled = frozen;
@@ -317,8 +316,8 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
       if (skinId && yard.dataset.failed) delete yard.dataset.requested;
       if (skinId && resolveFighterSkin(player.classId,skinId).id === skinId) {
         applyEdit({type:'skin',playerId:subject,skinId});
-      } else if (Object.hasOwn(healthLevels,tier)) {
-        applyEdit({type:'stat',playerId:subject,stat:'hp',value:Math.max(1,Math.round(player.maxHp*healthLevels[tier]))});
+      } else if (Object.hasOwn(conditions,tier)) {
+        applyEdit({type:'stat',playerId:subject,stat:'hp',value:Math.max(1,Math.round(player.maxHp*conditions[tier].previewRatio))});
       } else if (button.hasAttribute('data-pilot')) applyEdit({type:'pilot',playerId:subject});
       setFeedback('');
       paint();

@@ -146,7 +146,7 @@
    draft retains the taller, wider cards for its smaller choice set. */
 @media (min-width: 800px) {
   .lobby-wrap { width: min(100%, 1220px); }
-  .lobby-classes:has(:nth-child(5)) { grid-template-columns:repeat(8,minmax(0,1fr)); gap:6px; }
+  .lobby-classes:has(:nth-child(5)) { grid-template-columns:repeat(8,minmax(0,1fr)); grid-auto-flow:row; gap:6px; }
   .lobby-classes:has(:nth-child(5)) .lobby-class {
     height:clamp(160px,26vh,248px); border-radius:0;
   }

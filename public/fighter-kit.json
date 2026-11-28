@@ -1,9 +1,9 @@
 {
   "cell": { "width": 208, "height": 166, "baseline": 144 },
   "health": [
-    { "id": "healthy", "above": 0.65 },
-    { "id": "wounded", "above": 0.30 },
-    { "id": "critical" }
+    { "id": "healthy", "name": "Healthy", "previewRatio": 1, "above": 0.65 },
+    { "id": "wounded", "name": "Wounded", "previewRatio": 0.5, "above": 0.30 },
+    { "id": "critical", "name": "Critical", "previewRatio": 0.18 }
   ],
   "layers": {
     "sheet": {
@@ -24,7 +24,7 @@
   },
   "founders": {
     "guardian": {
-      "weapon": "hammer", "emblem": "shield", "title": "Frontline bulwark", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "weapon": "hammer", "emblem": "shield", "title": "Frontline bulwark", "idlePeriodMs": 12100, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": { "hand": [95, 75], "mouth": [104, 39], "ground": [166, 149] },
         "wounded": { "hand": [96, 78], "mouth": [102, 44], "ground": [164, 149] },
@@ -32,7 +32,7 @@
       }
     },
     "berserker": {
-      "weapon": "saber", "emblem": "axe", "title": "Bloodied vanguard", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "weapon": "saber", "emblem": "axe", "title": "Bloodied vanguard", "idlePeriodMs": 9700, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": { "hand": [128, 69], "mouth": [111, 40], "ground": [161, 149] },
         "wounded": { "hand": [129, 74], "mouth": [111, 46], "ground": [160, 149] },
@@ -40,7 +40,7 @@
       }
     },
     "chronomancer": {
-      "weapon": "focus", "emblem": "clock", "title": "Keeper of time", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "weapon": "focus", "emblem": "clock", "title": "Keeper of time", "idlePeriodMs": 13700, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": { "hand": [108, 70], "mouth": [110, 39], "ground": [159, 149] },
         "wounded": { "hand": [107, 72], "mouth": [111, 40], "ground": [157, 149] },
@@ -48,7 +48,7 @@
       }
     },
     "alchemist": {
-      "weapon": "sickle", "emblem": "flask", "title": "Brewer of wonders", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "weapon": "sickle", "emblem": "flask", "title": "Brewer of wonders", "idlePeriodMs": 10900, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": { "hand": [124, 70], "mouth": [118, 44], "ground": [147, 149] },
         "wounded": { "hand": [124, 73], "mouth": [118, 48], "ground": [146, 149] },
@@ -56,7 +56,7 @@
       }
     },
     "gambler": {
-      "weapon": "rapier", "emblem": "dice", "title": "Riverboat cardsharp", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "weapon": "rapier", "emblem": "dice", "title": "Riverboat cardsharp", "idlePeriodMs": 10300, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": {"hand": [102, 91], "mouth": [106, 53], "ground": [140, 147], "belt": [106, 85]},
         "wounded": {"hand": [101, 94], "mouth": [105, 59], "ground": [141, 147], "belt": [104, 85]},
@@ -64,7 +64,7 @@
       }
     },
     "necromancer": {
-      "weapon": "staff", "emblem": "skull", "title": "Keeper of the departed", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "weapon": "staff", "emblem": "skull", "title": "Keeper of the departed", "idlePeriodMs": 13400, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": {"hand": [102, 82], "mouth": [116, 48], "ground": [149, 149], "belt": [107, 78]},
         "wounded": {"hand": [106, 89], "mouth": [115, 52], "ground": [148, 149], "belt": [108, 86]},
@@ -72,7 +72,7 @@
       }
     },
     "trickster": {
-      "weapon": "dagger", "emblem": "dagger", "title": "Mirror duelist", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "weapon": "dagger", "emblem": "dagger", "title": "Mirror duelist", "idlePeriodMs": 9900, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": {"hand": [101, 83], "mouth": [113, 49], "ground": [144, 149], "belt": [106, 81]},
         "wounded": {"hand": [101, 88], "mouth": [114, 55], "ground": [143, 149], "belt": [106, 86]},
@@ -80,7 +80,7 @@
       }
     },
     "artificer": {
-      "weapon": "hammer", "emblem": "hammer", "title": "Forge mechanic", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "weapon": "hammer", "emblem": "hammer", "title": "Forge mechanic", "idlePeriodMs": 11500, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": {"hand": [105, 87], "mouth": [112, 53], "ground": [150, 149], "belt": [104, 82]},
         "wounded": {"hand": [104, 86], "mouth": [113, 61], "ground": [149, 149], "belt": [102, 87]},

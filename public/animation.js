@@ -3,7 +3,7 @@ import { scenePropImages, stageCombatProps, useExposures } from './combat-props.
 import { statusCue, statusIcon } from './status-effects.js';
 import { groupedTargets } from './effect-strip.js';
 import { combatTiming, directOutcome } from './combat-timing.js';
-import { fighterLayout, healthBand, resolveFighterSkin } from './fighter-kit.js';
+import { fighterKit, fighterLayout, healthBand, resolveFighterSkin } from './fighter-kit.js';
 import { actorClip, effectRows, impactCauses, missiles, motionScore } from './combat-motion.js';
 export { healthBand, registerFighterSkin, resolveFighterSkin } from './fighter-kit.js';
 
@@ -22,12 +22,43 @@ function pose(element, name) {
   element.style.setProperty('--pose-x', (index % standing.columns) * 100 / (standing.columns - 1) + '%');
   element.style.setProperty('--pose-y', Math.floor(index / standing.columns) * 100 / (standingRows - 1) + '%');
 }
-const idlePeriods = {
-  guardian: 12100, berserker: 9700, chronomancer: 13700, alchemist: 10900,
-  gambler: 10300, necromancer: 13400, trickster: 9900, artificer: 11500,
-};
+// Preview the same rest rows and standing paintings used by the arena. A
+// reduced-motion audition holds the representative drawing for inspection.
+export function playFittingPose(sprite, take) {
+  const layout = fighterLayout.layers.idles;
+  const row = layout.rows.indexOf(take);
+  const band = fighterLayout.health.findIndex(tier => tier.id === sprite.dataset.tier);
+  const still = sprite.closest('.reduce-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const original = sprite.dataset.pose;
+  let playback;
+  const time = row >= 0 ? 1450 : 1250;
+  if (row >= 0 && sprite.hasAttribute('data-idles-ready')) {
+    pose(sprite,'settle');
+    sprite.dataset.auditionRow = take;
+    const y = 100 * (band * layout.rows.length + row) / (layout.rows.length * fighterLayout.health.length - 1);
+    const layer = sprite.querySelector('.arena-check-cel');
+    sprite.style.setProperty('--audition-y',y + '%');
+    if (!still) playback = layer.animate([{backgroundPositionX:'0%'},{backgroundPositionX:'100%'}],
+      {duration:time,easing:'steps(' + (layout.columns - 1) + ',end)',fill:'forwards'});
+  } else {
+    const fallback = {rest:'breathe',check:'survey',focus:'settle',victory:'victory',fallen:'fallen'};
+    pose(sprite,fallback[take] || 'idle');
+  }
+  let done = false;
+  const timer = setTimeout(cancel,time);
+  function cancel() {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    playback?.cancel();
+    delete sprite.dataset.auditionRow;
+    sprite.style.removeProperty('--audition-y');
+    pose(sprite,original);
+  }
+  return {cancel};
+}
 function idlePeriod(role, band) {
-  return (idlePeriods[role] ?? 11500) + (band === 'critical' ? 1900 : band === 'wounded' ? 750 : 0);
+  return (fighterKit(role).idlePeriodMs ?? 11500) + (band === 'critical' ? 1900 : band === 'wounded' ? 750 : 0);
 }
 export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotion = false } = {}) {
   const skin = resolveFighterSkin(player.classId, skinId);

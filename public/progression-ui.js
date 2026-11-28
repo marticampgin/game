@@ -1,9 +1,9 @@
 import { CLASSES, REWARDS } from '../src/game/catalog.js';
 import { SHOP, MASTERY_TARGET, MATCH_QUESTS, LIFETIME_QUESTS, newProfile, owns } from '../src/game/progression.js';
 import { readProfile, readCareerStatus, loadProfile, subscribeProfile, buyItem, equipSkin } from './career-client.js';
-import { esc, glyph, rewardIcon } from './art.js';
-import { fighterModel, fighterPortrait, fighterKit } from './fighter-kit.js';
-import { playArenaAction } from './animation.js';
+import { actionIcon, esc, glyph, rewardIcon } from './art.js';
+import { fighterModel, fighterPortrait, fighterKit, fighterLayout } from './fighter-kit.js';
+import { playArenaAction, playFittingPose } from './animation.js';
 import { createSkinPreview } from './skin-preview.js';
 import { reconcile } from './arena-render.js';
 import { coin, number, objectiveRows } from './progression-objectives.js';
@@ -13,7 +13,7 @@ const roles = Object.values(CLASSES);
 const rewards = SHOP.filter(item => item.kind === 'reward');
 const starterCount = Object.keys(REWARDS).length - rewards.length;
 const tabs = [['quests', 'Quests', 'atlas'], ['skins', 'Skins', 'mail'], ['rewards', 'Reward unlocks', 'chest']];
-const conditions = [['healthy', 'Healthy', 100], ['wounded', 'Wounded', 48], ['critical', 'Critical', 18]];
+const conditions = fighterLayout.health;
 const icon = id => '<img class="pg-icon" src="/assets/i-' + esc(id) + '.png" alt="">';
 const paid = (profile, item) => item.skinId === 'founder' || owns(profile, item);
 const button = (text, action, value, attrs = '') =>
@@ -84,21 +84,38 @@ function classRail(state, profile) {
       '" alt=""><span>' + esc(role.name) + '</span>', 'class', role.id, 'class="pg-class" aria-pressed="' + (role.id === state.classId) + '"')).join('') + '</div></section>';
 }
 
+function fittingControls(state) {
+  const signature = CLASSES[state.classId].ability;
+  const actions = [
+    ['attack','Strike',actionIcon('attack')], [signature,REWARDS[signature].name,actionIcon(signature)],
+    ['defend','Defend',actionIcon('defend')], ['scavenge','Scavenge',actionIcon('scavenge')], ['red-tonic','Drink',actionIcon('red-tonic')],
+  ];
+  const poses = [
+    ['rest','Breathing',icon('feather')], ['check','Check gear',icon('mail')], ['focus','Flourish',rewardIcon({icon:fighterKit(state.classId).emblem})],
+    ['interrupted','Recoil',icon('shield')], ['victory','Victory',icon('crown')], ['fallen','Fallen',icon('skull')],
+  ];
+  const choices = state.rehearsal === 'poses' ? poses : actions;
+  return `<div class="pg-preview-controls"><div class="pg-preview-toolbar">
+    <div class="pg-control-line" role="group" aria-label="Rehearsal library">${button('Actions','library','actions','aria-pressed="' + (state.rehearsal === 'actions') + '"')}${button('Poses','library','poses','aria-pressed="' + (state.rehearsal === 'poses') + '"')}</div>
+    <div class="pg-control-line" role="group" aria-label="Preview condition">${conditions.map(({id,name:label}) =>
+      button(label,'condition',id,'aria-pressed="' + (id === state.tier) + '"')).join('')}</div></div>
+    <div class="pg-gesture-hand" role="group" aria-label="Preview gesture" style="--gestures:${choices.length}">${choices.map(([id,label,art]) =>
+      button(art + '<span>' + esc(label) + '</span>','gesture',id,'class="pg-gesture"')).join('')}</div></div>`;
+}
+
 function skinPage(state, profile, canPractice) {
   const options = outfits(state.classId);
   const item = options.find(s => s.skinId === state.skinId) || options[0];
   const className = CLASSES[state.classId].name;
-  const condition = conditions.find(c => c[0] === state.tier);
+  const condition = conditions.find(c => c.id === state.tier);
   const matches = Math.min(profile.classes[state.classId]?.matches || 0, item.mastery || MASTERY_TARGET);
   return `<div class="pg-shop-layout">${classRail(state,profile)}
     <section class="pg-showcase pg-panel" aria-label="Costume preview">
       <header class="pg-stage-heading"><small>${esc(className)}</small><h2>${esc(item.name)}</h2></header><div class="pg-skin-stage">
-        <div class="pg-fitting" role="img" aria-label="${esc(item.name + ' ' + className + ', ' + condition[1].toLowerCase())}">
+        <div class="pg-fitting" role="img" aria-label="${esc(item.name + ' ' + className + ', ' + condition.name.toLowerCase())}">
           <div class="pg-mannequin" data-seat="preview" data-facing="right"><span class="fighter-art"></span></div>
         </div></div>
-      <div class="pg-preview-controls"><div class="pg-control-line"><span>Condition</span><div role="group" aria-label="Preview condition">${conditions.map(([id,label]) =>
-        button(label, 'condition', id, 'aria-pressed="' + (id === state.tier) + '"')).join('')}</div></div>
-      <div class="pg-control-line"><span>Gesture</span><div role="group" aria-label="Preview gesture">${button('Strike','gesture','attack')}${button(esc(REWARDS[CLASSES[state.classId].ability].name),'gesture',CLASSES[state.classId].ability)}${button('Scavenge','gesture','scavenge')}${button('Drink','gesture','red-tonic')}</div></div></div>
+      ${fittingControls(state)}
     </section><section class="pg-panel pg-wardrobe"><div class="pg-section-head"><h2>Wardrobe</h2><small>${options.filter(i => paid(profile,i)).length} / ${options.length} owned</small></div>
       <div class="pg-outfits" role="group" aria-label="${esc(className)} outfits">${options.map(outfit =>
         button('<img class="pg-outfit-model" src="' + esc(fighterModel({classId:state.classId,skinId:outfit.skinId})) + '" alt=""><span><strong>' + esc(outfit.name) +
@@ -135,8 +152,8 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
   root.setAttribute('aria-labelledby','pg-heading');
   const classId = Object.hasOwn(CLASSES,initialClassId) ? initialClassId : roles[0].id;
   let profile = readProfile() || newProfile();
-  const state = {tab:tabs.some(t => t[0] === initialTab) ? initialTab : 'quests',classId,
-    skinId:initialSkinId || profile.equipped[classId] || 'founder',tier:conditions.some(([id]) => id === initialTier) ? initialTier : 'healthy',rewardId:rewards[0]?.id,busy:false};
+  const state = {tab:tabs.some(t => t[0] === initialTab) ? initialTab : 'quests',classId,rehearsal:'actions',
+    skinId:initialSkinId || profile.equipped[classId] || 'founder',tier:conditions.some(({id}) => id === initialTier) ? initialTier : 'healthy',rewardId:rewards[0]?.id,busy:false};
   let message = '', issue = false, preview, fitting, queuedGesture = '', followEquipped = !initialSkinId;
   host.replaceChildren(root);
 
@@ -170,6 +187,10 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
   }
   function performGesture(stage, actionId) {
     preview?.cancel();
+    if (state.rehearsal === 'poses' && actionId !== 'interrupted') {
+      preview = playFittingPose(stage.querySelector('.pg-mannequin .arena-sprite'),actionId);
+      return;
+    }
     preview = playArenaAction(stage,{actorId:'preview',targetId:'preview',actionId,events:[]},{rehearsal:true,onCue});
   }
   function updateFitting() {
@@ -182,10 +203,10 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
     preview?.cancel();
     const mannequin = stage.querySelector('.pg-mannequin .fighter-art');
     fitting ??= createSkinPreview(stage,mannequin,'pg-previous',{withEffects:true});
-    const condition = conditions.find(([id]) => id === tier);
-    const player = {id:'preview',classId,skinId,hp:condition[2],maxHp:100,alive:true};
+    const condition = conditions.find(({id}) => id === tier);
+    const player = {id:'preview',classId,skinId,hp:Math.round(100 * condition.previewRatio),maxHp:100,alive:true};
     const item = outfits(classId).find(item => item.skinId === skinId);
-    const label = (item?.name || 'Founder') + ' ' + CLASSES[classId].name + ', ' + condition[1].toLowerCase();
+    const label = (item?.name || 'Founder') + ' ' + CLASSES[classId].name + ', ' + condition.name.toLowerCase();
     fitting.show(player,key,label,() => !queuedGesture).then(result => {
       if (result === 'failed') { message = 'The full gesture set could not load.'; issue = true; render(); }
       if (result === 'ready' && queuedGesture) {
@@ -234,6 +255,7 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
     if (pg === 'tab') state.tab = value;
     if (pg === 'class') pickClass(value);
     if (pg === 'outfit') pickClass(state.classId,value);
+    if (pg === 'library') { preview?.cancel(); queuedGesture = ''; state.rehearsal = value; }
     if (pg === 'condition') state.tier = value;
     if (pg === 'reward') state.rewardId = value;
     if (pg === 'mastery') {

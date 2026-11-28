@@ -85,3 +85,26 @@ test('a failed practice outfit keeps the previous fighter and retries from the y
   await expect(fighter).toHaveAttribute('data-skin','harbor-warden');
   await expect(page.getByRole('button',{name:'Retry preview'})).toBeHidden();
 });
+
+test('the pose library replays the selected health band and releases it on costume changes', async ({page}) => {
+  const stage = await openBerserker(page);
+  await page.getByRole('button',{name:'Wounded',exact:true}).click();
+  await page.getByRole('button',{name:'Poses',exact:true}).click();
+  await page.getByRole('button',{name:'Check gear',exact:true}).click();
+  const sprite = stage.locator('.pg-mannequin .arena-sprite');
+  await expect(sprite).toHaveAttribute('data-audition-row','check');
+  await expect(sprite).toHaveCSS('--audition-y','50%');
+  await page.getByRole('button',{name:/Wolf Tracker.*coins/}).click();
+  await expect(stage).toHaveAttribute('data-shown','berserker/wolf-tracker/wounded');
+  await expect(sprite).not.toHaveAttribute('data-audition-row','check');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.getByRole('button',{name:'Flourish',exact:true}).click();
+  await expect(sprite).toHaveCSS('--audition-y','62.5%');
+  expect(await sprite.locator('.arena-check-cel').evaluate(el => el.getAnimations().length)).toBe(0);
+  await page.getByRole('button',{name:'Victory',exact:true}).click();
+  await expect(sprite).toHaveAttribute('data-pose','victory');
+  await page.getByRole('button',{name:'Actions',exact:true}).click();
+  await expect(sprite).toHaveAttribute('data-pose','idle');
+  await page.getByRole('button',{name:'Defend',exact:true}).click();
+  await expect(stage.locator('.arena-fx[data-action=defend]')).toBeAttached();
+});

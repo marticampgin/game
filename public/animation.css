@@ -419,3 +419,8 @@ body.reduce-motion .arena-sprite[data-pose='idle'] {
   background:url('/assets/skins/soul-thread.png') 0 0 / 36px 800% repeat-x;
   animation:arena-projectile-cels .26s steps(7,end) infinite;
 }
+
+.arena-sprite[data-audition-row] > .arena-cel { visibility:hidden; }
+.arena-sprite[data-audition-row] > .arena-check-cel {
+  opacity:1; background-position:53.333333% var(--audition-y);
+}
