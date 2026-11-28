@@ -6,6 +6,12 @@ const genericIcons = new Set([
   'frost', 'bolt', 'hammer', 'dice', 'leaf', 'dagger', 'skull', 'feather', 'crown', 'lantern', 'rune', 'coin',
 ]);
 export const classArt = player => fighterModel(typeof player === 'string' ? { classId: player } : player);
+// Slots store the mechanic key; a rune's catalog ID and player-facing name can differ.
+const runeNames = new Map(Object.values(REWARDS)
+  .filter(reward => reward.category === 'modifier')
+  .map(reward => [reward.modifier, reward.name]));
+export const modifierName = key => runeNames.get(key) ?? key;
+
 export function rewardIcon(reward) {
   const src = Object.hasOwn(REWARDS, reward?.id)
     ? '/assets/rewards/' + reward.id + '.png'

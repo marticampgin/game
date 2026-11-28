@@ -1,9 +1,9 @@
 import { applyCommand, botCommand, CLASSES, createMatch, eligible, EVENTS, REWARDS, sandboxEdit, STATUSES, viewMatch } from '../src/game/index.js';
-import { rewardIcon } from './art.js';
+import { modifierName, rewardIcon } from './art.js';
 import { fighterPortrait, fighterSkins, fighterLayout, healthBand, resolveFighterSkin } from './fighter-kit.js';
 import { createSkinPreview } from './skin-preview.js';
 import { wornGear } from './worn-gear.js';
-import { escapeHTML, option, titleCase, toolPage } from './atlas-ui.js';
+import { escapeHTML, option, toolPage } from './atlas-ui.js';
 
 const heroId = 'experimenter';
 const rivalId = 'rival';
@@ -102,7 +102,7 @@ function buildSummary(player) {
   const attributes = Object.entries(stats).filter(([id]) => !['hp', 'maxHp'].includes(id));
   return `<h3>${CLASSES[player.classId].name} build</h3><dl class="rb-attribute-list">${attributes.map(([id, label]) =>
     `<div><dt>${label}</dt><dd>${player[id]}</dd></div>`).join('')}</dl>
-    <div class="rb-loadout"><strong>Equipped</strong><div>${player.abilities.map(slot => `<span class="rb-slot">${rewardIcon(REWARDS[slot.id])}<span>${REWARDS[slot.id].name}${slot.modifiers.length ? ' · ' + slot.modifiers.map(titleCase).join(', ') : ''} <small>${slot.cooldown ? slot.cooldown + ' turns' : 'ready'}</small></span></span>`).join('')}</div></div>
+    <div class="rb-loadout"><strong>Equipped</strong><div>${player.abilities.map(slot => `<span class="rb-slot">${rewardIcon(REWARDS[slot.id])}<span>${REWARDS[slot.id].name}${slot.modifiers.length ? ' · ' + escapeHTML(slot.modifiers.map(modifierName).join(', ')) : ''} <small>${slot.cooldown ? slot.cooldown + ' turns' : 'ready'}</small></span></span>`).join('')}</div></div>
     <dl class="rb-inventory"><div><dt>Artifacts</dt><dd>${escapeHTML(itemNames(player.artifacts)) || 'None'}</dd></div>
     <div><dt>Consumables</dt><dd>${escapeHTML(itemNames(player.consumables)) || 'None'}</dd></div>
     <div><dt>Statuses</dt><dd>${effects.map(([id, n]) => STATUSES[id].name + ' ' + n).join(' · ') || 'None'}</dd></div></dl>`;

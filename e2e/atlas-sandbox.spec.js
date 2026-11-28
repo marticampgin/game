@@ -85,6 +85,24 @@ test('sandbox applies live edits, reproduces builds and carries them into battle
   expect(errors).toEqual([]);
 });
 
+test('etched runes keep their reward names in the workbench and battle inventory', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Sandbox', exact: true }).click();
+  await page.getByLabel('Operation').selectOption('grant');
+  for (const id of ['amplify', 'accelerate', 'echo-rune']) {
+    await page.getByLabel('Reward', { exact: true }).selectOption(id);
+    await page.getByRole('button', { name: 'Grant reward', exact: true }).click();
+  }
+  await page.getByText('Fighter build', { exact: true }).click();
+  const loadout = page.locator('.rb-loadout');
+  await expect(loadout).toBeVisible();
+  await expect(loadout).toContainText('Amplify Rune, Haste Rune, Echo Rune');
+
+  await page.getByRole('button', { name: 'Play match' }).click();
+  await page.getByRole('button', { name: 'Your inventory' }).click();
+  await expect(page.getByRole('dialog').locator('.item-list em')).toContainText('Amplify Rune · Haste Rune · Echo Rune');
+});
+
 for (const [width, height] of [[1280,720], [1920,1080]]) {
   test('desktop atlas opens with its active region and reward visible at ' + width + 'px', async ({ page }) => {
     await page.setViewportSize({ width, height });

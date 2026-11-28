@@ -1,7 +1,7 @@
 import { CLASSES, REWARDS, STATUSES, currentAttack, getActions } from '/src/game/index.js';
 import { wornGear } from './worn-gear.js';
 import { fighterModel, fighterPortrait, resolveFighterSkin } from './fighter-kit.js';
-import { actionIcon, rewardIcon, seatCrest, glyph, esc, toolButton as tool } from './art.js';
+import { actionIcon, modifierName, rewardIcon, seatCrest, glyph, esc, toolButton as tool } from './art.js';
 import { actionDock } from './command.js';
 import { fighterSpriteHTML } from './animation.js';
 import { statusBankHTML } from './effect-strip.js';
@@ -176,7 +176,7 @@ export function buildHTML(p, own) {
     a.id,
     a.cooldown ? 'Cooldown ' + a.cooldown : 'Ready',
     ...(a.id === gear ? ['Worn on belt'] : []),
-    ...(a.modifiers || []).map((m) => REWARDS[m]?.name || m),
+    ...(a.modifiers || []).map(modifierName),
   ]);
   const list = (items, empty) =>
     items.length
