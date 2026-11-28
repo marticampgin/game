@@ -15,12 +15,14 @@ import { mountLobby, resumeLobby, roomRequest as request } from './lobby.js';
 
 import { loadProfile, onSoloRejected, readProfile, subscribeProfile, syncCareerSolo } from './career-client.js';
 import { objectiveRows } from './progression-objectives.js';
+import { getLanguage, setLanguage } from './i18n.js';
 
 const app = document.querySelector('#app');
 const modal = document.querySelector('#dialog');
 const contents = document.querySelector('#dialog-content');
 const soundButton = document.querySelector('#sound');
 const pref = read(localStorage, 'rift-preferences') || {};
+setLanguage(pref.language || 'en');
 let screen = 'menu',
   dispose,
   timer,
@@ -599,7 +601,10 @@ function dialog(html) {
   }
 }
 function settings() {
-  dialog(`<h2>Settings &amp; rules</h2><label class="setting-line">Sound effects<input type="checkbox" data-pref="sound" ${pref.sound ? 'checked' : ''}></label>
+  dialog(`<h2>Settings &amp; rules</h2><label class="setting-line">Language<select data-language>
+    <option value="en" lang="en" translate="no" ${getLanguage() === 'en' ? 'selected' : ''}>English</option>
+    <option value="ru" lang="ru" translate="no" ${getLanguage() === 'ru' ? 'selected' : ''}>Русский</option>
+  </select></label><label class="setting-line">Sound effects<input type="checkbox" data-pref="sound" ${pref.sound ? 'checked' : ''}></label>
   <label class="setting-line">Faster bots in solo and hosted rooms<input type="checkbox" data-pref="fast" ${pref.fast ? 'checked' : ''}></label>
   <label class="setting-line">Reduce motion<input type="checkbox" data-pref="reduce" ${pref.reduce ? 'checked' : ''}></label>
   <h3>How to play</h3><p>Pick one of three rewards, then take one action. Strike any living rival, use equipment, defend for a shield, or scavenge for another reward. The last contender standing wins.</p>
@@ -725,6 +730,12 @@ document.addEventListener('input', (event) => {
   if (event.target.matches('[data-history-search]')) filterHistory(contents, event.target.value);
 });
 document.addEventListener('change', (event) => {
+  if (event.target.matches('[data-language]')) {
+    pref.language = event.target.value;
+    setLanguage(pref.language);
+    preferences();
+    return;
+  }
   if (event.target.dataset.pref) {
     pref[event.target.dataset.pref] = event.target.checked;
     preferences();

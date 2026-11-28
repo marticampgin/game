@@ -21,8 +21,8 @@ function moveSentence(action) {
 }
 
 function withNumbers(text) {
-  return String(text).split(/(\d+(?:\.\d+)?%?)/g)
-    .map((piece, i) => i % 2 ? '<b>' + piece + '</b>' : esc(piece)).join('');
+  return '<span data-quantity-line="' + esc(text) + '">' + String(text).split(/(\d+(?:\.\d+)?%?)/g)
+    .map((piece, i) => i % 2 ? '<b>' + piece + '</b>' : esc(piece)).join('') + '</span>';
 }
 
 function resultLine(action) {

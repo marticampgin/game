@@ -2,6 +2,7 @@ import { esc, seatCrest } from './art.js';
 import { statusCue, statusIcon } from './status-effects.js';
 import { effectTextHTML } from './resolution.js';
 import { finishPlace } from './finish-place.js';
+import { getLanguage, localizeTree } from './i18n.js';
 
 function liveTurn(view) {
   const active = view.players.find(p => p.id === view.activeId);
@@ -151,6 +152,7 @@ export function refreshHistory(root, view) {
   journal.dataset.historySnapshot = signature(view);
   journal.querySelector('.journal-handoff').textContent = liveTurn(view);
   journal.querySelector('.journal-limit').textContent = retainedNote(view);
+  if (getLanguage() !== 'en') localizeTree(journal);
   filterHistory(journal,journal.querySelector('[data-history-search]').value);
   if (focusRound) scroller.querySelector('[data-round="' + CSS.escape(focusRound) + '"] summary')?.focus({preventScroll:true});
   scroller.scrollTop = top;

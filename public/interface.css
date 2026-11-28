@@ -118,3 +118,12 @@
   .watch-seat img { width:clamp(33px,3.5vw,51px); height:clamp(39px,4vw,59px); object-fit:cover; image-rendering:pixelated; }
   .watch-seat strong { font-size:clamp(17px,1.45vw,23px); white-space:normal; }
 }
+.menu-language, .setting-line [data-language] {
+  font: inherit;
+  color: #f1dcb5;
+  background: #211a28;
+  border: 1px solid #856648;
+  border-radius: 2px;
+  padding: .28em .45em;
+}
+.menu-language { font-size: .85rem; margin-inline-end: .5rem; }

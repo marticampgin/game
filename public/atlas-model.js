@@ -63,6 +63,11 @@ export function matchingRewards(rewards, classes, filters) {
       if (!reward.exclusive && !reward.tags.some(tag => classes[filters.classId].favored.includes(tag))) return false;
     }
     return !needle || [reward.name, reward.description, reward.category, reward.rarity, ...reward.tags]
-      .some(word => word.toLowerCase().replaceAll('-', ' ').includes(needle.replaceAll('-', ' ')));
+      .some(word => {
+        const label = word.replaceAll('-', ' ');
+        const query = needle.replaceAll('-', ' ');
+        return [label, translate(label)].some(value => value.toLowerCase().includes(query));
+      });
   });
 }
+import { translate } from './i18n.js';
