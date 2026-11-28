@@ -2,7 +2,9 @@
 
 Each of the eight founder portraits sits beside its arena figure at native scale. The Russian match capture shows all eight contenders wearing alternate outfits in the same ring. [Compare the eight fighters](eight-fighters.webp) · [See all 24 outfits across three health bands](class-outfits.webp) · [Open the Russian battle capture](arena-ru.webp)
 
-The 11-second silent recording follows three attacks from the command through contact and recovery. A healthy Berserker uses Blood Cleave against Carnival Fox, a wounded Stormglass Engineer uses Rivet Drive in an eight-player match, and a critical Mirror Regent uses Mirror Feint against Glass Oracle. Each encounter was started through the Outfitter and Sandbox at 1440 × 900. [Watch the three attacks](fighter-motion.webm)
+The Gambler and Artificer comparison uses the same foot line and pixel scale for both editions of each outfit. The Gambler holds his fan of cards forward and rests his free hand near the rapier. The Artificer gains most of his height below the apron. [See the earlier and current models](gambler-artificer.webp)
+
+The 15-second silent recording follows four attacks from the command through contact and recovery. Riverboat Duelist uses Cut the Deck against Railway Smith, a healthy Berserker uses Blood Cleave against Carnival Fox, a wounded Stormglass Engineer uses Rivet Drive in an eight-player match, and a critical Mirror Regent uses Mirror Feint against Glass Oracle. Each encounter was started through the Outfitter and Sandbox at 1440 × 900. [Watch the four attacks](fighter-motion.webm)
 
 [Watch the 24-second combat reel](combat.mp4) · [Watch a complete eight-player turn](turn.mp4)
 
