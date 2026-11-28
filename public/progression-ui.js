@@ -141,7 +141,9 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
 
   function render() {
     if (signal.aborted) return;
-    const focus = root.contains(document.activeElement) && document.activeElement.closest('[data-pg]');
+    const focused = root.contains(document.activeElement) ? document.activeElement : null;
+    const focus = focused?.closest('[data-pg]');
+    const focusTarget = focused?.matches('summary') ? '.pg-pool summary' : '#pg-heading';
     const openPool = !!root.querySelector('.pg-pool[open]');
     preview?.cancel();
     root.innerHTML = `<div class="pg-wrap"><header class="pg-header">${button(glyph('back') + ' Back','back','','class="pg-back"')}
@@ -156,6 +158,8 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
     if (focus) {
       const same = [...root.querySelectorAll('[data-pg]')].find(el => el.dataset.pg === focus.dataset.pg && el.dataset.value === focus.dataset.value && !el.disabled);
       (same || root.querySelector('.pg-outfit[aria-pressed=true], .pg-reward-grid [aria-pressed=true]'))?.focus({preventScroll:true});
+    } else if (focused) {
+      (root.querySelector(focusTarget) || root.querySelector('#pg-heading')).focus({preventScroll:true});
     }
     if (state.tab === 'skins' && lastPreload !== state.classId + '/' + state.skinId) {
       lastPreload = state.classId + '/' + state.skinId;
@@ -180,8 +184,8 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
     root.remove();
   }
   function back() { destroy(); onBack?.(); }
-  root.addEventListener('keydown', event => {
-    if (event.key === 'Escape') { event.preventDefault(); back(); }
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !event.defaultPrevented && !document.querySelector('dialog[open]')) { event.preventDefault(); back(); }
   }, {signal});
   root.addEventListener('click', async event => {
     const el = event.target.closest('[data-pg]');

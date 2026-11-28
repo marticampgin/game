@@ -553,7 +553,11 @@ function settings() {
 }
 async function openProgression(tab) {
   const origin = screen;
-  const career = origin === 'battle' ? current()?.career : undefined;
+  const view = origin === 'battle' ? current() : undefined;
+  const career = view?.career;
+  const fighter = view?.players.find(p => p.id === match.viewerId);
+  const settlement = readProfile().lastSettlement;
+  const masterySkinId = career && settlement?.runId === career.runId ? settlement.masterySkinId : undefined;
   const opener = tab === 'skins' ? 'outfitter' : 'quests';
   const back = () => {
     if (origin === 'battle' && match) { setScreen('battle'); refreshBattle(); schedule(); }
@@ -564,7 +568,7 @@ async function openProgression(tab) {
   const start = epoch;
   try {
     const {mountProgression} = await import('./progression-ui.js');
-    if (epoch === start) dispose = mountProgression(app,{initialTab:tab,career,onBack:back});
+    if (epoch === start) dispose = mountProgression(app,{initialTab:tab,initialClassId:fighter?.classId,initialSkinId:masterySkinId,career,onBack:back});
   } catch (error) { if (epoch === start) { back(); notice(error.message); } }
 }
 async function openTool(tool) {
