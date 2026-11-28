@@ -31,3 +31,7 @@ The browser suite exercises two- and eight-seat turns with mouse and keyboard, a
 In a local Chromium run at 1440 × 900, the median frame interval was 16.7 ms for a two-seat bash, an eight-seat bash and an eight-seat flask throw. The 95th percentile was 16.7–16.8 ms. These timings cover the visible action after the sheets loaded. The fighter illustrations use twelve ordered cels per main motion, with separate countersteps and continuous movement between seats. A separate browser test blocks the main thread for 180 ms across a shield hit and verifies that HP changes on contact drawing 7. A sustained slow-frame test checks that six specific wind-up, contact and recovery drawings still appear.
 
 The four founders can appear more than once in a match. Crests identify individual seats, while duplicate characters still share their founder's face and costume. In the final recording, the Berserker still straightens quickly after the low cleave. The reviews here were internal. Readability for first-time players is an open playtest question.
+
+## Outfitter rehearsal
+
+The normal-speed stage recording shows Wolf Tracker striking into open space, opening a coffer and stowing its find. Star Cartographer then casts Time Bolt across the fitting stage. [Watch the gestures](workshop-gestures.mp4)
