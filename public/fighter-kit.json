@@ -47,9 +47,9 @@
       "weapon": "focus", "emblem": "clock", "title": "Keeper of time", "idlePeriodMs": 13700, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations", "collapse", "celebrate"],
       "endingTimingMs": { "collapse": [125, 260, 470], "celebrate": [240, 505, 840] },
       "anchors": {
-        "healthy": { "hand": [108, 70], "mouth": [110, 39], "ground": [159, 149] },
-        "wounded": { "hand": [107, 72], "mouth": [111, 40], "ground": [157, 149] },
-        "critical": { "hand": [107, 81], "mouth": [113, 56], "ground": [153, 149] }
+        "healthy": { "hand": [101, 69], "mouth": [106, 32], "ground": [157, 149], "belt": [108, 72] },
+        "wounded": { "hand": [96, 76], "mouth": [107, 38], "ground": [158, 149], "belt": [107, 77] },
+        "critical": { "hand": [92, 88], "mouth": [107, 49], "ground": [155, 149], "belt": [106, 87] }
       }
     },
     "alchemist": {
@@ -199,9 +199,9 @@
       "portrait": "/assets/skins/outfits/star-cartographer/portrait.webp",
       "model": "/assets/skins/outfits/star-cartographer/model.webp",
       "anchors": {
-        "healthy": {"hand": [100, 79], "mouth": [111, 42], "ground": [145, 149], "belt": [106, 70]},
-        "wounded": {"hand": [103, 87], "mouth": [113, 51], "ground": [150, 149], "belt": [107, 81]},
-        "critical": {"hand": [99, 93], "mouth": [115, 66], "ground": [145, 149], "belt": [109, 90]}
+        "healthy": {"hand": [98, 85], "mouth": [105, 46], "ground": [155, 149], "belt": [106, 73]},
+        "wounded": {"hand": [95, 91], "mouth": [111, 56], "ground": [161, 149], "belt": [107, 82]},
+        "critical": {"hand": [94, 101], "mouth": [115, 63], "ground": [148, 149], "belt": [107, 91]}
       }
     },
     {
@@ -220,9 +220,9 @@
       "portrait": "/assets/skins/outfits/glass-oracle/portrait.webp",
       "model": "/assets/skins/outfits/glass-oracle/model.webp",
       "anchors": {
-        "healthy": {"hand": [102, 77], "mouth": [110, 47], "ground": [148, 149], "belt": [105, 74]},
-        "wounded": {"hand": [99, 85], "mouth": [112, 56], "ground": [155, 149], "belt": [104, 80]},
-        "critical": {"hand": [100, 96], "mouth": [116, 70], "ground": [148, 149], "belt": [109, 92]}
+        "healthy": {"hand": [101, 82], "mouth": [110, 41], "ground": [156, 149], "belt": [106, 75]},
+        "wounded": {"hand": [93, 82], "mouth": [110, 48], "ground": [168, 149], "belt": [102, 78]},
+        "critical": {"hand": [96, 91], "mouth": [116, 58], "ground": [150, 149], "belt": [107, 92]}
       }
     },
     {
