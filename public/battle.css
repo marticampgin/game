@@ -713,6 +713,7 @@ body[data-screen='battle'] > .topbar {
   .battle-shell {
     --desktop-controls: clamp(156px, calc(8.4vw + 49px), 213px);
     --desktop-stage: clamp(310px, calc(100svh - clamp(52px, 6.6svh, 68px) - var(--desktop-controls) - 85px), 970px);
+    --ring-stretch: 1.09;
     min-height: 100svh;
     display: flex;
     flex-direction: column;
@@ -724,8 +725,25 @@ body[data-screen='battle'] > .topbar {
   .battle-shell .turn-board.drafting:not(.shop-hidden) .arena-world,
   .battle-shell .turn-board.drafting.shop-hidden .arena-world {
     height: var(--desktop-stage);
-    background: var(--ring-image) center top / 100% calc(var(--desktop-stage) * 1.09) no-repeat;
+    background: var(--ring-image) center top / 100% calc(var(--desktop-stage) * var(--ring-stretch)) no-repeat;
   }
+  /* Both plumes are sampled from the painting at its native 1881 × 836 grid.
+     Match its projection so particles rise from the coals at every PC size. */
+  .arena-world .torch-embers {
+    left:calc(100% * var(--fire-x) / 1881); top:calc(100% * var(--ring-stretch) * var(--fire-y) / 836);
+    width:calc(100% * 48 / 1881); height:calc(100% * var(--ring-stretch) * 60 / 836);
+    transform:none;
+  }
+  .torch-embers.west { --fire-x:605; --fire-y:190; --flame-row:0%; --flame-time:1.27s; --flame-offset:0s; }
+  .torch-embers.east { --fire-x:1431; --fire-y:226; --flame-row:100%; --flame-time:1.11s; --flame-offset:-.38s; }
+  .arena-world .torch-embers::before {
+    inset:0; width:100%; height:100%; box-shadow:none;
+    background: url('/assets/arena-braziers.webp') 0 var(--flame-row) / 1200% 200% no-repeat;
+    animation:brazier-flicker var(--flame-time) steps(12,end) var(--flame-offset) infinite;
+  }
+  .arena-world .torch-embers::after { left:49%; top:64%; bottom:auto; }
+  .arena-world .torch-embers.east::after { animation-duration:4.7s; animation-delay:-2.4s; }
+  @keyframes brazier-flicker { from { background-position-x:0%; } to { background-position-x:109.09091%; } }
   .battle-shell .turn-board .arena-world:not([data-count='2']) {
     --unit: clamp(88px, min(10.6vw, 16svh), 169px);
   }
@@ -736,7 +754,7 @@ body[data-screen='battle'] > .topbar {
     padding: 0 clamp(10px, 1.6vw, 30px) 5px;
     background:
       linear-gradient(transparent 8%, #211822 69%),
-      var(--ring-image) center calc(-1 * var(--desktop-stage)) / 100% calc(var(--desktop-stage) * 1.09) no-repeat;
+      var(--ring-image) center calc(-1 * var(--desktop-stage)) / 100% calc(var(--desktop-stage) * var(--ring-stretch)) no-repeat;
   }
   .turn-controls:has(.watch) {
     display: grid;
