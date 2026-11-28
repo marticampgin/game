@@ -769,6 +769,13 @@ export function playArenaAction(arena, recap, options = {}) {
     ...(!effectsOnly && !still && score.gesture === 'scavenge' ? [3,7,10].map(i => timing.windup + actorFrames[i]) : []),
     ...(score.family === 'cast' && !still ? [timing.windup + score.release] : []),
   ])].sort((a, b) => a - b);
+  function reservePaint(offsets) {
+    for (const offset of offsets) {
+      const point = cueTime + offset;
+      if (!paintPoints.includes(point)) paintPoints.push(point);
+    }
+    paintPoints.sort((a,b) => a-b);
+  }
   function startMove() {
     articulate();
     if (!still) {
@@ -833,7 +840,11 @@ export function playArenaAction(arena, recap, options = {}) {
     // the bottle breaking, blade hitting, or spell that caused that result.
     if (status) statusBurst(subject, status, targetCount > 3 ? 0.76 : 1);
     else contactBurst(subject, wardHit ? score.effect : kind, event.amount, full);
-    if (wardHit) at(108, () => contactBurst(subject, kind, event.amount, false));
+    if (wardHit) {
+      // The status gets its own paint first, then the shield that absorbed it.
+      reservePaint([108]);
+      at(108, () => contactBurst(subject, kind, event.amount, false));
+    }
     const blocked = event.type === 'damage' && event.shieldDamage && !event.healthDamage;
     const reaction = {
       damage: blocked ? 'guard' : 'hurt',
@@ -856,11 +867,7 @@ export function playArenaAction(arena, recap, options = {}) {
           // paint must not let the compositor finish the fall between two cues.
           fall.animation.startTime = timelineStart + cueTime / speed;
           animations.set(fall.animation, cueTime);
-          for (const offset of fall.landmarks) {
-            const point = cueTime + offset;
-            if (!paintPoints.includes(point)) paintPoints.push(point);
-          }
-          paintPoints.sort((a,b) => a-b);
+          reservePaint(fall.landmarks);
         }
       }
       const reactionClip = reaction === 'guard' ? 'brace' : reaction === 'hurt' ? 'hurt' : null;

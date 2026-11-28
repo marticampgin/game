@@ -37,11 +37,18 @@ test('absorbed Burn and Poison ticks retain their own art, source and exact shie
       for (const label of world.querySelectorAll('.arena-status-label[data-change="tick"]')) {
         const id = label.dataset.status;
         const burst = world.querySelector('.arena-status-burst[data-status="' + id + '"]');
+        const firstPaint = !window.statusReadouts[id];
         const row = window.statusReadouts[id] ||= {
           text:label.innerText, icon:label.querySelector('.status-icon')?.dataset.statusIcon, decorated:false, ward:false,
         };
         row.decorated ||= !!burst && getComputedStyle(burst).backgroundImage.includes('status-effects.png');
-        row.ward ||= !!world.querySelector('.arena-fx-burst[data-effect="guard"]');
+        const center = element => { const r = element.getBoundingClientRect(); return r.left + r.width / 2; };
+        row.ward ||= !!burst && [...world.querySelectorAll('.arena-fx-burst[data-effect="guard"]')]
+          .some(ward => Math.abs(center(ward) - center(burst)) < 4);
+        if (firstPaint) {
+          const nextPaint = performance.now() + 450;
+          while (performance.now() < nextPaint) { /* Miss the ward's original wall-clock lifetime. */ }
+        }
       }
     }).observe(world, { childList:true, subtree:true });
   });
