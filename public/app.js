@@ -7,7 +7,7 @@ import { clearRewardFlight, dealOffers, deliverReward, pickedEmblem } from './dr
 import { battleHTML, buildHTML, nextEventButton, roundCaption, turnRail } from './battle.js';
 import { historyHTML, filterHistory, refreshHistory } from './history.js';
 import { planBotStep } from './pacing.js';
-import { actionVisual, healthBand, playArenaAction, preloadArenaSkins } from './animation.js';
+import { actionVisual, healthBand, playArenaAction, preloadBattleOrder, warmActiveFighter } from './animation.js';
 import { glyph, esc } from './art.js';
 import { playContactSound } from './combat-sound.js';
 import { mountLobby, resumeLobby, roomRequest as request } from './lobby.js';
@@ -29,6 +29,7 @@ let screen = 'menu',
   match,
   busy = false,
   toolOrigin = 'menu',
+  artEpoch = -1,
   epoch = 0;
 let choice = 'attack',
   target = '',
@@ -190,7 +191,6 @@ function startBattle(payload) {
   pinnedAction = null;
   draftHidden = false;
   planCache = null;
-  preloadArenaSkins(current().players);
   if (match.state?.careerUnavailable) notice(careerUnavailableMessage(match.state.careerUnavailable));
   busy = false;
   shownView = null;
@@ -216,6 +216,14 @@ function refreshBattle() {
   if (screen !== 'battle' || !match) return;
   const v = current();
   if (!v) return;
+  if (artEpoch !== epoch) {
+    const openedAt = epoch;
+    artEpoch = openedAt;
+    void preloadBattleOrder(v, () => epoch === openedAt);
+  } else if (shownView && shownView.activeId !== v.activeId && v.activeId) {
+    const actor = v.players.find(p => p.id === v.activeId);
+    if (actor) void warmActiveFighter(actor);
+  }
   if (match.state?.career) void syncCareerSolo(match.state);
   if (match.state)
     sessionStorage.setItem('rift-solo', JSON.stringify({ state: match.state, viewerId: match.viewerId }));

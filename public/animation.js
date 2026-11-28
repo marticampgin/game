@@ -167,14 +167,14 @@ async function warmSheet(image) {
   }
 }
 
-export function preloadArenaSkins(players = [], {withEffects = true} = {}) {
+export function preloadArenaSkins(players = [], {withEffects = true, layers = Object.keys(fighterLayout.layers), priority = 'auto'} = {}) {
   if (typeof Image === 'undefined') return Promise.resolve([]);
   const urls = new Set([
     ...(withEffects ? [fxSheet, missileSheet, '/assets/skins/status-effects.png', '/assets/skins/status-icons.png',
       '/assets/skins/gilt-card.png', '/assets/skins/soul-thread.png', ...scenePropImages] : []),
     ...players.flatMap((p) => {
       const skin = resolveFighterSkin(p.classId, p.skinId);
-      return Object.keys(fighterLayout.layers).filter(layer => layer !== 'ambient' || !skin.idles)
+      return layers.filter(layer => layer !== 'ambient' || !skin.idles)
         .map(layer => skin[layer]).filter(Boolean);
     }),
   ]);
@@ -182,6 +182,7 @@ export function preloadArenaSkins(players = [], {withEffects = true} = {}) {
     Array.from(urls, (url) => {
       if (!images.has(url)) {
         const image = new Image();
+        image.fetchPriority = priority;
         images.set(
           url,
           new Promise((resolve) => {
@@ -213,6 +214,27 @@ export function preloadArenaSkins(players = [], {withEffects = true} = {}) {
       return images.get(url);
     }),
   );
+}
+
+export function warmActiveFighter(player) {
+  return preloadArenaSkins([player], {withEffects:false, layers:['motions','sheet'], priority:'high'});
+}
+
+export async function preloadBattleOrder(view, stillOpen) {
+  const byId = new Map(view.players.map(p => [p.id,p]));
+  const order = [...new Set([view.activeId,...view.upcoming,...byId.keys()])].map(id => byId.get(id)).filter(Boolean);
+  if (!order.length) return;
+  // The largest files are the combat strips. Let the first contender's attack
+  // arrive alongside the standing figures before filling later seats' kits.
+  const first = warmActiveFighter(order[0]);
+  void preloadArenaSkins(order, {withEffects:false, layers:['sheet']});
+  void preloadArenaSkins();
+  await first;
+  if (!stillOpen()) return;
+  void preloadArenaSkins(order, {withEffects:false, layers:['idles','ambient']});
+  for (let i = 0; i < order.length && stillOpen(); i += 2) {
+    await preloadArenaSkins(order.slice(i,i+2),{withEffects:false});
+  }
 }
 
 export function actionVisual(actionId, classId, self = false) {

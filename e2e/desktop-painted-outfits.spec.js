@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { applyCommand, createMatch, sandboxEdit } from '../src/game/index.js';
-import { fighterLayout } from '../public/fighter-kit.js';
+import { fighterLayout, resolveFighterSkin } from '../public/fighter-kit.js';
 
 const gallery = [
   ['harbor-warden', 'Rook'], ['wolf-tracker', 'Fen'], ['star-cartographer', 'Lyra'], ['apiarist', 'Bram'],
@@ -25,6 +25,32 @@ function reviewTurn(group) {
   }
   return { state, viewerId: actorId };
 }
+
+test('a cold full ring loads its opening attack first and resumes other kits after visiting the Atlas', async ({page}) => {
+  const save = reviewTurn(newGallery);
+  const actor = save.state.players.find(player => player.id === save.viewerId);
+  const motion = resolveFighterSkin(actor.classId, actor.skinId).motions;
+  const requested = [];
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  await page.route('**/outfits/*/motions.webp', async route => {
+    const path = new URL(route.request().url()).pathname;
+    requested.push(path);
+    if (path === motion) await gate;
+    await route.continue();
+  });
+  await page.addInitScript(data => sessionStorage.setItem('rift-solo', JSON.stringify(data)), save);
+  await page.goto('/', {waitUntil:'domcontentloaded'});
+  await expect(page.locator('.combatant')).toHaveCount(8);
+  await expect.poll(() => requested).toContain(motion);
+  await page.getByRole('button', {name:'Atlas', exact:true}).click();
+  await expect(page.getByRole('heading', {name:'Reward Atlas'})).toBeVisible();
+  release();
+  await page.evaluate(async player => (await import('/animation.js')).warmActiveFighter(player),actor);
+  expect(requested).toEqual([motion]);
+  await page.getByRole('button', {name:'Back', exact:true}).click();
+  await expect(page.locator('.combatant [data-motion-ready][data-idles-ready][data-variations-ready]')).toHaveCount(8);
+});
 
 for (const [label, group] of [
   ['duel', gallery.slice(0, 2)], ['full ring', gallery],

@@ -302,7 +302,10 @@ body.reduce-motion .arena-sprite[data-pose='idle'] {
   opacity: 0;
   pointer-events: none;
   image-rendering: pixelated;
-  background: var(--check-skin) 0 0 / 1200% 300% no-repeat;
+  background: none 0 0 / 1200% 300% no-repeat;
+}
+.arena-sprite:is([data-idles-ready], [data-ambient-ready]) > .arena-check-cel {
+  background-image: var(--check-skin);
 }
 [data-facing='left'] .arena-check-cel {
   transform: scaleX(-1);
