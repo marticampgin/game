@@ -171,3 +171,23 @@ test('random assignments and three-class drafts wear the owned outfit equipped f
     }
   } finally { rooms.close(); }
 });
+
+test('every shop outfit requires ownership at each room wardrobe entry point', () => {
+  const profile = newProfile();
+  const rooms = createRooms({profiles:{view:() => profile}});
+  try {
+    const host = rooms.create({name:'Moss',classId:'guardian'},'host');
+    for (const {classId, skinId} of SHOP.filter(item => item.kind === 'skin')) {
+      const choice = {name:'Flint',classId,skinId};
+      for (const wear of [
+        () => rooms.create(choice,'guest'),
+        () => rooms.join(host.code,choice,'guest'),
+        () => rooms.interact(host.code,host.token,'class',choice),
+      ]) {
+        assert.throws(wear, error => error.status === 403, classId + '/' + skinId);
+      }
+    }
+    const seats = rooms.interact(host.code,host.token,'view',{}).room.seats;
+    assert.deepEqual(seats.map(seat => [seat.classId, seat.skinId]), [['guardian', undefined]]);
+  } finally { rooms.close(); }
+});
