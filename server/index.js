@@ -58,7 +58,21 @@ async function staticFile(pathname, request, response) {
   if (!file.startsWith(root + sep)) throw new RoomError(404, 'File not found.');
   const info = await stat(file).catch(() => null);
   if (!info?.isFile()) throw new RoomError(404, 'File not found.');
+  // Art and modules have stable filenames. Check for a new build on return,
+  // while letting an unchanged fighter sheet stay in the browser's cache.
+  const tag = '"' + info.size.toString(16) + '-' + info.mtimeMs.toString(16) + '"';
+  const cache = { 'Cache-Control': 'no-cache', ETag: 'W/' + tag, 'Last-Modified': info.mtime.toUTCString() };
+  const suppliedTags = request.headers['if-none-match'];
+  const unchanged = suppliedTags !== undefined
+    ? suppliedTags.split(',').some(value => value.trim() === '*' || value.trim().replace(/^W\//, '') === tag)
+    : Math.floor(info.mtimeMs / 1000) * 1000 <= Date.parse(request.headers['if-modified-since']);
+  if (unchanged) {
+    response.writeHead(304, cache);
+    response.end();
+    return;
+  }
   response.writeHead(200, {
+    ...cache,
     'Content-Type': mime[extname(file).toLowerCase()] ?? 'application/octet-stream',
     'Content-Length': info.size, 'X-Content-Type-Options': 'nosniff',
   });

@@ -292,3 +292,26 @@ test('serves browser modules with the correct content type and rejects unknown p
     await response.text();
   }
 });
+
+test('returning to the arena reuses unchanged fighter art and checks for newer builds', async () => {
+  const url = base + '/assets/skins/guardian-motions.webp';
+  const original = await fetch(url);
+  assert.equal(original.status, 200);
+  const tag = original.headers.get('etag');
+  const modified = original.headers.get('last-modified');
+  assert.ok(tag && modified);
+  assert.ok((await original.arrayBuffer()).byteLength > 0);
+  for (const [method, headers] of [
+    ['GET', { 'If-None-Match': '"older", ' + tag }],
+    ['HEAD', { 'If-None-Match': tag.replace(/^W\//, '') }],
+    ['GET', { 'If-Modified-Since': modified }],
+  ]) {
+    const same = await fetch(url, { method, headers });
+    assert.equal(same.status, 304);
+    assert.equal(same.headers.get('etag'), tag);
+    assert.equal(await same.text(), '');
+  }
+  const updated = await fetch(url, {method:'HEAD', headers:{'If-None-Match':'"older"', 'If-Modified-Since':modified}});
+  assert.equal(updated.status, 200);
+  assert.equal(updated.headers.get('content-length'), original.headers.get('content-length'));
+});
