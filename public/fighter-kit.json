@@ -83,9 +83,9 @@
       "weapon": "dagger", "emblem": "dagger", "title": "Mirror duelist", "idlePeriodMs": 9900, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations", "collapse", "celebrate"],
       "endingTimingMs": { "collapse": [82, 170, 355], "celebrate": [185, 480, 795] },
       "anchors": {
-        "healthy": {"hand": [101, 83], "mouth": [113, 49], "ground": [144, 149], "belt": [106, 81]},
-        "wounded": {"hand": [101, 88], "mouth": [114, 55], "ground": [143, 149], "belt": [106, 86]},
-        "critical": {"hand": [97, 97], "mouth": [120, 69], "ground": [145, 149], "belt": [109, 96]}
+        "healthy": {"hand": [104, 75], "mouth": [105, 42], "ground": [144, 149], "belt": [105, 75]},
+        "wounded": {"hand": [103, 84], "mouth": [106, 49], "ground": [143, 149], "belt": [109, 90]},
+        "critical": {"hand": [100, 88], "mouth": [114, 60], "ground": [145, 149], "belt": [100, 87]}
       }
     },
     "artificer": {
@@ -367,9 +367,9 @@
       "portrait": "/assets/skins/outfits/carnival-fox/portrait.webp",
       "model": "/assets/skins/outfits/carnival-fox/model.webp",
       "anchors": {
-        "healthy": {"hand": [100, 88], "mouth": [115, 49], "ground": [153, 149], "belt": [107, 82]},
-        "wounded": {"hand": [99, 93], "mouth": [115, 54], "ground": [140, 149], "belt": [109, 87]},
-        "critical": {"hand": [96, 99], "mouth": [118, 65], "ground": [141, 149], "belt": [109, 96]}
+        "healthy": {"hand": [106, 78], "mouth": [106, 44], "ground": [153, 149], "belt": [104, 76]},
+        "wounded": {"hand": [106, 84], "mouth": [106, 48], "ground": [140, 149], "belt": [110, 90]},
+        "critical": {"hand": [102, 91], "mouth": [114, 62], "ground": [141, 149], "belt": [106, 89]}
       }
     },
     {
@@ -388,9 +388,9 @@
       "portrait": "/assets/skins/outfits/mirror-regent/portrait.webp",
       "model": "/assets/skins/outfits/mirror-regent/model.webp",
       "anchors": {
-        "healthy": {"hand": [107, 88], "mouth": [114, 48], "ground": [145, 149], "belt": [106, 81]},
-        "wounded": {"hand": [106, 96], "mouth": [114, 52], "ground": [145, 149], "belt": [107, 87]},
-        "critical": {"hand": [104, 99], "mouth": [116, 64], "ground": [145, 149], "belt": [108, 96]}
+        "healthy": {"hand": [103, 80], "mouth": [106, 44], "ground": [145, 149], "belt": [105, 74]},
+        "wounded": {"hand": [103, 85], "mouth": [107, 46], "ground": [145, 149], "belt": [108, 90]},
+        "critical": {"hand": [101, 92], "mouth": [114, 61], "ground": [145, 149], "belt": [106, 89]}
       }
     },
     {
