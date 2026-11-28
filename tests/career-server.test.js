@@ -5,6 +5,8 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
+import { SHOP, newProfile } from '../src/game/progression.js';
+import { createRooms } from '../server/rooms.js';
 import { createArenaServer } from '../server/index.js';
 import { applyCommand, botCommand } from '../src/game/index.js';
 import { isDraftUnlocked } from '../src/game/progression.js';
@@ -146,4 +148,26 @@ test('an eight-seat room freezes a departing profile before its bot takes over',
   assert.equal(automatedTurn,true);
   assert.deepEqual((await api.send('profile',a)).data,cutoff);
   assert.equal((await api.send(path,a,undefined,host.token)).status,401);
+});
+
+test('random assignments and three-class drafts wear the owned outfit equipped for the assigned class', () => {
+  const profile = newProfile();
+  for (const item of SHOP.filter(entry => entry.kind === 'skin' && !entry.mastery)) {
+    profile.unlocks.push(item.id);
+    profile.equipped[item.classId] = item.skinId;
+  }
+  const rooms = createRooms({profiles:{view:() => profile}});
+  try {
+    for (const mode of ['random','draft']) {
+      const room = rooms.create({name:'Moss',mode},'test-profile');
+      const seat = room.room.seats[0];
+      assert.equal(seat.skinId, profile.equipped[seat.classId]);
+      const reset = rooms.interact(room.code,room.token,'class',{classId:seat.classId,skinId:'founder'});
+      assert.equal(reset.room.seats[0].skinId,undefined);
+      if (mode === 'draft') {
+        const next = room.room.draft.find(id => id !== seat.classId);
+        assert.equal(rooms.interact(room.code,room.token,'class',{classId:next}).room.seats[0].skinId,profile.equipped[next]);
+      }
+    }
+  } finally { rooms.close(); }
 });

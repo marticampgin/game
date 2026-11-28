@@ -48,12 +48,15 @@ function addSeat(room, name, { classId: requestedClass, skinId: requestedSkin },
   const classId = room.mode === 'free'
     ? chooseClass(requestedClass ?? CLASS_IDS[0])
     : draft[0] ?? sampleClasses(1)[0];
-  // The skin preference belongs to the selected class. Random/draft may assign
-  // another class, whose starting appearance is its own founder.
+  // An explicit outfit is tied to the class it was selected for. A room
+  // assigning a different class can use that class's equipped wardrobe.
   const preferredClass = requestedSkin === undefined ? classId : chooseClass(requestedClass ?? classId);
-  const skinId = chooseSkin(preferredClass, requestedSkin, requestedSkin && room.profiles.view(key));
+  const profile = key ? room.profiles.view(key) : undefined;
+  const explicitSkin = chooseSkin(preferredClass, requestedSkin, profile);
+  const skinId = requestedSkin !== undefined && preferredClass === classId
+    ? explicitSkin : chooseSkin(classId, profile?.equipped?.[classId], profile);
   const id = 'p' + (room.nextSeat++);
-  const seat = { id, name, classId, bot, ...(skinId && preferredClass === classId ? { skinId } : {}) };
+  const seat = { id, name, classId, bot, ...(skinId ? { skinId } : {}) };
   const token = bot ? null : randomBytes(32).toString('base64url');
   room.seats.push(seat);
   if (token) room.sessions.set(token, { id, draft, key });
@@ -205,7 +208,8 @@ export function createRooms({ botDelay, idleTimeout = 24 * 60 * 60 * 1000, profi
         const classId = chooseClass(input.classId);
         if (room.mode === 'draft' && !session.draft.includes(classId)) throw new RoomError(400, 'Choose one of your three drafted classes.');
         if (classId !== seat.classId || input.skinId !== undefined) {
-          const skinId = chooseSkin(classId, input.skinId,input.skinId && room.profiles.view(session.key));
+          const profile = session.key ? room.profiles.view(session.key) : undefined;
+          const skinId = chooseSkin(classId, input.skinId ?? profile?.equipped?.[classId], profile);
           if (skinId) seat.skinId = skinId;
           else delete seat.skinId;
           seat.classId = classId;

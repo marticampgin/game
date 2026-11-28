@@ -33,7 +33,7 @@ export function roomRequest(session, operation = '', body) {
 function classGallery(picked, allowed, locked, skinId) {
   return '<div class="lobby-classes" aria-label="Character classes">' + classes.filter(c => allowed.includes(c.id)).map(c =>
     '<button type="button" class="lobby-class" data-lobby-class="' + c.id + '" aria-pressed="' + (c.id === picked) +
-    '" aria-label="' + c.name + '"' + (locked ? ' disabled' : '') + '><img class="class-portrait" src="' + fighterPortrait({classId:c.id,skinId:c.id === picked ? skinId : undefined}) +
+    '" aria-label="' + c.name + '"' + (locked ? ' disabled' : '') + '><img class="class-portrait" src="' + fighterPortrait({classId:c.id,skinId:c.id === picked ? skinId : preferredSkin(c.id)}) +
     '" alt=""><span class="class-plaque">' + rewardIcon({ icon: fighterKit(c.id).emblem }) + c.name + '</span></button>'
   ).join('') + '</div>';
 }
@@ -179,7 +179,7 @@ function lobbyController(host, callbacks, initialSession, initialView) {
       if (event.type !== 'change' || busy) return;
       choseSkin = true;
       const previous = model.skinId;
-      model.skinId = value === 'founder' ? undefined : value;
+      model.skinId = value;
       if (session) await perform(async () => {
         try { update(await roomRequest(session, 'class', { classId:model.selected, skinId:value })); }
         catch (error) { model.skinId = previous; throw error; }

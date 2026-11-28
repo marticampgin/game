@@ -1,6 +1,7 @@
 import { CLASSES, REWARDS, STATUSES, currentAttack, getActions } from '/src/game/index.js';
 import { SHOP } from '/src/game/progression.js';
-import { fighterModel, fighterPortrait } from './fighter-kit.js';
+import { wornGear } from './worn-gear.js';
+import { fighterModel, fighterPortrait, resolveFighterSkin } from './fighter-kit.js';
 import { rewardIcon, seatCrest, glyph, esc } from './art.js';
 import { actionDock } from './command.js';
 import { fighterSpriteHTML } from './animation.js';
@@ -163,9 +164,12 @@ export function battleHTML(view, viewerId, ui) {
 }
 
 export function buildHTML(p, own) {
+  const gear = wornGear(p);
+  const outfit = resolveFighterSkin(p.classId,p.skinId);
   const skills = p.abilities.map((a) => [
     a.id,
     a.cooldown ? 'Cooldown ' + a.cooldown : 'Ready',
+    ...(a.id === gear ? ['Worn on belt'] : []),
     ...(a.modifiers || []).map((m) => REWARDS[m]?.name || m),
   ]);
   const list = (items, empty) =>
@@ -188,7 +192,7 @@ export function buildHTML(p, own) {
         '</ul>'
       : '<p class="muted">' + empty + '</p>';
   const stats = Object.entries(p.statuses).filter(([, v]) => v);
-  return `<div class="inspect-top"><img src="${fighterModel(p)}" alt=""><div><small>${esc(CLASSES[p.classId].name)}</small><h2>${esc(p.name)}</h2><p>${esc(CLASSES[p.classId].innate)}</p></div></div>
+  return `<div class="inspect-top"><img src="${fighterModel(p)}" alt=""><div><small>${esc(CLASSES[p.classId].name)}${outfit.id !== 'founder' ? ' · ' + esc(outfit.name) : ''}</small><h2>${esc(p.name)}</h2><p>${esc(CLASSES[p.classId].innate)}</p></div></div>
   <dl class="stats-row">${[
     ['Health', p.hp + '/' + p.maxHp],
     ['Shield', p.shield],
@@ -202,7 +206,7 @@ export function buildHTML(p, own) {
   ${stats.length ? '<h3>Status effects</h3>' + stats.map(([k, n]) => '<p><strong>' + esc(STATUSES[k]?.name) + ' ×' + n + '</strong> · ' + esc(STATUSES[k]?.description) + '</p>').join('') : ''}
   <h3>Abilities &amp; equipment</h3>${list(skills, 'No equipped abilities.')}
   <h3>Passive artifacts</h3>${list(
-    p.artifacts.map((id) => [id]),
+    p.artifacts.map((id) => id === gear ? [id, 'Worn on belt'] : [id]),
     'No artifacts acquired yet.',
   )}
   <h3>Consumables · ${p.consumableCount}</h3>${
