@@ -73,11 +73,19 @@ def crop_cell(image, col, row):
 
 
 def skins(role):
-    kit = KIT['founders'][role]
+    # A new founder can be painted and checked before its descriptor is published.
+    kit = KIT['founders'].get(role, {'layers': ['motions', 'ambient']})
     base = '/assets/skins/' + role + '-'
     base_skin = {'classId':role, 'id':'founder', 'sheet':base + 'founder.png'}
     base_skin.update({layer:base + layer + '.webp' for layer in kit['layers']})
     return [base_skin] + [skin for skin in KIT['skins'] if skin['classId'] == role]
+
+
+def supplemental_paths(skin):
+    if not skin.get('motions'):
+        return skin
+    prefix = skin['motions'].removesuffix('motions.webp')
+    return {'idles':prefix+'idles.webp', 'variations':prefix+'variations.webp', **skin}
 
 
 def image_asset(url):
@@ -191,13 +199,19 @@ def publish(skin):
     width, height = CROP[2]-CROP[0], CROP[3]-CROP[1]
     atlas = Image.new('RGBA',(COLUMNS*width,len(BANDS)*3*height))
     tracks = KIT['layers']['motions']['rows']
+    ambient = image_asset(skin['ambient']) if skin.get('ambient') else None
     for band in range(len(BANDS)):
         base = crop_cell(rest_sheet,0,band*3)
         track, col = CHECKS[role]
         check = planted(base, crop_cell(motions,col,band*len(tracks)+tracks.index(track)))
         # New authors can rehearse a costume with a readied weapon pose before
         # supplying its own second key painting.
-        alternate = crop_cell(key_sheet,0,band) if key_sheet else crop_cell(motions,3,band*len(tracks)+tracks.index('attack'))
+        if key_sheet:
+            alternate = crop_cell(key_sheet,0,band)
+        elif ambient:
+            alternate = crop_cell(ambient,5,band)
+        else:
+            alternate = crop_cell(motions,3,band*len(tracks)+tracks.index('attack'))
         focus = planted(base,alternate)
         keys = [base, check, focus]
         if mid_sheet:
@@ -241,7 +255,8 @@ if __name__ == '__main__':
         if not args.role: parser.error('--import-board requires --role')
         register(Image.open(args.import_board).convert('RGBA'),args.role,args.breakdown)
     for role in (args.role,) if args.role else KIT['founders']:
-        for skin in skins(role):
+        for descriptor in skins(role):
+            skin = supplemental_paths(descriptor) if args.role else descriptor
             if args.skin and skin['id'] != args.skin:
                 continue
             if skin.get('idles') and not args.variations_only:

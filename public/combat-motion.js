@@ -203,7 +203,7 @@ export const missiles = ['arcane', 'venom', 'fire', 'frost', 'doom', 'shock'];
 
 function weaponStrike(role) {
   const weapon = fighterKit(role).weapon;
-  if (weapon === 'dagger') return moves.thrust;
+  if (weapon === 'dagger' || weapon === 'rapier') return moves.thrust;
   return weapon === 'saber' ? { ...moves.swing, effect: 'cleave' } : moves.swing;
 }
 
