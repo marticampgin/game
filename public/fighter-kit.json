@@ -92,9 +92,9 @@
       "weapon": "hammer", "emblem": "hammer", "title": "Forge mechanic", "idlePeriodMs": 11500, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations", "collapse", "celebrate"],
       "endingTimingMs": { "collapse": [100, 225, 445], "celebrate": [218, 510, 805] },
       "anchors": {
-        "healthy": {"hand": [105, 87], "mouth": [112, 53], "ground": [150, 149], "belt": [104, 82]},
-        "wounded": {"hand": [104, 86], "mouth": [113, 61], "ground": [149, 149], "belt": [102, 87]},
-        "critical": {"hand": [103, 98], "mouth": [113, 63], "ground": [148, 149], "belt": [103, 95]}
+        "healthy": {"hand": [123, 92], "mouth": [108, 50], "ground": [149, 149], "belt": [108, 83]},
+        "wounded": {"hand": [122, 97], "mouth": [108, 53], "ground": [150, 149], "belt": [107, 87]},
+        "critical": {"hand": [121, 101], "mouth": [108, 59], "ground": [149, 149], "belt": [108, 96]}
       }
     }
   },
@@ -409,9 +409,9 @@
       "portrait": "/assets/skins/outfits/railway-smith/portrait.webp",
       "model": "/assets/skins/outfits/railway-smith/model.webp",
       "anchors": {
-        "healthy": {"hand": [96, 91], "mouth": [107, 52], "ground": [145, 149], "belt": [104, 81]},
-        "wounded": {"hand": [96, 97], "mouth": [109, 60], "ground": [147, 149], "belt": [106, 87]},
-        "critical": {"hand": [95, 102], "mouth": [112, 63], "ground": [148, 149], "belt": [107, 96]}
+        "healthy": {"hand": [127, 94], "mouth": [110, 50], "ground": [149, 149], "belt": [109, 84]},
+        "wounded": {"hand": [125, 97], "mouth": [110, 56], "ground": [148, 149], "belt": [108, 88]},
+        "critical": {"hand": [123, 102], "mouth": [108, 61], "ground": [149, 149], "belt": [111, 93]}
       }
     },
     {
@@ -430,9 +430,9 @@
       "portrait": "/assets/skins/outfits/stormglass-engineer/portrait.webp",
       "model": "/assets/skins/outfits/stormglass-engineer/model.webp",
       "anchors": {
-        "healthy": {"hand": [98, 94], "mouth": [111, 56], "ground": [145, 149], "belt": [105, 83]},
-        "wounded": {"hand": [98, 99], "mouth": [112, 61], "ground": [145, 149], "belt": [106, 87]},
-        "critical": {"hand": [99, 104], "mouth": [113, 61], "ground": [145, 149], "belt": [107, 96]}
+        "healthy": {"hand": [126, 92], "mouth": [105, 44], "ground": [148, 149], "belt": [109, 83]},
+        "wounded": {"hand": [123, 98], "mouth": [105, 51], "ground": [149, 149], "belt": [110, 89]},
+        "critical": {"hand": [123, 102], "mouth": [105, 55], "ground": [150, 149], "belt": [108, 94]}
       }
     }
   ]
