@@ -46,7 +46,7 @@ RIGS = {
     'artificer': [(110,49,25,28,1,2,.08), (135,80,25,27,2,-4,.15), (75,84,20,25,-2,2,.24)],
 }
 # Authored landmarks in the existing body-motion pack for the first idle.
-# A Guardian settles behind the shield; a Berserker rolls her knife shoulder;
+# A Guardian settles behind the shield; a Berserker rolls the knife shoulder;
 # a Chronomancer tests the field around her hand; an Alchemist checks the pack.
 CHECKS = {
     'guardian': ('brace',6), 'berserker': ('attack',2),

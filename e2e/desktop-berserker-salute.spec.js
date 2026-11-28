@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('Berserker keeps her stature and footing through each outfit’s victory salute', async ({page}) => {
+test('Berserker keeps consistent stature and footing through each outfit’s victory salute', async ({page}) => {
   await page.goto('/');
   const salutes = await page.evaluate(async () => {
     const {fighterLayout, fighterSkins} = await import('/fighter-kit.js');
