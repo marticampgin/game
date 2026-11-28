@@ -21,6 +21,7 @@ function standingFrame(name) {
 function pose(element, name) {
   trackBelt(element);
   delete element.dataset.track;
+  delete element.dataset.collapsing;
   delete element.dataset.pickup;
   element.style.removeProperty('--clip-row');
   element.querySelector('.arena-cel').style.removeProperty('background-position-x');
@@ -28,6 +29,12 @@ function pose(element, name) {
   element.dataset.pose = name;
   element.style.setProperty('--pose-x', frame.x);
   element.style.setProperty('--pose-y', frame.y);
+}
+
+function startCollapse(sprite, still, speed = 1) {
+  if (still || !sprite.hasAttribute('data-collapse-ready')) return;
+  sprite.style.setProperty('--fall-time', 440 / speed + 'ms');
+  sprite.dataset.collapsing = '';
 }
 // Preview the same rest rows and standing paintings used by the arena. A
 // reduced-motion audition holds the representative drawing for inspection.
@@ -50,6 +57,7 @@ export function playFittingPose(sprite, take) {
   } else {
     const fallback = {rest:'breathe',check:'survey',focus:'settle',victory:'victory',fallen:'fallen'};
     pose(sprite,fallback[take] || 'idle');
+    if (take === 'fallen') startCollapse(sprite, still);
   }
   let done = false;
   const timer = setTimeout(cancel,time);
@@ -92,6 +100,8 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
   const steps = skin.footwork ? ' data-footwork-src="' + skin.footwork + '"' : '';
   const variations = skin.variations ? ' data-variations-src="' + skin.variations + '"' +
     (readySheets.has(skin.variations) ? ' data-variations-ready' : '') : '';
+  const collapse = skin.collapse ? ' data-collapse-src="' + skin.collapse + '"' +
+    (readySheets.has(skin.collapse) ? ' data-collapse-ready' : '') : '';
   const motion = skin.motions
     ? ' data-motion-src="' + skin.motions + '"' + (readySheets.has(skin.motions) ? ' data-motion-ready' : '')
     : '';
@@ -101,6 +111,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     ');' +
     (skin.motions ? '--motion-skin:url(' + skin.motions + ');' : '') +
     (skin.variations ? '--variation-skin:url(' + skin.variations + ');' : '') +
+    (skin.collapse ? '--collapse-skin:url(' + skin.collapse + ');' : '') +
     (skin.consume ? '--consume-skin:url(' + skin.consume + ');' : '') +
     (skin.footwork ? '--footwork-skin:url(' + skin.footwork + ');' : '') +
     (skin.idles || skin.ambient
@@ -133,7 +144,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     motion +
     consume +
     steps +
-    ambient + idleSet + variations +
+    ambient + idleSet + variations + collapse +
     ' style="' +
     style +
     '"><span class="arena-cel"></span>' +
@@ -197,7 +208,7 @@ export function preloadArenaSkins(players = [], {withEffects = true, layers = Ob
                 return;
               }
               readySheets.add(url);
-              for (const layer of ['motion', 'ambient', 'idles', 'consume', 'variations']) {
+              for (const layer of ['motion', 'ambient', 'idles', 'consume', 'variations', 'collapse']) {
                 document.querySelectorAll('[data-' + layer + '-src="' + url + '"]')
                   .forEach(el => el.setAttribute('data-' + layer + '-ready', ''));
               }
@@ -835,6 +846,7 @@ export function playArenaAction(arena, recap, options = {}) {
       // Return the feet under the body before the victor's weapon returns home.
       // A subsequent impact or knockout owns the pose and supersedes this recovery.
       const body = subject === actor ? art : subject.sprite;
+      if (reaction === 'fallen') startCollapse(body, still, speed);
       const reactionClip = reaction === 'guard' ? 'brace' : reaction === 'hurt' ? 'hurt' : null;
       const illustrated = reactionClip && flipbook(body, reactionClip, [0, 15, 32, 46, 61, 78, 95, 135, 176, 227, 315, 402]);
       if (illustrated) {

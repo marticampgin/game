@@ -6,6 +6,7 @@ key paintings are versioned; runtime needs just the compact three-strip atlas.
 """
 from argparse import ArgumentParser
 from pathlib import Path
+from art_output import publish as publish_bitmap
 import importlib.util
 import math
 import json
@@ -193,7 +194,7 @@ def publish_variations(skin):
             for col,(a,b,v) in enumerate(((0,1,.4),(0,1,.88),(0,1,1),(1,2,.28),(1,2,.69))):
                 atlas.paste(body.between(a,b,v),(col*CELL[0],(band*2+row)*CELL[1]))
     output = PUBLIC / skin['variations'].lstrip('/')
-    atlas.save(output,lossless=True,method=5)
+    publish_bitmap(atlas, output)
     print(f'{role}/{skin["id"]} windups: {output.stat().st_size:,} bytes',flush=True)
 
 
@@ -246,7 +247,7 @@ def publish(skin):
     packed = atlas.convert('RGB').quantize(palette=palette,dither=Image.Dither.NONE).convert('RGBA')
     packed.putalpha(atlas.getchannel('A'))
     output = PUBLIC / skin['idles'].lstrip('/')
-    packed.save(output,lossless=True,method=5)
+    publish_bitmap(packed, output)
     print(f'{role}/{name}: {output.stat().st_size:,} bytes',flush=True)
 
 

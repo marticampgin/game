@@ -24,10 +24,12 @@
 .arena-sprite[data-tier='wounded'] {
   --skin-band: 37.5%;
   --variation-band: 40%;
+  --collapse-band: 50%;
 }
 .arena-sprite[data-tier='critical'] {
   --skin-band: 75%;
   --variation-band: 80%;
+  --collapse-band: 100%;
 }
 .arena-cel {
   display: block;
@@ -41,6 +43,18 @@
 }
 [data-facing='left'] .arena-cel {
   transform: scaleX(-1);
+}
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.reduce-motion) .arena-sprite[data-collapsing] > .arena-cel {
+    background-image: var(--collapse-skin);
+    background-size: 900% 300%;
+    background-position: 100% var(--collapse-band, 0%);
+    animation: arena-collapse var(--fall-time) steps(8, end) both;
+  }
+}
+@keyframes arena-collapse {
+  from { background-position-x: 0%; }
+  to { background-position-x: 100%; }
 }
 .arena-sprite[data-pose='idle']:not([data-still]) > .arena-cel {
   animation: arena-idle-frames var(--idle-time) steps(1, end) infinite;

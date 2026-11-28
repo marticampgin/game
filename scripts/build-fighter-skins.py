@@ -13,6 +13,8 @@ import runpy
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
+from art_output import publish
+from fighter_defeat import install as install_defeat
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'public' / 'assets'
@@ -230,11 +232,12 @@ def build(role):
         for i, cel in enumerate(clip(solver, role, tier, 'consume')):
             consume.paste(cel, (CELL[0] * i, CELL[1] * tier))
         if tier == 0:
-            keys[0].crop(keys[0].getbbox()).save(ASSETS / f'{role}.png', optimize=True)
-    standing.save(ASSETS / 'skins' / f'{role}-founder.png', optimize=True)
-    moving.save(ASSETS / 'skins' / f'{role}-motions.webp', lossless=True, method=5)
-    ambient.save(ASSETS / 'skins' / f'{role}-ambient.webp', lossless=True, method=5)
-    consume.save(ASSETS / 'skins' / f'{role}-consume.webp', lossless=True, method=5)
+            publish(keys[0].crop(keys[0].getbbox()), ASSETS / f'{role}.png')
+    install_defeat(standing, ASSETS / 'skins' / f'{role}-collapse.webp', role)
+    publish(standing, ASSETS / 'skins' / f'{role}-founder.png')
+    publish(moving, ASSETS / 'skins' / f'{role}-motions.webp')
+    publish(ambient, ASSETS / 'skins' / f'{role}-ambient.webp')
+    publish(consume, ASSETS / 'skins' / f'{role}-consume.webp')
     print(f'{role}: 60 painted keys, {len(TRACK_KEYS) * 36} combat and idle cels')
 
 

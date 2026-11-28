@@ -19,6 +19,7 @@ All sheets use the same health bands in the same order. Healthy fighters are abo
 | Class idles, optional | 2880 × 1350, sixteen columns and nine rows | Rest, equipment check and a second mannerism for each health band. The artwork is cropped to `(14, 0, 194, 150)` in its original cel. |
 | Alternate windups, optional | 1040 × 996, five columns and six rows | Five alternate preparation drawings for basic attack and signature in each band |
 | Drink and use, optional | 2496 × 498, twelve columns and three rows | One reach, raise, hold and return sequence per health band |
+| Collapse, optional | 1872 × 498, nine columns and three rows | Recoil, knee, hip and ground through each injury palette |
 
 Pack cels edge to edge with transparent space inside each cel. PNG and lossless WebP are both supported. Older standing sheets remain usable on their own.
 
@@ -40,6 +41,8 @@ The consume strip drives drinks and held items. Start at rest, reach to the belt
 
 ### Class idles and alternate windups
 
+Set each founder’s `idlePeriodMs` in `public/fighter-kit.json` for the period of its mannerisms. Each health band’s `previewRatio` supplies the same starting HP fraction to the Outfitter and Sandbox. In the Outfitter, **Poses** plays the resting breath, equipment check, flourish, recoil, victory or fall on demand. **Actions** uses the combat performances, props and sound cues.
+
 The PC renderer plays each fighter's resting breath, first equipment check and second mannerism on its own clock. A single opaque drawing is visible at each exposure. Critical fighters move more slowly and breathe through a shorter arc. Reduced motion holds a single pose. A costume with an ambient sheet can still perform its twelve-frame equipment check.
 
 The outfit's three health boards supply its resting stance, equipment check and combat keys. To add a custom mannerism, paint a transparent three-by-three board for the costume. Each row is one injury band, with the resting pose, a halfway drawing and a held expression in that order. Place objects in the hand at every stage. Keep the same foot line and facing across the gesture.
@@ -52,6 +55,17 @@ python scripts/build-idle-performances.py --role guardian --skin harbor-warden
 The builder registers the middle and held paintings once in `scripts/art/idles`. It then packs the idle loops and derives a second attack and signature from the class's preparation poses. The alternate windup joins the original clip on frame six. Both takes therefore share the release, weapon contact and end pose. Include `idles` and `variations` in a founder's layers, or add the two image URLs to an outfit descriptor. Each class's body anchors, timing and chamber choices are defined in the builder. A new class needs those entries only once.
 
 See the [eight-class PC arena](qa/pc-combat/eight-class-ring.webp) and [four signatures in play](qa/pc-combat/class-signatures.webm) at playing size.
+
+### Grounded defeat
+
+Paint three full-body poses per outfit as the fighter takes a knee, braces on one hip and settles on the floor. The staff, hammer or loose cards can come to rest beside the hand. Keep the lowest contact on the arena baseline. The registered source is three 208 × 166 cels across in `scripts/art/defeats/<look>.webp`. To import three costumes together, arrange the founder and its two outfits in columns in manifest order, with the three poses in rows and transparent gutters between drawings.
+
+```sh
+python scripts/fighter_defeat.py --role necromancer --import-board necromancer-defeats.png
+python scripts/check-fighter-skins.py
+```
+
+The packer connects the existing recoil with the three paintings and applies the corresponding outfit palette in each injury band. It copies the final floor drawing into the standing sheet as well. A replay, an eliminated seat, and a reduced-motion knockout can therefore show the same endpoint immediately. The standard fighter and costume builds pick up the registered paintings automatically.
 
 ## Which animation plays
 

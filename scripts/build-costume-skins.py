@@ -7,13 +7,14 @@ Requires Pillow, NumPy, and OpenCV at authoring time.
 from argparse import ArgumentParser
 from functools import lru_cache
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 import importlib.util
 import re
 
 import cv2
 import numpy as np
 from PIL import Image
+from art_output import publish
+from fighter_defeat import install as install_defeat
 
 SCRIPT = Path(__file__).resolve().parent
 ROOT = SCRIPT.parent
@@ -232,20 +233,7 @@ def import_portrait(source, dest):
     x, y = (width - side) // 2, (height - side) // 2
     portrait = portrait.crop((x, y, x + side, y + side)).resize((144, 144), Image.Resampling.LANCZOS)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    palette_board(portrait).save(dest, lossless=True, method=6)
-
-
-def publish(image, destination):
-    with NamedTemporaryFile(dir=destination.parent, suffix=destination.suffix, delete=False) as temp:
-        staged = Path(temp.name)
-    try:
-        if destination.suffix == '.png':
-            image.save(staged, optimize=True)
-        else:
-            image.save(staged, lossless=True, method=5)
-        staged.replace(destination)
-    finally:
-        staged.unlink(missing_ok=True)
+    publish(palette_board(portrait), dest, lossless=True, method=6)
 
 
 def asset_path(id, layer, founder):
@@ -318,6 +306,8 @@ def build(id, founder=False):
     for name, image in sheets.items():
         packed = image.convert('RGB').quantize(palette=palette, dither=Image.Dither.NONE).convert('RGBA')
         packed.putalpha(image.getchannel('A'))
+        if name == 'standing':
+            install_defeat(packed, asset_path(id, 'collapse', founder), id)
         publish(packed, asset_path(id, name, founder))
         if name == 'standing':
             rest = tile(packed, 0, 0)
