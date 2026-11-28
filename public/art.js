@@ -2,7 +2,7 @@ import { fighterModel } from './fighter-kit.js';
 import { REWARDS } from '../src/game/catalog.js';
 
 const genericIcons = new Set([
-  'shield', 'axe', 'clock', 'flask', 'crystal', 'fire', 'sword', 'heart', 'ring', 'chest',
+  'atlas', 'shield', 'axe', 'clock', 'flask', 'crystal', 'fire', 'sword', 'heart', 'ring', 'chest',
   'frost', 'bolt', 'hammer', 'dice', 'leaf', 'dagger', 'skull', 'feather', 'crown', 'lantern', 'rune', 'coin',
 ]);
 export const classArt = player => fighterModel(typeof player === 'string' ? { classId: player } : player);

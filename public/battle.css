@@ -753,10 +753,12 @@ body[data-screen='battle'] > .topbar {
     background: linear-gradient(90deg, transparent, #211822c9 16%, #211822e0);
   }
   .turn-rail button {
-    width: clamp(50px, 3.8vw, 61px);
+    width: clamp(58px, 4.95vw, 78px);
     height: clamp(51px, 4.1vw, 60px);
     border-radius: 4px;
   }
+  .turn-rail .rail-name { padding-inline:1px; text-overflow:ellipsis; }
+  .fighter-panel { max-width:clamp(112px,13vw,184px); }
   .turn-rail img {
     image-rendering: pixelated;
     object-position: center 26%;

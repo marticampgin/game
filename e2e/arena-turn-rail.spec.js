@@ -25,8 +25,8 @@ test('identical class portraits retain distinct and readable player labels as or
     })));
     const labels = await readLabels();
     expect(new Set(Object.values(labels)).size).toBe(8);
-    expect(labels.p0).toBe('Northwi');
-    expect(labels.p1).toBe('Nightfa');
+    expect(labels.p0).toBe('Northwind');
+    expect(labels.p1).toBe('Nightfall');
     expect(labels.p2).toBe('#3');
     expect(labels.p3).toBe('#4');
     expect(labels.p6).toBe('Lark');

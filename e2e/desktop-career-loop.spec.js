@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { applyCommand, botCommand } from '../src/game/index.js';
+import { applyCommand, botCommand, createMatch, getActions } from '../src/game/index.js';
 
 const duo = [
   {id:'p1', name:'Moss', classId:'guardian', bot:false},
@@ -12,6 +12,26 @@ async function verifiedPost(page, headers, endpoint, data) {
   return response.json();
 }
 
+function winningDuel() {
+  // Draft balance can change which seat wins a particular seed. Select a real
+  // duel whose last basic attack can be performed through the ordinary HUD.
+  for (let i = 0; i < 32; i++) {
+    const seed = 'career-finish-' + i;
+    let state = createMatch({seed,players:duo,career:{runId:'fixture',seats:{p1:[]}}});
+    const commands = [];
+    while (state.phase !== 'finished' && commands.length < 400) {
+      if (state.activeId === 'p1' && state.phase === 'action' &&
+          getActions(state,'p1').some(action => action.id === 'attack' && !action.disabled) &&
+          applyCommand(state,'p1',{type:'act',actionId:'attack',targetId:'p2'}).winnerId === 'p1')
+        return {seed,commands};
+      const command = botCommand(state);
+      commands.push(command);
+      state = applyCommand(state,state.activeId,command);
+    }
+  }
+  throw Error('No playable Guardian finishing blow across 32 seeded duels.');
+}
+
 test('the finishing blow settles lifetime coins and opens the Outfitter from victory', async ({page}) => {
   await page.goto('/');
   const headers = await page.evaluate(async () => {
@@ -19,18 +39,9 @@ test('the finishing blow settles lifetime coins and opens the Outfitter from vic
     await client.initCareer();
     return client.profileHeaders();
   });
-  const start = await verifiedPost(page, headers, '/solo', {seed:'career-finish-0',players:duo});
-  let state = start.state;
-  const commands = [];
-  // Prepare the last turn of an authentic completed duel. Replay every prior
-  // command on the server, then let the player finish through the combat HUD.
-  while (state.phase !== 'finished' && commands.length < 400) {
-    if (state.activeId === 'p1' && state.phase === 'action' &&
-        applyCommand(state,'p1',{type:'act',actionId:'attack',targetId:'p2'}).winnerId === 'p1') break;
-    const command = botCommand(state);
-    commands.push(command);
-    state = applyCommand(state, state.activeId, command);
-  }
+  const {seed,commands} = winningDuel();
+  const start = await verifiedPost(page, headers, '/solo', {seed,players:duo});
+  const state = commands.reduce((prior,cmd) => applyCommand(prior,prior.activeId,cmd), start.state);
   expect(state.activeId).toBe('p1');
   expect(state.phase).toBe('action');
   for (let from = 0; from < commands.length; from += 48) {

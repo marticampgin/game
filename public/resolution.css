@@ -41,7 +41,9 @@
   border-left: 1px solid #755a47; padding-left: 13px;
 }
 .recap-handoff .reward-art { width: 19px; height: 19px; object-fit: contain; image-rendering: pixelated; }
-.recap-handoff > span { color: #dcc0a3; }
+.recap-handoff > span { flex:none; white-space:nowrap; color:#dcc0a3; }
+.recap-handoff > div { min-width:0; }
+.recap-handoff .reward-art { flex:none; }
 .recap-handoff strong { color: #e6bdee; font-weight: 600; }
 .recap-handoff small { color: var(--journal-muted); font: 400 14px/1.3 var(--journal-serif); }
 .recap-handoff small::before { content: ' · '; }

@@ -80,8 +80,8 @@ export function turnRail(view, viewerId) {
       const letters = words.length > 1 ? first.slice(0, 1).concat(last.slice(0, length - 1)) : first.slice(0, length);
       return letters.join('').toUpperCase();
     };
-    const names = [first.slice(0, 7).join('')];
-    if (words.length > 1 && /\p{L}/u.test(words.at(-1))) names.push(last.slice(0, 7).join(''));
+    const names = [first.join('')];
+    if (words.length > 1 && /\p{L}/u.test(words.at(-1))) names.push(last.join(''));
     return { names, codes: [short(2), short(3)] };
   });
   const uniqueLabel = (seat, key) => plates[seat][key].find(candidate =>
