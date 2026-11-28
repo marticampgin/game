@@ -29,21 +29,31 @@ const select = (name, label, markup) => `<label>${label}<select name="${name}" a
 const numeric = (label, value, min, max) => `<label>${label}<input type="number" name="value" value="${value}" min="${min}" max="${max}" step="1" required></label>`;
 const itemNames = list => list.map(id => REWARDS[id].name).join(', ');
 
-export function makeExperiment(presetId, seed, count = 2) {
+export function makeExperiment(presetId, seed, count = 2, fitting) {
   const preset = experiments[presetId];
   if (!preset) throw Error('Choose a starting build.');
   if (!Number.isInteger(count) || count < 2 || count > 8) throw Error('Choose 2–8 contenders.');
+  const heroClass = fitting?.classId ?? preset.classId;
+  const rivalClass = heroClass === preset.rival ? preset.classId : preset.rival;
   const roster = [
-    { id: heroId, name: 'Aster', classId: preset.classId, bot: false },
-    { id: rivalId, name: 'Sparring rival', classId: preset.rival, bot: true },
+    { id: heroId, name: 'Aster', classId: heroClass, skinId: fitting?.skinId, bot: false },
+    { id: rivalId, name: 'Sparring rival', classId: rivalClass, bot: true },
   ];
   const names = ['Finch', 'Iris', 'Flint', 'Rowan', 'Moss', 'Vale'];
-  const roles = [...Object.keys(CLASSES).filter(id => ![preset.classId,preset.rival].includes(id)),preset.classId,preset.rival];
+  const roles = [...Object.keys(CLASSES).filter(id => ![heroClass,rivalClass].includes(id)),heroClass,rivalClass];
   for (let index = 0; index < count - 2; index++) {
     roster.push({id:'sparring-' + index, name:names[index], classId:roles[index % roles.length], bot:true});
   }
   let state = createMatch({seed, players:roster});
   for (const edit of preset.edits) state = sandboxEdit(state, { playerId: heroId, ...edit });
+  if (fitting) {
+    const hero = state.players.find(p => p.id === heroId);
+    const tier = Object.hasOwn(healthLevels,fitting.tier) ? fitting.tier : 'healthy';
+    if (healthBand(hero) !== tier) {
+      const hp = Math.max(1,Math.round(hero.maxHp * healthLevels[tier]));
+      state = sandboxEdit(state,{type:'stat',playerId:heroId,stat:'hp',value:hp});
+    }
+  }
   return state;
 }
 
@@ -51,21 +61,15 @@ const healthLevels = {healthy:1, wounded:.5, critical:.18};
 const healthNames = {healthy:'Healthy', wounded:'Wounded', critical:'Critical'};
 const saveKey = 'rift-practice-bench-v1';
 
-function initialBench(fighter) {
+function initialBench(fitting) {
   const fresh = {presetId:'fresh', seed:'starfall', count:2, edits:[], subject:heroId};
-  if (fighter && Object.hasOwn(CLASSES,fighter.classId)) {
-    const skin = resolveFighterSkin(fighter.classId,fighter.skinId);
-    const edits = [{type:'class', playerId:heroId, classId:fighter.classId}, {type:'skin',playerId:heroId,skinId:skin.id}];
-    const ratio = Object.hasOwn(healthLevels,fighter.tier) ? healthLevels[fighter.tier] : 1;
-    if (ratio < 1) edits.push({type:'stat',playerId:heroId,stat:'hp',value:Math.max(1,Math.round(CLASSES[fighter.classId].stats.maxHp*ratio))});
-    return {...fresh,edits};
-  }
+  if (fitting) return fresh;
   try { return JSON.parse(sessionStorage.getItem(saveKey)) || fresh; }
   catch { return fresh; }
 }
 
-function restoreBench(bench) {
-  let state = makeExperiment(bench.presetId,bench.seed,bench.count);
+function restoreBench(bench, fitting) {
+  let state = makeExperiment(bench.presetId,bench.seed,bench.count,fitting);
   for (const edit of bench.edits) {
     state = edit.type === 'step' ? applyCommand(state,state.activeId,botCommand(state)) : sandboxEdit(state,edit);
   }
@@ -92,11 +96,13 @@ function buildSummary(player) {
 
 export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
   const {root, destroy, signal} = toolPage(host,'Sandbox',onClose);
-  let bench = initialBench(initialFighter), state;
-  try { state = restoreBench(bench); }
+  let fitting = initialFighter && Object.hasOwn(CLASSES,initialFighter.classId)
+    ? {...initialFighter,skinId:resolveFighterSkin(initialFighter.classId,initialFighter.skinId).id} : null;
+  let bench = initialBench(fitting), state;
+  try { state = restoreBench(bench,fitting); }
   catch {
     bench = {presetId:'fresh', seed:'starfall', count:2, edits:[], subject:heroId};
-    state = restoreBench(bench);
+    state = restoreBench(bench,fitting);
   }
   let subject = state.players.some(p => p.id === bench.subject) ? bench.subject : heroId;
 
@@ -140,6 +146,8 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
   const model = createSkinPreview(yard,get('.bench-body'),'bench-previous');
   signal.addEventListener('abort',() => model.dispose(),{once:true});
   const save = () => {
+    // An Outfitter trial is disposable. The ordinary Sandbox owns the saved bench.
+    if (fitting) return;
     bench.subject = subject;
     try { sessionStorage.setItem(saveKey,JSON.stringify(bench)); } catch { /* Play also works without storage. */ }
   };
@@ -256,8 +264,12 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
   }
   preset.addEventListener('submit', event => {
     event.preventDefault();
+    if (fitting) {
+      const hero = state.players.find(p => p.id === heroId);
+      fitting = {classId:hero.classId,skinId:hero.skinId,tier:healthBand(hero)};
+    }
     bench = {presetId:preset.elements.preset.value,seed:preset.elements.seed.value,count:Number(preset.elements.count.value),edits:[],subject:heroId};
-    state = restoreBench(bench);
+    state = restoreBench(bench,fitting);
     subject = heroId;
     selectedField = {};
     paint();
