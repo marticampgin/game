@@ -31,15 +31,21 @@ def check_layer(path, layer):
         if expected != image.size:
             raise ValueError(f'{path.name}: expected {expected}, found {image.size}')
         rgba = image.convert('RGBA')
-    alpha = rgba.getchannel('A')
+    # A half-opaque pixel on the border can clip a blade or sample a neighboring
+    # pose. Use the same silhouette threshold as the browser's standing-sheet check.
+    silhouette = rgba.getchannel('A').point(lambda opacity: 255 if opacity >= 128 else 0)
     starts = set()
     for band in range(BANDS):
         for row in range(rows):
             for col in range(columns):
                 x, y = col * width, (band * rows + row) * height
                 box = (x, y, x + width, y + height)
-                if alpha.crop(box).getbbox() is None:
-                    raise ValueError(f'{path.name}: empty cel at band {band}, row {row}, column {col}')
+                bounds = silhouette.crop(box).getbbox()
+                position = f'{path.parent.name}/{path.name}: {LAYOUT["health"][band]["id"]}, row {row}, column {col}'
+                if bounds is None:
+                    raise ValueError(f'{position}: empty silhouette')
+                if bounds[0] == 0 or bounds[1] == 0 or bounds[2] == width or bounds[3] == height:
+                    raise ValueError(f'{position}: silhouette touches cel edge')
                 if row == col == 0:
                     starts.add(rgba.crop(box).tobytes())
     if len(starts) != BANDS:

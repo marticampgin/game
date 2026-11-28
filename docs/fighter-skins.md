@@ -185,7 +185,7 @@ Only the class, ID and standing sheet are required. The turn rail and command de
 
 For a new class, define its stats and signature `ability` in [catalog.js](../src/game/catalog.js). Add one entry in the manifest’s `founders` object for its weapon, emblem, display title and available layers. Supply `/assets/skins/<class>-founder.png` and `/assets/skins/<class>-<layer>.webp` for each declared layer, plus `/assets/portrait-<class>.webp` and `/assets/<class>.png`. A class with only standing art can start with an empty layer list. Weapon choices include hammer, saber, dagger, focus and sickle; a new weapon uses the standard swing until it needs a distinct movement.
 
-Validate the packed sheet sizes, every cel and the three band openings before inspecting in-game playback. The checker needs Pillow and reads the same manifest as the game.
+Leave a one-pixel margin around each pose, including the tip of a weapon at full extension. The Pillow checker reads the game manifest and validates this margin on every animation layer, along with the sheet dimensions, injury bands and final poses.
 
 ```sh
 python scripts/check-fighter-skins.py
