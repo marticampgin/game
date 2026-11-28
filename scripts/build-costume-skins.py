@@ -1,0 +1,227 @@
+"""Register painted costume boards and pack them into the standard fighter kit.
+
+Rebuilding assets uses the committed healthy, wounded, and critical paintings.
+The optional import step registers a new artist board against a class's footwork.
+Requires Pillow, NumPy, and OpenCV at authoring time.
+"""
+from argparse import ArgumentParser
+from functools import lru_cache
+from pathlib import Path
+import importlib.util
+
+import cv2
+import numpy as np
+from PIL import Image
+
+SCRIPT = Path(__file__).resolve().parent
+ROOT = SCRIPT.parent
+PACKS = SCRIPT / 'art' / 'costumes'
+ART = ROOT / 'public' / 'assets' / 'skins'
+spec = importlib.util.spec_from_file_location('founders', SCRIPT / 'build-fighter-skins.py')
+founders = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(founders)
+CELL = founders.CELL
+BASELINE = founders.BASELINE
+BANDS = founders.TIERS
+
+# The twenty painted landmarks in a costume board occupy five columns, four rows.
+# Each pose has its own anatomy, weapon angle and footing. Contact is frame 7.
+TRACKS = {
+    'idle': ((0, 0), (6, 1), (12, 0)),
+    'attack': ((0, 0), (2, 4), (4, 5), (7, 6), (9, 7), (11, 0)),
+    'signature': ((0, 0), (2, 8), (4, 9), (7, 10), (9, 11), (11, 0)),
+    'cast': ((0, 0), (2, 2), (4, 12), (7, 13), (8, 13), (11, 0)),
+    'utility': ((0, 0), (2, 2), (7, 3), (8, 3), (11, 0)),
+    'brace': ((0, 0), (2, 2), (6, 14), (9, 14), (11, 0)),
+    'hurt': ((0, 0), (2, 15), (5, 15), (9, 1), (11, 0)),
+    'ambient': ((0, 0), (2, 1), (5, 2), (7, 2), (10, 1), (11, 0)),
+    'consume': ((0, 0), (2, 16), (6, 17), (8, 17), (10, 16), (11, 0)),
+}
+
+
+def tile(board, col, row):
+    w, h = CELL
+    return board.crop((col * w, row * h, (col + 1) * w, (row + 1) * h))
+
+
+def reference(class_id, band):
+    master = Image.open(founders.MASTERS / (class_id + '-keys.webp')).convert('RGBA')
+    consume = Image.open(founders.MASTERS / (class_id + '-consume-keys.webp')).convert('RGBA')
+    steps = Image.open(ART / (class_id + '-footwork.webp')).convert('RGBA')
+    poses = [tile(master, i % 4, 4 * band + i // 4) for i in range(16)]
+    if class_id == 'guardian':
+        poses[3] = tile(Image.open(founders.MASTERS / 'guardian-reach.webp'), 0, band)
+    return poses + [tile(consume, i, band) for i in range(2)] + [tile(steps, i, band) for i in range(2)]
+
+
+def separate(board):
+    """Recover intact figures even when a blade crosses a nominal column edge."""
+    rgba = np.asarray(board.convert('RGBA'))
+    height, width = rgba.shape[:2]
+    _, labels, stats, _ = cv2.connectedComponentsWithStats((rgba[:, :, 3] >= 110).astype('uint8'))
+    parts = sorted(range(1, len(stats)), key=lambda i: int(stats[i, 4]), reverse=True)
+    bodies = parts[:20]
+    if len(bodies) != 20 or min(stats[i, 4] for i in bodies) < height * width * .002:
+        raise ValueError('Expected twenty separate opaque figures on a transparent five-column board')
+    centers = {i: stats[i, :2] + stats[i, 2:4] / 2 for i in bodies}
+    vertical = sorted(bodies, key=lambda i: centers[i][1])
+    ordered = [i for row in range(4) for i in sorted(vertical[row * 5:row * 5 + 5],
+                                                      key=lambda i: centers[i][0])]
+    owners = np.zeros(len(stats), dtype=np.int32)
+    for index, i in enumerate(ordered, start=1):
+        owners[i] = index
+    # Include disconnected glass, particles, hair curls, and constellation rings.
+    # Assign by distance to the silhouette envelope so an extended hand wins
+    # over a neighboring fighter on the other side of a nominal grid boundary.
+    for i in parts[20:]:
+        x, y, w, h, area = stats[i]
+        if area < 4:
+            continue
+        px, py = x + w / 2, y + h / 2
+        nearest, distance = None, float('inf')
+        for body in bodies:
+            bx, by, bw, bh, _ = stats[body]
+            dx = max(bx - px, px - (bx + bw), 0)
+            dy = max(by - py, py - (by + bh), 0)
+            score = dx * dx + dy * dy
+            if score < distance:
+                nearest, distance = body, score
+        if distance < (min(width / 5, height / 4) * .22) ** 2:
+            owners[i] = owners[nearest]
+    assigned = owners[labels]
+    figures = []
+    for index in range(1, 21):
+        yy, xx = np.nonzero(assigned == index)
+        left, right, top, bottom = xx.min(), xx.max() + 1, yy.min(), yy.max() + 1
+        figure = rgba[top:bottom, left:right].copy()
+        figure[:, :, 3] = np.where(assigned[top:bottom, left:right] == index, 255, 0)
+        figures.append(Image.fromarray(figure))
+    return figures
+
+
+def feet(image):
+    """Use both grounded boots to register lunges and short return steps."""
+    alpha = np.asarray(image.convert('RGBA'))[:, :, 3]
+    yy, _ = np.nonzero(alpha > 96)
+    floor = int(yy.max())
+    start = floor - max(4, round((floor - yy.min()) * .085))
+    _, xx = np.nonzero(alpha[start:floor + 1] > 96)
+    return float((np.percentile(xx, 5) + np.percentile(xx, 95)) / 2)
+
+
+def palette_board(out):
+    pixels = np.asarray(out)
+    colours = pixels[pixels[:, :, 3] > 128, :3]
+    palette = Image.fromarray(colours.reshape(-1, 1, 3)).quantize(colors=152)
+    limited = out.convert('RGB').quantize(palette=palette, dither=Image.Dither.NONE).convert('RGBA')
+    limited.putalpha(out.getchannel('A'))
+    return limited
+
+
+def import_board(class_id, band_name, source, dest):
+    band = BANDS.index(band_name)
+    guides = reference(class_id, band)
+    figures = separate(Image.open(source))
+    # Keep one scale across the board to avoid pumping in poses with high weapons.
+    height_ratios = [(guides[i].getbbox()[3] - guides[i].getbbox()[1]) / figures[i].height
+                     for i in (0, 1, 2, 8, 12, 14, 16, 17)]
+    scale = float(np.median(height_ratios))
+    limits = [min((CELL[0] - 4) / im.width, (BASELINE - 2) / im.height) for im in figures]
+    scale = min(scale, min(limits))
+    board = Image.new('RGBA', (5 * CELL[0], 4 * CELL[1]))
+    for i, (im, guide) in enumerate(zip(figures, guides)):
+        cel = Image.new('RGBA', CELL)
+        im = im.resize((max(1, round(im.width * scale)), max(1, round(im.height * scale))),
+                       Image.Resampling.LANCZOS)
+        im.putalpha(im.getchannel('A').point(lambda a: 255 if a >= 110 else 0))
+        x = max(1, min(CELL[0] - im.width - 1, round(feet(guide) - feet(im))))
+        cel.alpha_composite(im, (x, BASELINE - im.height))
+        board.paste(cel, (i % 5 * CELL[0], i // 5 * CELL[1]))
+    dest.parent.mkdir(exist_ok=True, parents=True)
+    palette_board(board).save(dest, lossless=True, method=6)
+
+
+def skin_cels(board):
+    if board.size != (5 * CELL[0], 4 * CELL[1]):
+        raise ValueError('A registered costume master must have five columns and four rows')
+    return [tile(board, i % 5, i // 5) for i in range(20)]
+
+
+def import_portrait(source, dest):
+    portrait = Image.open(source).convert('RGBA')
+    width, height = portrait.size
+    side = min(width, height)
+    x, y = (width - side) // 2, (height - side) // 2
+    portrait = portrait.crop((x, y, x + side, y + side)).resize((144, 144), Image.Resampling.LANCZOS)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    palette_board(portrait).save(dest, lossless=True, method=6)
+
+
+def build(id):
+    pack = PACKS / id
+    dest = ART / 'outfits' / id
+    dest.mkdir(parents=True, exist_ok=True)
+    layers = founders.KIT['layers']
+    def sheet(cols, rows):
+        return Image.new('RGBA', (cols * CELL[0], rows * CELL[1]))
+    standing = sheet(layers['sheet']['columns'], 9)
+    motion = sheet(layers['motions']['columns'], len(layers['motions']['rows']) * 3)
+    ambient = sheet(layers['ambient']['columns'], 3)
+    consume = sheet(layers['consume']['columns'], 3)
+    steps = sheet(layers['footwork']['columns'], 3)
+    def place(image, cel, col, row):
+        image.paste(cel, (col * CELL[0], row * CELL[1]))
+
+    for band, name in enumerate(BANDS):
+        keys = skin_cels(Image.open(pack / (name + '.webp')).convert('RGBA'))
+        if band == 0:
+            keys[0].crop(keys[0].getbbox()).save(dest / 'model.webp', lossless=True, method=6)
+        solver = founders.Inbetweens(keys)
+        between = lru_cache(maxsize=None)(solver.between)
+        stills = [keys[0], keys[1], keys[2], between(0, 1, .5), keys[5], keys[6], keys[12], keys[13],
+                  keys[14], keys[15], founders.fallen(keys[15]), keys[9]]
+        for index, cel in enumerate(stills):
+            place(standing, cel, index % 4, band * 3 + index // 4)
+        track_rows = layers['motions']['rows']
+        for track, script in TRACKS.items():
+            dest_sheet = ambient if track == 'ambient' else consume if track == 'consume' else motion
+            row = band if track in ('ambient', 'consume') else band * len(track_rows) + track_rows.index(track)
+            for frame in range(12):
+                (left, a), (right, b) = next((l, r) for l, r in zip(script, script[1:]) if l[0] <= frame <= r[0])
+                cel = between(a, b, (frame - left) / (right - left))
+                if track in ('idle', 'ambient'):
+                    cel = cel.copy()
+                    cel.paste(keys[0].crop((0, 133, CELL[0], CELL[1])), (0, 133))
+                place(dest_sheet, cel, frame, row)
+        for frame, cel in enumerate((keys[18], between(18, 19, .5), keys[19], between(19, 0, .5))):
+            place(steps, cel, frame, band)
+        between.cache_clear()
+    for name, image in [('standing', standing), ('motions', motion), ('ambient', ambient), ('consume', consume),
+                        ('footwork', steps)]:
+        image.save(dest / (name + '.webp'), lossless=True, method=5)
+    print(id + ': packed 372 cels', flush=True)
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--skin', help='costume ID; omit to rebuild every registered costume')
+    parser.add_argument('--import-board', type=Path, help='register a raw five-by-four painted board')
+    parser.add_argument('--import-portrait', type=Path, help='pack a square head and shoulders painting')
+    parser.add_argument('--class-id', choices=founders.ROLES, help='class used for foot registration')
+    parser.add_argument('--health', choices=BANDS)
+    args = parser.parse_args()
+    cv2.setNumThreads(1)
+    if args.import_portrait:
+        if not args.skin:
+            parser.error('portrait import requires --skin')
+        import_portrait(args.import_portrait, ART / 'outfits' / args.skin / 'portrait.webp')
+    elif args.import_board:
+        if not (args.skin and args.class_id and args.health):
+            parser.error('import requires --skin, --class-id and --health')
+        import_board(args.class_id, args.health, args.import_board, PACKS / args.skin / (args.health + '.webp'))
+    elif args.skin:
+        build(args.skin)
+    else:
+        for skin in founders.KIT['skins']:
+            if (PACKS / skin['id']).is_dir():
+                build(skin['id'])
