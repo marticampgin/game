@@ -139,3 +139,10 @@ export function setLanguage(locale) {
 }
 export const getLanguage = () => language;
 
+export function setPlayerLine(node, before, playerName, after) {
+  const name = document.createElement('span');
+  name.setAttribute('translate','no');
+  name.textContent = playerName;
+  node.replaceChildren(before, name, after);
+}
+

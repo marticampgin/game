@@ -521,5 +521,7 @@ NetworkError when attempting to fetch resource.|Не удалось подклю
 elimination|выбывание соперника
 Arena fire|Пламя арены
 Echo|Эхо
+Sparring rival|Соперник
+Wanderer|Странник
 `.trim().split('\n').map(row => row.split('|')));
 

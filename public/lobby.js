@@ -8,6 +8,8 @@ import { seedNumber, shuffled } from '/src/game/draft.js';
 import { SHOP, owns } from '/src/game/progression.js';
 import { initCareer, profileHeaders, loadProfile, acceptProfile, readProfile, startCareerSolo } from './career-client.js';
 
+import { translate } from './i18n.js';
+
 const preferredSkin = classId => readProfile()?.equipped?.[classId];
 const classes = Object.values(CLASSES);
 const botNames = ['Morrow', 'Sable', 'Brasswick', 'Vesper', 'Belladonna', 'Orin', 'Holloway'];
@@ -99,7 +101,7 @@ function roster(view) {
 }
 
 function lobbyController(host, callbacks, initialSession, initialView) {
-  const model = { tab: callbacks.initialCode ? 'join' : 'solo', name:'Wanderer', selected:classes[0].id, skinId:preferredSkin(classes[0].id), capacity:4,
+  const model = { tab: callbacks.initialCode ? 'join' : 'solo', name:translate('Wanderer'), selected:classes[0].id, skinId:preferredSkin(classes[0].id), capacity:4,
     mode:'free', fillBots:true, seed:'', code:String(callbacks.initialCode || '').toUpperCase(), showSettings:false };
   let session = initialSession, view = initialView;
   let disposed = false, busy = false, polling = false, timer;

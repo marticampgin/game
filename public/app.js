@@ -15,7 +15,7 @@ import { mountLobby, resumeLobby, roomRequest as request } from './lobby.js';
 
 import { loadProfile, onSoloRejected, readProfile, subscribeProfile, syncCareerSolo } from './career-client.js';
 import { objectiveRows } from './progression-objectives.js';
-import { getLanguage, setLanguage } from './i18n.js';
+import { getLanguage, setLanguage, setPlayerLine } from './i18n.js';
 
 const app = document.querySelector('#app');
 const modal = document.querySelector('#dialog');
@@ -268,7 +268,7 @@ function refreshBattle() {
       region.inert = true;
     const callout = document.createElement('div');
     callout.className = 'scene-callout';
-    callout.textContent = action.actorName + ' · ' + action.actionName;
+    setPlayerLine(callout, '', action.actorName, ' · ' + action.actionName);
     arena.append(callout);
     if (innerWidth <= 700 && arena.getBoundingClientRect().bottom < innerHeight / 2)
       arena.scrollIntoView({ block: 'center', behavior: 'instant' });
@@ -298,7 +298,7 @@ function refreshBattle() {
         if (event.timing !== 'turn') return;
         const owner = old.players.find(p => p.id === event.turnOwnerId);
         if (!owner) return;
-        callout.textContent = owner.name + ' · Turn start';
+        setPlayerLine(callout, '', owner.name, ' · Turn start');
         if (shownOwner === owner.id) return;
         shownOwner = owner.id;
         for (const seat of arena.querySelectorAll('[data-seat]'))

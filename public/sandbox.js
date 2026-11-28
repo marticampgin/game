@@ -5,6 +5,8 @@ import { createSkinPreview } from './skin-preview.js';
 import { wornGear } from './worn-gear.js';
 import { escapeHTML, option, toolPage } from './atlas-ui.js';
 
+import { getLanguage, setPlayerLine, translate } from './i18n.js';
+
 const heroId = 'experimenter';
 const rivalId = 'rival';
 const stats = { hp: 'Health', maxHp: 'Maximum health', armor: 'Armor', attack: 'Attack', spellPower: 'Spell power', shield: 'Shield', regen: 'Regeneration', rerolls: 'Rerolls' };
@@ -52,7 +54,7 @@ export function makeExperiment(presetId, seed, count = 2, fitting) {
   const rivalClass = heroClass === preset.rival ? preset.classId : preset.rival;
   const roster = [
     { id: heroId, name: 'Aster', classId: heroClass, skinId: fitting?.skinId, bot: false },
-    { id: rivalId, name: 'Sparring rival', classId: rivalClass, bot: true },
+    { id: rivalId, name: translate('Sparring rival'), classId: rivalClass, bot: true },
   ];
   const names = ['Finch', 'Iris', 'Flint', 'Rowan', 'Moss', 'Vale'];
   const roles = [...Object.keys(CLASSES).filter(id => ![heroClass,rivalClass].includes(id)),heroClass,rivalClass];
@@ -192,7 +194,7 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
     const chosen = selectedField[op];
     let html = '';
     if (op === 'grant') {
-      const list = Object.values(REWARDS).filter(reward => eligible(player, reward)).sort((a, b) => a.name.localeCompare(b.name));
+      const list = Object.values(REWARDS).filter(reward => eligible(player, reward)).sort((a, b) => translate(a.name).localeCompare(translate(b.name),getLanguage()));
       const reward = list.find(entry => entry.id === chosen) || list[0];
       if (reward) {
         html = field('Reward', list.map(r => option(r.id, r.name)).join(''), reward.id);
@@ -245,7 +247,7 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
     const skin = resolveFighterSkin(player.classId,player.skinId), band = healthBand(player);
     const frozen = state.phase === 'finished' || !player.alive;
     get('.bench-name').textContent = skin.name;
-    get('.bench-class').textContent = player.name + ' · ' + CLASSES[player.classId].name;
+    setPlayerLine(get('.bench-class'), '', player.name, ' · ' + CLASSES[player.classId].name);
     get('.bench-vitals strong').textContent = player.hp + ' / ' + player.maxHp + ' HP';
     get('.bench-life i').style.width = Math.min(100,100*player.hp/player.maxHp) + '%';
     get('.bench-outfits').innerHTML = fighterSkins(player.classId).map(outfit =>
@@ -265,7 +267,9 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
     const isFinished = state.phase === 'finished';
     get('.bench-round').textContent = 'Round ' + state.round;
     get('.bench-count').textContent = state.players.length + ' seats';
-    get('.rb-phase').textContent = isFinished ? 'Match complete' : `${state.age} · ${current.name} · ${state.phase === 'acquire' ? 'Acquisition' : 'Action'}`;
+    const phase = get('.rb-phase');
+    if (isFinished) phase.textContent = 'Match complete';
+    else setPlayerLine(phase, state.age + ' · ', current.name, state.phase === 'acquire' ? ' · Acquisition' : ' · Action');
     get('[data-step]').disabled = isFinished;
     if (onPlay) get('[data-play]').disabled = isFinished;
     get('.rb-contenders').innerHTML = state.players.map(p => combatant(p, p.id === subject)).join('');
