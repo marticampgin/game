@@ -2,6 +2,7 @@
 // the seats while retaining the seed to counterbalance order and bot preferences.
 import { botCommand, CLASSES, getActions, previewAction, simulateMatch, viewMatch } from '../src/game/index.js';
 import { seedNumber, shuffled } from '../src/game/draft.js';
+import { careerView, MATCH_QUESTS } from '../src/game/progression.js';
 
 const [size='2', repetitions='1', prefix='roster', focus, policy='normal'] = process.argv.slice(2);
 if (!['2','4','8'].includes(size) || !/^\d+$/.test(repetitions) || +repetitions < 1 || +repetitions > 100 ||
@@ -81,7 +82,8 @@ function armorFirst(state) {
     return {type:'act',actionId:'defend',targetId:actor.id};
   return ordinary;
 }
-const stats = Object.fromEntries(roles.map(id => [id,{wins:0,damage:[],turns:[],armor:[],pairs:[]}]));
+const stats = Object.fromEntries(roles.map(id => [id,{wins:0,damage:[],turns:[],armor:[],pairs:[],coins:[]}]));
+const objectives=Object.fromEntries(MATCH_QUESTS.map(q=>[q.id,{assigned:0,completed:0}]));
 const duels = {};
 const rounds = [], firstDrops = [];
 let draws = 0;
@@ -107,7 +109,13 @@ for (const table of lineups(roles,Number(size))) {
       for (const p of state.players) {
         const group = stats[p.classId];
         if (p.id === state.winnerId) group.wins++;
-        group.damage.push(state.career.seats[p.id].metrics.damage);
+        const career=careerView(state,p.id);
+        group.damage.push(career.metrics.damage);
+        group.coins.push(career.earnedCoins);
+        for (const quest of career.objectives) {
+          objectives[quest.id].assigned++;
+          if (quest.complete) objectives[quest.id].completed++;
+        }
         group.turns.push(p.personalTurn);
         group.armor.push(p.armor);
       }
@@ -117,8 +125,10 @@ for (const table of lineups(roles,Number(size))) {
 }
 const classes = Object.fromEntries(Object.entries(stats).map(([id,s]) => [id,{
   seats:s.damage.length,wins:s.wins,winRatePercent:percent(s.wins/s.damage.length),pairedWinRate95:pairedInterval(s.pairs),
-  medianDamage:median(s.damage),medianTurns:median(s.turns),medianArmor:median(s.armor)
+  medianDamage:median(s.damage),medianTurns:median(s.turns),medianArmor:median(s.armor),medianObjectiveCoins:median(s.coins)
 }]));
+const coins=Object.values(stats).flatMap(s=>s.coins);
 console.log(JSON.stringify({seed:prefix,policy,...(focus ? {focus} : {}),players:+size,matches:rounds.length,draws,medianRounds:median(rounds),
-  medianFirstElimination:median(firstDrops),medianSeatDamage:median(Object.values(stats).flatMap(s => s.damage)),classes,
+  medianFirstElimination:median(firstDrops),medianSeatDamage:median(Object.values(stats).flatMap(s => s.damage)),classes,objectives,
+  medianObjectiveCoins:median(coins),seatsWithoutObjectiveCoins:coins.filter(n=>!n).length,
   ...(Number(size) === 2 ? {duels} : {})},null,2));

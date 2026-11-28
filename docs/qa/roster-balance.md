@@ -32,6 +32,8 @@ The independent `bellfoundry-check` set ran 896 duels, 280 four-seat matches and
 
 Alchemist was Guardian’s hardest duel opponent, winning 22 of 32. Alchemist also beat Trickster 27–4 with one draw, and lost 6–26 to Berserker. The second `silent-gear` set reproduced the Alchemist–Trickster mismatch at 25–7. Across the two sets Alchemist’s four-seat results ranged from 27.1% to 37.1%. These matchups deserve human playtests, particularly how often a Trickster player chooses to copy Poison while a cleanse is publicly equipped. A fixed armor build also performed poorly in a crowd despite its strong duel results.
 
+An action trace across 96 Alchemist–Trickster duels counted 2,220 Mirror Feints copying Poison. In 1,131 of those casts the Alchemist already had Reverse Polarity equipped. That ability converts Poison into health and permanent regeneration. Alchemist won 70 of the 79 games where it acquired Reverse Polarity, versus 3 of 17 where it never acquired it. Longer games also create more draft opportunities. This shows how often the bot feeds a visible counter and identifies a decision for human playtesting.
+
 | Table size | Median final round | Median first elimination round | Median credited health damage per seat |
 | --- | ---: | ---: | ---: |
 | 2 | 38 | 38 | 634.5 |
@@ -39,6 +41,12 @@ Alchemist was Guardian’s hardest duel opponent, winning 22 of 32. Alchemist al
 | 8 | 47 | 23 | 693.5 |
 
 The opening eight-class rules on `silent-gear` gave Alchemist 62 wins in 144 eight-seat matches. The current rules yielded 13 on those same seeds. Bots now consider public regeneration and spell power alongside health, attack and armor. They give a little less priority to rivals who have already drawn several attacks that round. Blood Cleave applies 2 Bleed and recovers in three personal turns. Artificer's draft affinity includes attack, the stat used by its piston.
+
+## Personal objectives
+
+In a separate `coins-and-cloth` sample of 228 starter-pool matches, the two personal objectives awarded a median of 30 coins in duels and 25 coins in both larger formats. Of 928 seats, 141 earned zero objective coins. Lifetime awards are tallied separately. Bots played their ordinary combat strategy with no incentive to chase a quest. At full eight-seat tables, all 88 seats assigned Spellwork completed it, while only 2 of 84 assigned Trail Seeker found time to Scavenge twice. This difference matters when comparing the effort of objective pairs in a crowd.
+
+Repeat the comparison with `node scripts/playtest-roster.js 2 1 coins-and-cloth`, then with `4 1` and `8 16` on the same seed prefix. The output includes completion counts and coin yield for all eight classes.
 
 ## Reproducing the matches
 
@@ -54,4 +62,4 @@ node scripts/playtest-roster.js 2 16 rivet-armor guardian counter
 node scripts/playtest-roster.js 8 48 rivet-armor guardian armor
 ```
 
-Older solo tickets keep their original ability formulas, defense scaling, reward order and bot decisions. Regression tests replay 305 pre-expansion commands and 611 opening-roster commands from persisted untagged state.
+Older solo tickets keep their original ability formulas, defense scaling, reward order and bot decisions. Regression tests replay 305 pre-expansion commands and 611 opening-roster commands from persisted untagged state. A separate HTTP check restored real saves produced by builds `efbc5b9` and `acb002b` at command 87, uploaded overlapping 37-command batches, restarted the server midway and retried the final batch. Both verified the original final inventories, health, winner, random generator state and career counters. Duplicate delivery left the wallet and completed-match count unchanged.
