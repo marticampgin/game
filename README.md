@@ -33,6 +33,16 @@ The first roster includes Guardian, Berserker, Chronomancer and Alchemist. The 4
 
 Cooldowns advance at the start of the owner’s personal turn. A cooldown of two makes an ability ready on the second following personal turn. Extra actions keep the current turn’s draft and cooldown state. An extra full turn starts a new draft and advances personal-turn effects.
 
+## Career and the Outfitter
+
+Two private objectives accompany each tracked match. Open **Objectives** along the arena footer to see your assignment and progress. Completing an objective pays coins automatically. The **Quest journal** shows lifetime challenges, your coin balance and how many matches each class has completed.
+
+The **Outfitter** sells permanent outfits and six unlocks for future reward drafts. A new profile starts with the other 40 catalog entries available under their usual eligibility rules. Each class has its Founder costume, an 85-coin outfit and a 260-coin mastery outfit. Playing 12 matches to elimination or victory with that class earns the mastery outfit. Every appearance uses the class's combat statistics. Preview its healthy, wounded and critical poses before equipping it for the next lobby.
+
+Solo and private rooms share the same profile on one browser and origin. The game server saves profiles in `~/.riftbound/profiles`. Set `RIFT_PROFILE_DIR` to choose another persistent directory. A solo match started online can reconnect and submit verified turns after a network interruption. Sandbox experiments and newly started offline matches run outside the career.
+
+See [career and roster design](docs/career.md) and the [fighter art and motion guide](docs/fighter-skins.md).
+
 ## Experiment and test
 
 The **Sandbox** uses the match engine directly. Load a seeded encounter, grant rewards, edit attributes, set status stacks and cooldowns, advance rounds, or trigger arena events. Step through decisions or enter the battle to play the edited build.

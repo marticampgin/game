@@ -97,9 +97,9 @@
 .pg-skin-stage, .pg-relic-stage { position:relative; isolation:isolate; background:#281d2b url('/assets/reliquary.webp') center bottom / cover no-repeat; }
 .pg-skin-stage { height:clamp(270px,40vh,410px); }
 .pg-skin-stage::before { content:''; position:absolute; inset:0; background:linear-gradient(#17101dbf,transparent 40%); }
-.pg-stage-heading { position:absolute; top:14px; left:20px; right:20px; z-index:1; pointer-events:none; text-shadow:0 2px 4px #120e18; }
+.pg-stage-heading { display:flex; flex-wrap:wrap; align-items:baseline; gap:.3em .8em; padding:8px 16px; border-bottom:1px solid var(--pg-line); background:#271e26; }
 .pg-stage-heading small, .pg-category { color:#dec09a; font:600 12px/1.25 var(--body); letter-spacing:.07em; text-transform:uppercase; }
-.pg-stage-heading h2 { font-size:clamp(24px,2.5vw,34px); }
+.pg-stage-heading h2 { margin:0; font-size:clamp(20px,1.8vw,27px); }
 .pg-fitting { position:absolute; inset:0; overflow:hidden; }
 .pg-mannequin { position:absolute; width:clamp(135px,14vw,210px); aspect-ratio:1; left:50%; bottom:22%; transform:translateX(-50%); }
 .pg-mannequin .fighter-art { display:block; position:absolute; inset:0; width:100%; height:100%; }
@@ -157,3 +157,9 @@
   .pg-class .pg-portrait { width:29px; height:29px; }
   .pg-control-line button { padding-inline:6px; }
 }
+
+.pg-practice { position:absolute; bottom:22%; left:79%; width:15%; height:30%; opacity:0; pointer-events:none; }
+.pg-practice .fighter-art { position:absolute; inset:0; }
+.pg-practice img { position:absolute; bottom:12%; left:5%; width:64%; aspect-ratio:1; image-rendering:pixelated; filter:drop-shadow(0 3px 3px #201527); }
+.pg-fitting[data-practicing] .pg-practice { opacity:1; }
+.pg-control-line [aria-label="Preview gesture"] { display:flex; flex-wrap:wrap; justify-content:flex-end; }

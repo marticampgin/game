@@ -91,13 +91,14 @@ function skinPage(state, profile) {
   const matches = Math.min(profile.classes[state.classId]?.matches || 0, item.mastery || MASTERY_TARGET);
   return `<div class="pg-shop-layout">${classRail(state,profile)}
     <section class="pg-showcase pg-panel" aria-label="Costume preview">
-      <div class="pg-skin-stage"><div class="pg-stage-heading"><small>${esc(className)}</small><h2>${esc(item.name)}</h2></div>
+      <header class="pg-stage-heading"><small>${esc(className)}</small><h2>${esc(item.name)}</h2></header><div class="pg-skin-stage">
         <div class="pg-fitting" role="img" aria-label="${esc(item.name + ' ' + className + ', ' + condition[1].toLowerCase())}">
           <div class="pg-mannequin" data-seat="preview" data-facing="right"><span class="fighter-art">${fighterSpriteHTML(player)}</span></div>
+          <span class="pg-practice" data-seat="practice" aria-hidden="true"><span class="fighter-art"><span class="arena-sprite"></span></span><img src="/assets/i-crystal.png" alt=""></span>
         </div></div>
       <div class="pg-preview-controls"><div class="pg-control-line"><span>Condition</span><div role="group" aria-label="Preview condition">${conditions.map(([id,label]) =>
         button(label, 'condition', id, 'aria-pressed="' + (id === state.tier) + '"')).join('')}</div></div>
-      <div class="pg-control-line"><span>Gesture</span><div role="group" aria-label="Preview gesture">${button('Scavenge','gesture','scavenge')}${button('Drink','gesture','red-tonic')}</div></div></div>
+      <div class="pg-control-line"><span>Gesture</span><div role="group" aria-label="Preview gesture">${button('Strike','gesture','attack')}${button(esc(REWARDS[CLASSES[state.classId].ability].name),'gesture',CLASSES[state.classId].ability)}${button('Scavenge','gesture','scavenge')}${button('Drink','gesture','red-tonic')}</div></div></div>
     </section><section class="pg-panel pg-wardrobe"><div class="pg-section-head"><h2>Wardrobe</h2><small>${options.filter(i => paid(profile,i)).length} / ${options.length} owned</small></div>
       <div class="pg-outfits" role="group" aria-label="${esc(className)} outfits">${options.map(outfit =>
         button('<img class="pg-portrait" src="' + esc(fighterPortrait({classId:state.classId,skinId:outfit.skinId})) + '" alt=""><span><strong>' + esc(outfit.name) +
@@ -212,7 +213,12 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
     }
     if (pg === 'gesture') {
       preview?.cancel();
-      preview = playArenaAction(root.querySelector('.pg-fitting'),{actorId:'preview',targetId:'preview',actionId:value,events:[]});
+      const stage = root.querySelector('.pg-fitting');
+      const aimed = value === 'attack' || value === CLASSES[state.classId].ability;
+      stage.toggleAttribute('data-practicing', aimed);
+      const handle = playArenaAction(stage,{actorId:'preview',targetId:aimed ? 'practice' : 'preview',actionId:value,events:[]});
+      preview = handle;
+      handle.finished.then(() => { if (preview === handle) stage.removeAttribute('data-practicing'); });
       return;
     }
     if (pg === 'buy' || pg === 'equip') {
