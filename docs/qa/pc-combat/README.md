@@ -1,5 +1,7 @@
 # The Shattered Ring on PC
 
+The comparison pairs each updated portrait with its standing figure for Guardian, Gambler, Artificer, Alchemist and Berserker. The Russian match capture shows their alternate outfits together in an eight-seat practice arena. [Compare the five fighters](five-fighters.webp) · [Open the Russian battle capture](arena-ru.webp)
+
 [Watch the 24-second combat reel](combat.mp4) · [Watch a complete eight-player turn](turn.mp4)
 
 Both recordings capture the playable game at 1440 × 900, with normal-speed animation and the in-game sound enabled. The combat reel cuts between separate encounters. In order, it shows Basic Attack, Bastion Bash, Blood Cleave, Venom Flask, Time Bolt, Whiteout, Cinder Orb, Defend and Scavenge. The encounters use the game engine and a fixed loadout for each clip. Both the caster and the victim are visible through release and recovery.

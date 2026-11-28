@@ -2,11 +2,13 @@
 
 A PC turn-based pixel art battle arena for 2–8 contenders. Pick one of three rewards, take one action, and survive the Shattered Ring. Fight friends in a private room or fill the arena with bots.
 
-![All eight classes in round three. Sable the Artificer has Rivet Drive aimed at Rook the Guardian.](docs/qa/pc-combat/eight-class-ring.webp)
+![The eight-class arena in Russian. The Harbor Warden has Bastion Bash aimed at the Nightshade Apothecary.](docs/qa/pc-combat/arena-ru.webp)
 
 [Try on Wolf Tracker and take it into a duel](docs/qa/pc-combat/wolf-tracker-walkthrough.mp4) · [Watch four finishing blows](docs/qa/pc-combat/finishing-blows.mp4) · [Watch an eight-player turn](docs/qa/pc-combat/turn.mp4)
 
 ## Play
+
+Choose **English** or **Русский** in the main menu or match settings. Each player can change their own language during a turn. To try a locked skin, open **Outfitter → Try in Sandbox → Play match**. In Russian the same route is **Гардероб → Испытать в песочнице → Начать бой**.
 
 With Node.js 20.17 or later installed, run these commands in the repository.
 
