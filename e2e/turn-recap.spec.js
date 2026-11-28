@@ -11,9 +11,15 @@ async function roomRequest(api, path, body, session) {
 }
 
 async function openSession(page, kind, saved) {
-  await page.goto('/');
-  await page.evaluate(([kind, data]) => sessionStorage.setItem(kind, JSON.stringify(data)), [kind, saved]);
-  await page.reload();
+  if (page.url() === 'about:blank') {
+    await page.addInitScript(([key, data]) => {
+      if (!sessionStorage.getItem(key)) sessionStorage.setItem(key, JSON.stringify(data));
+    }, [kind, saved]);
+    await page.goto('/', {waitUntil:'domcontentloaded'});
+  } else {
+    await page.evaluate(([key, data]) => sessionStorage.setItem(key, JSON.stringify(data)), [kind, saved]);
+    await page.reload({waitUntil:'domcontentloaded'});
+  }
   await expect(page.getByRole('heading', {name:'The Shattered Ring'})).toBeVisible();
 }
 
@@ -69,7 +75,7 @@ test('two human clients see the same resolved hit, browse prior actions and keep
     await expect(recap(actingPage).locator('.recap-handoff.was')).toContainText('Then');
     await recap(actingPage).getByRole('button',{name:'Next action'}).click();
     await expect(recap(actingPage).getByRole('heading',{name:'Defend'})).toBeVisible();
-    await actingPage.reload();
+    await actingPage.reload({waitUntil:'domcontentloaded'});
     await expect(recap(actingPage).locator('.recap-who')).toContainText('Defend');
     await expect(recap(actingPage).getByRole('button',{name:'Effects'})).toHaveAttribute('aria-expanded','false');
     await recap(actingPage).getByRole('button',{name:'Effects'}).click();

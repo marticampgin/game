@@ -7,9 +7,9 @@ permissions:
 jobs:
   arena:
     runs-on: ubuntu-latest
-    # The complete Chromium run takes about five minutes before the desktop
-    # WebKit suite starts. Leave both browsers time to finish on a hosted runner.
-    timeout-minutes: 25
+    # Hosted WebKit renders the pixel sheets in software. Its multi-window
+    # tests share a runner with the game server and need a worker of their own.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -20,7 +20,7 @@ jobs:
       - run: npm test
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
-      - run: npm run test:turn:webkit
+      - run: npm run test:turn:webkit -- --workers=1
       - run: npm run simulate -- 12 4 ci
       - uses: actions/upload-artifact@v6
         if: failure()
