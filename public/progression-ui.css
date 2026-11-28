@@ -200,3 +200,19 @@
 .pg-screen .pg-gesture:hover,.pg-screen .pg-gesture:focus-visible { border-image-source:var(--plate-lit); background:var(--control-selected); }
 .pg-gesture :is(img,.pg-icon) { width:clamp(24px,2.4vw,36px); height:clamp(24px,2.4vw,36px); object-fit:contain; image-rendering:pixelated; }
 .pg-gesture span { min-width:0; }
+
+@media (min-width: 1600px) and (min-height: 800px) {
+  .pg-wrap { max-width:clamp(1240px,calc(66vw + 248px),1920px); }
+  .pg-shop-layout {
+    --outfit-height:clamp(82px,5.5vw,132px);
+    grid-template-columns:clamp(200px,13vw,250px) minmax(0,1.65fr) minmax(360px,1fr);
+    gap:clamp(16px,1.25vw,28px);
+  }
+  .pg-skin-stage { height:min(48vh,640px,calc(100svh - 435px)); }
+  .pg-mannequin,.pg-previous { width:min(clamp(235px,15vw,376px),36vh); }
+  .pg-class .pg-portrait { width:clamp(36px,2.4vw,50px); height:auto; }
+  .pg-screen .pg-shop-layout .pg-class span { font-size:clamp(17px,1vw,21px); }
+  .pg-outfits .pg-outfit { grid-template-rows:var(--outfit-height) 1fr; }
+  .pg-outfit-model { height:var(--outfit-height); }
+  .pg-preview-toolbar,.pg-gesture-hand { width:min(100%,780px); margin-inline:auto; }
+}

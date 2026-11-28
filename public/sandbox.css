@@ -103,3 +103,9 @@ body:has(.rb-sandbox) { background:#19151e; }
 .rb-sandbox .bench-previous { pointer-events:none; }
 .rb-sandbox .bench-art-error:not([hidden]) { display:flex; align-items:center; gap:10px; padding:6px 12px; color:#ffccaa; background:#3a262b; }
 .rb-sandbox .bench-art-error button { padding:4px 10px; border:1px solid #a17958; background:#31242c; color:#f1d7b5; font-family:var(--control-font); }
+
+@media (min-width: 1600px) and (min-height: 800px) {
+  .rb-sandbox { width:min(100%,clamp(1520px,78vw,1920px)); }
+  .rb-sandbox .bench-yard { height:min(39vh,540px,calc(100svh - 535px)); }
+  .rb-sandbox .bench-body,.rb-sandbox .bench-previous { width:min(clamp(212px,13vw,344px),33vh); }
+}
