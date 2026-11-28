@@ -4,7 +4,7 @@
 
 A regular solo match or room snapshots each human contender’s reward licenses when it starts. Each contender draws two personal objectives from the match quest catalog. Closing a draft, collecting a shard, using an ability, defending, scavenging or dealing actual damage to another contender’s health can advance the corresponding objective. Each completion pays its listed coins once. Selecting a quest carries no combat bonus. Damage against shields, overkill and damage from the arena do not count toward career damage.
 
-Lifetime milestones include the first completed match, 1,000 damage, ten wins and 100,000 damage. The journal exposes progress and the exact payout. A completed class match requires playing at least one personal turn and reaching elimination or the end of the match. A class’s twelfth completion awards its mastery outfit if it is still unowned. Players who prefer another class can save coins for that outfit instead.
+Lifetime milestones include the first completed match, 1,000 damage, ten wins and 12,000 damage. The journal exposes progress and the exact payout. A completed class match requires playing at least one personal turn and reaching elimination or the end of the match. A class’s twelfth completion awards its mastery outfit if it is still unowned. Players who prefer another class can save coins for that outfit instead.
 
 | Class | Founder | 85 coins | 260 coins or class mastery |
 | --- | --- | --- | --- |
@@ -14,6 +14,10 @@ Lifetime milestones include the first completed match, 1,000 damage, ten wins an
 | Alchemist | Founder | Apiarist | Nightshade Apothecary |
 
 Six of the 46 reward entries require a license. Buying one adds it to eligible draws in subsequent matches. Rarity, class weighting, duplicates, prerequisites and slot limits still apply. Players can inspect the entire catalog in the Atlas and experiment in the Sandbox.
+
+### Damage pacing
+
+In 120 seeded starter-pool bot matches, the original four classes dealt median rival-health damage of 701 per seat in duels, 696 in four-seat matches and 755 in eight-seat matches. Each size used 40 seeds with classes rotated around the table (560 seat results). At those rates the old 100,000 target implied roughly 132–144 matches. Ring Veteran now pays 140 coins at 12,000 damage, roughly 16–17 such matches, just beyond the first class mastery. Actual human pace depends on build and survival. Existing career damage applies, and an already paid milestone keeps its award.
 
 ## Extending the catalog
 

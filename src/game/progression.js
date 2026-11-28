@@ -34,7 +34,7 @@ export const LIFETIME_QUESTS = [
   quest('first-steps', 'First Steps', 'Complete your first match.', 'matches', 1, 35),
   quest('blood-and-iron', 'Blood and Iron', 'Deal 1,000 total damage to rival health.', 'damage', 1000, 75),
   quest('seasoned', 'Seasoned Contender', 'Win ten matches.', 'wins', 10, 160),
-  quest('century', 'A Hundred Thousand Scars', 'Deal 100,000 total damage to rival health.', 'damage', 100000, 1000),
+  quest('century', 'Ring Veteran', 'Deal 12,000 total damage to rival health.', 'damage', 12000, 140),
 ];
 
 export const owns = (profile, item) => !!item && !!profile?.unlocks?.includes(item.id);
@@ -88,6 +88,19 @@ export function equip(profile, classId, skinId) {
   return true;
 }
 
+// Re-evaluate saved totals when milestones are rebalanced. Stable claimed IDs
+// keep a previously paid reward from being credited a second time.
+export function awardLifetimeQuests(profile) {
+  let paid = 0;
+  for (const quest of LIFETIME_QUESTS) {
+    if (profile.claimed.includes(quest.id) || profile.totals[quest.metric] < quest.target) continue;
+    profile.claimed.push(quest.id);
+    paid += quest.coins;
+  }
+  profile.coins += paid;
+  return paid;
+}
+
 // The caller commits the receipt and profile in the same transaction. A lost
 // HTTP reply, another tab, a short battle log or an old room snapshot can never
 // cause the same damage, contract or class completion to count twice.
@@ -116,13 +129,8 @@ export function credit(profile, receipt, state, playerId) {
       receipt.masterySkinId = masterySkin.skinId;
     }
   }
-  for (const q of LIFETIME_QUESTS) {
-    if (!profile.claimed.includes(q.id) && profile.totals[q.metric] >= q.target) {
-      profile.claimed.push(q.id);
-      profile.coins += q.coins;
-      receipt.lifetimeCoins = (receipt.lifetimeCoins || 0) + q.coins;
-    }
-  }
+  const lifetimeCoins = awardLifetimeQuests(profile);
+  if (lifetimeCoins) receipt.lifetimeCoins = (receipt.lifetimeCoins || 0) + lifetimeCoins;
   if (receipt.finished && (finished || profile.lastSettlement?.runId === progress.runId)) {
     profile.lastSettlement = {
       runId:progress.runId, classId:player.classId, objectiveCoins:receipt.coins,

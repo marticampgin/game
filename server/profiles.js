@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { applyCommand, botCommand, createMatch, CLASSES } from '../src/game/index.js';
-import { SHOP, buy, credit, equip, newProfile, owns } from '../src/game/progression.js';
+import { SHOP, awardLifetimeQuests, buy, credit, equip, newProfile, owns } from '../src/game/progression.js';
 import { resolveFighterSkin } from '../public/fighter-kit.js';
 
 export class ProfileError extends Error {
@@ -43,7 +43,15 @@ export function classSkinAllowed(profile, classId, skinId) {
 export function createProfiles({profileDirectory = process.env.RIFT_PROFILE_DIR || join(homedir(),'.riftbound','profiles')}={}) {
   const accountPath = key => join(profileDirectory,key,'profile.json');
   const folder = key => mkdirSync(join(profileDirectory,key),{recursive:true,mode:0o700});
-  const account = key => read(accountPath(key),()=>({profile:newProfile(),receipts:{}}));
+  function account(key) {
+    const path = accountPath(key);
+    const file = read(path, () => ({profile:newProfile(), receipts:{}}));
+    if (awardLifetimeQuests(file.profile)) {
+      file.profile.revision++;
+      save(path,file);
+    }
+    return file;
+  }
 
   function settle(key, state, playerId) {
     const file=account(key), id=state.career.runId + '/' + playerId;

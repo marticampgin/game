@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { applyCommand, createMatch, sandboxEdit, viewMatch, REWARDS } from '../src/game/index.js';
 import { deal, grantReward } from '../src/game/combat.js';
 import { drawOffers } from '../src/game/draft.js';
-import { SHOP, buy, credit, equip, newProfile, MASTERY_TARGET, isDraftUnlocked } from '../src/game/progression.js';
+import { SHOP, awardLifetimeQuests, buy, credit, equip, newProfile, MASTERY_TARGET, isDraftUnlocked } from '../src/game/progression.js';
 
 const players = [{id:'a',name:'Moss',classId:'guardian'},{id:'b',name:'June',classId:'alchemist'}];
 const tracked = (seats={a:[],b:[]}) => createMatch({seed:'ticket',players,career:{runId:'unique-run',seats}});
@@ -100,4 +100,17 @@ test('end-of-match settlement includes lifetime coins earned earlier in the same
   game.phase='finished';
   credit(p,receipt,game,'a');
   assert.deepEqual(p.lastSettlement,{runId:'unique-run',classId:'guardian',lifetimeCoins:75,objectiveCoins:0,masterySkinId:'sunspire-paladin'});
+});
+
+test('a veteran profile crosses the recalibrated milestone once and keeps any old award', () => {
+  const profile = newProfile();
+  profile.totals.damage = 11999;
+  profile.claimed.push('blood-and-iron');
+  assert.equal(awardLifetimeQuests(profile),0);
+  profile.totals.damage++;
+  assert.equal(awardLifetimeQuests(profile),140);
+  assert.equal(awardLifetimeQuests(profile),0);
+  profile.coins = 1000;
+  assert.equal(awardLifetimeQuests(profile),0);
+  assert.equal(profile.coins,1000);
 });
