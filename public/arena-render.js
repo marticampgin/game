@@ -1,6 +1,7 @@
 // A turn update can change a single target or HP value. Keep standing sprites
 // attached to the document so their idle cycles continue across those updates.
-function reconcile(live, next) {
+export function reconcile(live, next, preserve) {
+  if (preserve?.(live,next)) return;
   if (live.isEqualNode(next)) return;
   if (live.nodeName !== next.nodeName || live.namespaceURI !== next.namespaceURI) {
     live.replaceWith(next.cloneNode(true));
@@ -16,7 +17,7 @@ function reconcile(live, next) {
   const children = Array.from(next.childNodes);
   children.forEach((child, index) => {
     const existing = live.childNodes[index];
-    if (existing) reconcile(existing, child);
+    if (existing) reconcile(existing, child, preserve);
     else live.append(child.cloneNode(true));
   });
   while (live.childNodes.length > children.length) live.lastChild.remove();

@@ -569,8 +569,7 @@ function settings() {
   <p>Armor reduces incoming damage before shields absorb it. Abilities recover at the start of your personal turn. Inspect a contender to see their build and status effects. Carried consumables stay secret until used.</p>
   <p>Every round gives each living contender a turn. Watch for announced arena events and increasing pressure in the Age of Chaos.</p>`);
 }
-async function openProgression(tab) {
-  const origin = screen;
+async function openProgression(tab, origin = screen, fitting) {
   const view = origin === 'battle' ? current() : undefined;
   const career = view?.career;
   const fighter = view?.players.find(p => p.id === match.viewerId);
@@ -586,10 +585,16 @@ async function openProgression(tab) {
   const start = epoch;
   try {
     const {mountProgression} = await import('./progression-ui.js');
-    if (epoch === start) dispose = mountProgression(app,{initialTab:tab,initialClassId:fighter?.classId,initialSkinId:masterySkinId,career,onBack:back});
+    if (epoch === start) dispose = mountProgression(app,{
+      initialTab:tab, initialClassId:fitting?.classId || fighter?.classId, initialSkinId:fitting?.skinId || masterySkinId,
+      initialTier:fitting?.tier, returnToPractice:!!fitting, career, onBack:back,
+      onPractice: initialFighter => openTool('sandbox',{
+        initialFighter, onClose:() => openProgression('skins',origin,initialFighter),
+      }),
+    });
   } catch (error) { if (epoch === start) { back(); notice(error.message); } }
 }
-async function openTool(tool) {
+async function openTool(tool, options = {}) {
   toolOrigin = screen === 'battle' ? 'battle' : 'menu';
   setScreen(tool);
   const start = epoch;
@@ -608,6 +613,7 @@ async function openTool(tool) {
       onClose: close,
       readProfile, subscribeProfile,
       onPlay: (state, viewerId) => startBattle({ state, viewerId }),
+      ...options,
     });
   } catch (e) {
     if (epoch === start) {

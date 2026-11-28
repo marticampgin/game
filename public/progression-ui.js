@@ -2,8 +2,9 @@ import { CLASSES, REWARDS } from '../src/game/catalog.js';
 import { SHOP, MASTERY_TARGET, MATCH_QUESTS, LIFETIME_QUESTS, newProfile, owns } from '../src/game/progression.js';
 import { readProfile, readCareerStatus, loadProfile, subscribeProfile, buyItem, equipSkin } from './career-client.js';
 import { esc, glyph, rewardIcon } from './art.js';
-import { fighterPortrait, fighterKit } from './fighter-kit.js';
+import { fighterModel, fighterPortrait, fighterKit } from './fighter-kit.js';
 import { fighterSpriteHTML, playArenaAction, preloadArenaSkins } from './animation.js';
+import { reconcile } from './arena-render.js';
 import { coin, number, objectiveRows } from './progression-objectives.js';
 export { objectiveRows };
 
@@ -55,7 +56,7 @@ function journal(profile, career) {
     <div class="pg-section-head"><h2>Lifetime quests</h2><small>${quests.filter(q => q.complete).length} / ${quests.length} complete</small></div>
     ${objectiveRows(quests)}</section>
     <section class="pg-panel pg-mastery"><div class="pg-section-head"><h2>Class mastery</h2>${icon('crown')}</div>
-    <p>Finish matches with a class to earn its mastery outfit.</p>${roles.map(role => masteryRow(role,profile)).join('')}</section></div>`;
+    <p>Finish matches with a class to earn its mastery outfit.</p><div class="pg-mastery-list">${roles.map(role => masteryRow(role,profile)).join('')}</div></section></div>`;
 }
 
 function availability(item, profile) {
@@ -82,32 +83,30 @@ function classRail(state, profile) {
       '" alt=""><span>' + esc(role.name) + '</span>', 'class', role.id, 'class="pg-class" aria-pressed="' + (role.id === state.classId) + '"')).join('') + '</div></section>';
 }
 
-function skinPage(state, profile) {
+function skinPage(state, profile, canPractice) {
   const options = outfits(state.classId);
   const item = options.find(s => s.skinId === state.skinId) || options[0];
   const className = CLASSES[state.classId].name;
   const condition = conditions.find(c => c[0] === state.tier);
-  const player = {id:'preview',classId:state.classId,skinId:item.skinId,hp:condition[2],maxHp:100,alive:true};
   const matches = Math.min(profile.classes[state.classId]?.matches || 0, item.mastery || MASTERY_TARGET);
   return `<div class="pg-shop-layout">${classRail(state,profile)}
     <section class="pg-showcase pg-panel" aria-label="Costume preview">
       <header class="pg-stage-heading"><small>${esc(className)}</small><h2>${esc(item.name)}</h2></header><div class="pg-skin-stage">
         <div class="pg-fitting" role="img" aria-label="${esc(item.name + ' ' + className + ', ' + condition[1].toLowerCase())}">
-          <div class="pg-mannequin" data-seat="preview" data-facing="right"><span class="fighter-art">${fighterSpriteHTML(player)}</span></div>
-          <span class="pg-practice" data-seat="practice" aria-hidden="true"><span class="fighter-art"><span class="arena-sprite"></span></span><img src="/assets/i-crystal.png" alt=""></span>
+          <div class="pg-mannequin" data-seat="preview" data-facing="right"><span class="fighter-art"></span></div>
         </div></div>
       <div class="pg-preview-controls"><div class="pg-control-line"><span>Condition</span><div role="group" aria-label="Preview condition">${conditions.map(([id,label]) =>
         button(label, 'condition', id, 'aria-pressed="' + (id === state.tier) + '"')).join('')}</div></div>
       <div class="pg-control-line"><span>Gesture</span><div role="group" aria-label="Preview gesture">${button('Strike','gesture','attack')}${button(esc(REWARDS[CLASSES[state.classId].ability].name),'gesture',CLASSES[state.classId].ability)}${button('Scavenge','gesture','scavenge')}${button('Drink','gesture','red-tonic')}</div></div></div>
     </section><section class="pg-panel pg-wardrobe"><div class="pg-section-head"><h2>Wardrobe</h2><small>${options.filter(i => paid(profile,i)).length} / ${options.length} owned</small></div>
       <div class="pg-outfits" role="group" aria-label="${esc(className)} outfits">${options.map(outfit =>
-        button('<img class="pg-portrait" src="' + esc(fighterPortrait({classId:state.classId,skinId:outfit.skinId})) + '" alt=""><span><strong>' + esc(outfit.name) +
+        button('<img class="pg-outfit-model" src="' + esc(fighterModel({classId:state.classId,skinId:outfit.skinId})) + '" alt=""><span><strong>' + esc(outfit.name) +
           '</strong><small>' + esc(availability(outfit,profile)) + '</small></span>' + glyph('right'), 'outfit', outfit.skinId,
           'class="pg-outfit" aria-pressed="' + (outfit.skinId === item.skinId) + '"')).join('')}</div>
       <div class="pg-outfit-order"><div class="pg-section-head"><h3>${esc(item.name)}</h3>${item.mastery ? chip('Mastery') : ''}</div>
       <p>${item.skinId === 'founder' ? esc(fighterKit(state.classId).title) + ' · Original class outfit.' : esc(item.description)}</p>
       ${item.mastery ? '<p>Earn in ' + item.mastery + ' completed ' + esc(className) + ' matches, or unlock with coins.</p><div class="pg-meter-row"><progress aria-label="Class mastery" value="' + matches + '" max="' + item.mastery + '"></progress><span>' + matches + ' / ' + item.mastery + '</span></div>' : ''}
-      ${purchase(item,profile,state.busy)}</div></section></div>`;
+      ${purchase(item,profile,state.busy)}${canPractice ? button('Try in Sandbox ' + glyph('right'),'practice',item.skinId,'class="pg-try"') : ''}</div></section></div>`;
 }
 
 function rewardPage(state, profile) {
@@ -127,7 +126,7 @@ function rewardPage(state, profile) {
 }
 
 /** Full-screen journal and shop. The live match displays objectiveRows directly. */
-export function mountProgression(host, {initialTab='quests', initialClassId, initialSkinId, career, onBack} = {}) {
+export function mountProgression(host, {initialTab='quests', initialClassId, initialSkinId, initialTier, returnToPractice=false, career, onPractice, onBack} = {}) {
   const abort = new AbortController();
   const {signal} = abort;
   const root = document.createElement('section');
@@ -136,8 +135,8 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
   const classId = Object.hasOwn(CLASSES,initialClassId) ? initialClassId : roles[0].id;
   let profile = readProfile() || newProfile();
   const state = {tab:tabs.some(t => t[0] === initialTab) ? initialTab : 'quests',classId,
-    skinId:initialSkinId || profile.equipped[classId] || 'founder',tier:'healthy',rewardId:rewards[0]?.id,busy:false};
-  let message = '', issue = false, preview, lastPreload = '', followEquipped = !initialSkinId;
+    skinId:initialSkinId || profile.equipped[classId] || 'founder',tier:conditions.some(([id]) => id === initialTier) ? initialTier : 'healthy',rewardId:rewards[0]?.id,busy:false};
+  let message = '', issue = false, preview, reveal, fitRevision = 0, queuedGesture = '', followEquipped = !initialSkinId;
   host.replaceChildren(root);
 
   function render() {
@@ -146,15 +145,19 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
     const focus = focused?.closest('[data-pg]');
     const focusTarget = focused?.matches('summary') ? '.pg-pool summary' : '#pg-heading';
     const openPool = !!root.querySelector('.pg-pool[open]');
-    preview?.cancel();
-    root.innerHTML = `<div class="pg-wrap"><header class="pg-header">${button(glyph('back') + ' Back','back','','class="pg-back"')}
+    const template = document.createElement('template');
+    template.innerHTML = `<div class="pg-wrap"><header class="pg-header">${button(glyph('back') + ' Back','back','','class="pg-back"')}
       <h1 tabindex="-1" id="pg-heading">${state.tab === 'quests' ? 'Quest journal' : 'Outfitter'}</h1>
       <div class="pg-wallet" aria-label="${number(profile.coins)} coins">${coin()}<span><small>Coins</small><strong>${number(profile.coins)}</strong></span></div></header>
       <nav class="pg-tabs" aria-label="Progression sections">${tabs.map(([id,label,image]) =>
         button(icon(image) + label, 'tab', id, 'aria-current="' + (id === state.tab ? 'page' : 'false') + '"')).join('')}</nav>
-      ${readCareerStatus() === 'offline' ? '<div class="pg-connection" role="status">Offline · Showing saved progress.' + button(state.busy ? 'Connecting…' : 'Reconnect','retry','','class="pg-retry"' + (state.busy ? ' disabled' : '')) + '</div>' : ''}
-      <div class="pg-content">${state.tab === 'quests' ? journal(profile,career) : state.tab === 'skins' ? skinPage(state,profile) : rewardPage(state,profile)}</div>
+      <div class="pg-connection-slot">${readCareerStatus() === 'offline' ? '<div class="pg-connection" role="status">Offline · Showing saved progress.' + button(state.busy ? 'Connecting…' : 'Reconnect','retry','','class="pg-retry"' + (state.busy ? ' disabled' : '')) + '</div>' : ''}</div>
+      <div class="pg-content">${state.tab === 'quests' ? journal(profile,career) : state.tab === 'skins' ? skinPage(state,profile,!!onPractice) : rewardPage(state,profile)}</div>
       <p class="pg-feedback${issue ? ' pg-error' : ''}" role="status">${esc(message)}</p></div>`;
+    const next = template.content.firstElementChild;
+    if (root.firstElementChild) reconcile(root.firstElementChild,next,(live,wanted) => live.classList?.contains('pg-fitting') && wanted.classList?.contains('pg-fitting'));
+    else root.append(next);
+    if (state.tab === 'skins' && root.querySelector('.pg-fitting')?.dataset.failed) root.querySelector('.pg-feedback').insertAdjacentHTML('beforeend',button('Retry preview','retry-fit','','class="pg-retry"'));
     if (openPool && root.querySelector('.pg-pool')) root.querySelector('.pg-pool').open = true;
     if (focus) {
       const same = [...root.querySelectorAll('[data-pg]')].find(el => el.dataset.pg === focus.dataset.pg && el.dataset.value === focus.dataset.value && !el.disabled);
@@ -162,10 +165,62 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
     } else if (focused) {
       (root.querySelector(focusTarget) || root.querySelector('#pg-heading')).focus({preventScroll:true});
     }
-    if (state.tab === 'skins' && lastPreload !== state.classId + '/' + state.skinId) {
-      lastPreload = state.classId + '/' + state.skinId;
-      preloadArenaSkins([{classId:state.classId,skinId:state.skinId}]);
-    }
+    updateFitting();
+  }
+  function performGesture(stage, actionId) {
+    preview?.cancel();
+    preview = playArenaAction(stage,{actorId:'preview',targetId:'preview',actionId,events:[]},{rehearsal:true});
+  }
+  function updateFitting() {
+    const stage = root.querySelector('.pg-fitting');
+    if (!stage) { reveal?.cancel(); fitRevision++; queuedGesture = ''; preview?.cancel(); return; }
+    const {classId, skinId, tier} = state;
+    const key = classId + '/' + skinId + '/' + tier;
+    if (stage.dataset.requested === key) return;
+    const revision = ++fitRevision;
+    delete stage.dataset.failed;
+    stage.dataset.requested = key;
+    stage.setAttribute('aria-busy','true');
+    queuedGesture = '';
+    preview?.cancel();
+    const mannequin = stage.querySelector('.pg-mannequin .fighter-art');
+    const condition = conditions.find(([id]) => id === tier);
+    const player = {id:'preview',classId,skinId,hp:condition[2],maxHp:100,alive:true};
+    if (!mannequin.firstElementChild) mannequin.innerHTML = fighterSpriteHTML(player);
+    preloadArenaSkins([player]).then(results => {
+      if (signal.aborted || revision !== fitRevision || !stage.isConnected) return;
+      stage.setAttribute('aria-busy','false');
+      if (!results.every(Boolean)) {
+        stage.dataset.failed = key;
+        message = 'The full gesture set could not load.';
+        issue = true;
+        render();
+        return;
+      }
+      delete stage.dataset.failed;
+      const outfitsForClass = outfits(classId);
+      const name = outfitsForClass.find(item => item.skinId === skinId)?.name || 'Founder';
+      stage.setAttribute('aria-label',name + ' ' + CLASSES[classId].name + ', ' + condition[1].toLowerCase());
+      const old = mannequin.firstElementChild;
+      const oldKey = stage.dataset.shown;
+      mannequin.innerHTML = fighterSpriteHTML(player);
+      stage.dataset.shown = key;
+      const reduced = stage.closest('.reduce-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+      reveal?.cancel();
+      stage.querySelector('.pg-previous')?.remove();
+      if (old && oldKey && oldKey !== key && !reduced && !queuedGesture) {
+        const previous = document.createElement('span');
+        previous.className = 'pg-previous';
+        previous.setAttribute('aria-hidden','true');
+        previous.append(old);
+        stage.append(previous);
+        const time = {duration:150, easing:'ease-out'};
+        const conceal = previous.animate([{clipPath:'inset(-25% -40% -25%)'},{clipPath:'inset(125% -40% -25%)'}],time);
+        conceal.onfinish = () => previous.remove();
+        reveal = mannequin.animate([{clipPath:'inset(-25% -40% 125%)'},{clipPath:'inset(-25% -40% -25%)'}],time);
+      }
+      if (queuedGesture) { const action = queuedGesture; queuedGesture = ''; performGesture(stage,action); }
+    });
   }
   function pickClass(id, skinId) {
     followEquipped = !skinId;
@@ -181,6 +236,7 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
   function destroy() {
     abort.abort();
     unsubscribe?.();
+    reveal?.cancel();
     preview?.cancel();
     root.remove();
   }
@@ -202,6 +258,8 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
       state.busy = false;
       if (readCareerStatus() === 'offline') { issue = true; message = 'The progression server is still unavailable.'; }
     }
+    if (pg === 'practice') { onPractice?.({classId:state.classId,skinId:state.skinId,tier:state.tier}); return; }
+    if (pg === 'retry-fit') { const stage = root.querySelector('.pg-fitting'); delete stage.dataset.requested; delete stage.dataset.failed; }
     if (pg === 'tab') state.tab = value;
     if (pg === 'class') pickClass(value);
     if (pg === 'outfit') pickClass(state.classId,value);
@@ -212,13 +270,9 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
       pickClass(value, SHOP.find(i => i.classId === value && i.mastery)?.skinId);
     }
     if (pg === 'gesture') {
-      preview?.cancel();
       const stage = root.querySelector('.pg-fitting');
-      const aimed = value === 'attack' || value === CLASSES[state.classId].ability;
-      stage.toggleAttribute('data-practicing', aimed);
-      const handle = playArenaAction(stage,{actorId:'preview',targetId:aimed ? 'practice' : 'preview',actionId:value,events:[]});
-      preview = handle;
-      handle.finished.then(() => { if (preview === handle) stage.removeAttribute('data-practicing'); });
+      if (stage.getAttribute('aria-busy') === 'true') queuedGesture = value;
+      else if (!stage.dataset.failed) performGesture(stage,value);
       return;
     }
     if (pg === 'buy' || pg === 'equip') {
@@ -234,7 +288,7 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
     render();
   }, {signal});
   render();
-  root.querySelector('h1').focus({preventScroll:true});
+  (returnToPractice && root.querySelector('[data-pg="practice"]') || root.querySelector('h1')).focus({preventScroll:true});
   loadProfile().then(next => { if (next && next !== profile) refreshProfile(next); })
     .catch(error => { message = error.message; issue = true; render(); });
   return destroy;
