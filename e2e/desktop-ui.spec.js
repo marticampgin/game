@@ -1,6 +1,22 @@
 import { expect, test } from '@playwright/test';
 import { applyCommand, botCommand, createMatch, sandboxEdit } from '../src/game/index.js';
 
+test('desktop menu labels fit on one line as the interface type scales up', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('button',{name:'Quest journal'})).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  for (const width of [960, 1280, 1536, 2560]) {
+    await page.setViewportSize({width,height:width > 1536 ? 1440 : 720});
+    const wrapped = await page.locator('.menu-label').evaluateAll(labels => labels.flatMap(label => {
+      const text = Array.from(label.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      return range.getClientRects().length > 1 ? [text.textContent] : [];
+    }));
+    expect(wrapped, 'wrapped menu labels at ' + width + 'px').toEqual([]);
+  }
+});
+
 test('keyboard users can close a centered dialog and return from each main menu destination', async ({ page }) => {
   await page.goto('/');
   const settings = page.getByRole('button', { name: 'Settings and rules' });
