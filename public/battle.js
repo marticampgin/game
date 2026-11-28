@@ -54,7 +54,7 @@ function combatant(p, index, view, viewerId, selection, intent) {
     .filter(Boolean)
     .join(' · ');
   return `<article class="combatant ${active ? 'acting' : ''} ${marked ? 'marked' : ''} ${incoming ? 'incoming' : ''} ${champion ? 'champion' : ''} ${p.alive ? '' : 'fallen'}"
-    data-seat="${esc(p.id)}" data-facing="${x > 50 ? 'left' : 'right'}" style="--x:${x.toFixed(2)}%;--y:${y.toFixed(2)}%;--depth:${Math.round(y)};--scale:${(0.76 + (y - 35) * 0.0073).toFixed(3)}">
+    data-seat="${esc(p.id)}" data-facing="${x > 50 ? 'left' : 'right'}" data-status-placement="${y <= 60 ? 'below' : 'side'}" style="--x:${x.toFixed(2)}%;--y:${y.toFixed(2)}%;--depth:${Math.round(y)};--scale:${(0.76 + (y - 35) * 0.0073).toFixed(3)}">
     <button type="button" class="fighter-main" data-${targetable ? 'aim' : 'inspect'}="${esc(p.id)}" aria-label="${targetable ? 'Target' : 'View'} ${esc(p.name)}" aria-describedby="vitals-${esc(p.id)}" ${targetable ? 'aria-pressed="' + !!marked + '"' : ''}>
       <span class="foot-ring" aria-hidden="true"></span><span class="fighter-art">${fighterSpriteHTML(p, {victory:champion})}</span>
       <span class="fighter-panel" id="vitals-${esc(p.id)}"><strong class="fighter-title">${seatCrest(index)}${esc(p.name)}</strong>

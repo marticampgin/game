@@ -150,6 +150,13 @@
 .recap-conditions { display: inline-flex; align-items: center; gap: 2px; }
 .seat-conditions { position: absolute; left: calc(100% - 2px); top: 4px; }
 [data-facing='left'] > .fighter-main .seat-conditions { left: auto; right: calc(100% - 2px); }
+/* The back row shares a baseline. Put each stack beneath its owner, leaving
+   the near row's trays beside their owners so they clear the command dock. */
+@media (min-width:960px) {
+  [data-status-placement='below'] > .fighter-main .seat-conditions {
+    top:100%; left:50%; right:auto; transform:translateX(-50%);
+  }
+}
 .condition-chips {
   display: flex; align-items: center; width: max-content; gap: 2px; padding: 2px 4px;
   color: #f1e9d8; background: #211724eb; border: 1px solid #705747; border-radius: 2px;
