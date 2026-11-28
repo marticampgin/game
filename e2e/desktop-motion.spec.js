@@ -150,26 +150,36 @@ test('idle equipment checks are staggered by seat and respect reduced motion', a
   const record = await page.evaluate(async (players) => {
     await (await import('/animation.js')).preloadArenaSkins(players);
     const checks = Array.from(document.querySelectorAll('[data-seat] .arena-check-cel'));
-    return checks.map((el) => {
-      const cycle = el.getAnimations().find((a) => a.animationName === 'arena-equipment-check');
+    return Promise.all(checks.map(async (el) => {
+      const cycle = el.getAnimations().find((a) => a.animationName === 'arena-role-idle');
       const timing = cycle.effect.getTiming();
       cycle.pause();
-      cycle.currentTime = timing.delay + timing.duration * 0.89;
+      await cycle.ready;
       return {
         delay: timing.delay,
         duration: timing.duration,
-        alpha: parseFloat(getComputedStyle(el).opacity),
-        column: parseFloat(getComputedStyle(el).backgroundPositionX),
+        poses: [0.08, 0.24, 0.89].map((fraction) => {
+          cycle.currentTime = timing.delay + timing.duration * (1 + fraction);
+          const style = getComputedStyle(el);
+          return {
+            row: parseFloat(style.backgroundPositionY), column: parseFloat(style.backgroundPositionX),
+            ink: Number(style.opacity), base: getComputedStyle(el.previousElementSibling).visibility,
+          };
+        }),
       };
-    });
+    }));
   }, state.players);
   expect(record).toHaveLength(4);
   expect(new Set(record.map((r) => r.delay)).size).toBe(4);
   for (const row of record) {
     expect(row.duration).toBeGreaterThanOrEqual(9500);
-    expect(row.alpha).toBe(1);
-    expect(row.column).toBeGreaterThan(30);
-    expect(row.column).toBeLessThan(85);
+    expect(row.poses.map((p) => p.row)).toEqual([0, 12.5, 25]);
+    for (const cel of row.poses) {
+      expect(cel.ink).toBe(1);
+      expect(cel.base).toBe('hidden');
+      expect(cel.column).toBeGreaterThan(30);
+      expect(cel.column).toBeLessThan(85);
+    }
   }
   await page.emulateMedia({ reducedMotion: 'reduce' });
   expect(

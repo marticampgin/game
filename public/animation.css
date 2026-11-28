@@ -363,3 +363,35 @@ body.reduce-motion .arena-sprite[data-pose='idle'] {
 .belt-layer img { position:absolute; left:var(--belt-x); top:var(--belt-y); width:var(--belt-width); height:auto; transform:translateX(-50%); image-rendering:pixelated; }
 [data-facing='left'] .belt-layer { transform:scaleX(-1); }
 .arena-sprite[data-pose='fallen'] .belt-layer { display:none; }
+
+/* The packed rest sheet has sixteen exposures for breathing, an equipment
+   check and a second painted mannerism per injury band. Only one silhouette
+   is visible, including the cut from a gesture back to resting feet. */
+.arena-sprite[data-idles-src] > .arena-check-cel {
+  left:6.730769%; top:0; bottom:auto; right:auto; width:86.538462%; height:90.361446%;
+  --rest-y:0%; --check-y:12.5%; --focus-y:25%;
+  background-size:1600% 900%; background-position:0 var(--rest-y);
+}
+.arena-sprite[data-idles-src][data-tier='wounded'] > .arena-check-cel {
+  --rest-y:37.5%; --check-y:50%; --focus-y:62.5%;
+}
+.arena-sprite[data-idles-src][data-tier='critical'] > .arena-check-cel {
+  --rest-y:75%; --check-y:87.5%; --focus-y:100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.reduce-motion) .arena-sprite[data-idles-ready][data-pose='idle']:not([data-still]),
+  body:not(.reduce-motion) .arena-sprite[data-idles-ready][data-pose='idle']:not([data-still]) > .arena-cel { animation:none; }
+  body:not(.reduce-motion) .arena-sprite[data-idles-ready][data-pose='idle']:not([data-still]) > .arena-cel { visibility:hidden; }
+  body:not(.reduce-motion) .arena-sprite[data-idles-ready][data-pose='idle']:not([data-still]) > .arena-check-cel {
+    opacity:1; animation:arena-role-idle var(--check-time) steps(15,end) var(--check-delay) infinite;
+  }
+}
+@keyframes arena-role-idle {
+  0%, 33%, 49%, 65% { background-position:0% var(--rest-y); }
+  15.99%, 48.99%, 64.99%, 79.99% { background-position:100% var(--rest-y); animation-timing-function:step-end; }
+  16% { background-position:0% var(--check-y); }
+  32.99% { background-position:100% var(--check-y); animation-timing-function:step-end; }
+  80% { background-position:0% var(--focus-y); }
+  96.99% { background-position:100% var(--focus-y); animation-timing-function:step-end; }
+  97%,100% { background-position:0% var(--rest-y); }
+}

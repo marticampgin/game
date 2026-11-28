@@ -21,6 +21,13 @@ function pose(element, name) {
   element.style.setProperty('--pose-x', (index % standing.columns) * 100 / (standing.columns - 1) + '%');
   element.style.setProperty('--pose-y', Math.floor(index / standing.columns) * 100 / (standingRows - 1) + '%');
 }
+const idlePeriods = {
+  guardian: 12100, berserker: 9700, chronomancer: 13700, alchemist: 10900,
+  gambler: 10300, necromancer: 13400, trickster: 9900, artificer: 11500,
+};
+function idlePeriod(role, band) {
+  return (idlePeriods[role] ?? 11500) + (band === 'critical' ? 1900 : band === 'wounded' ? 750 : 0);
+}
 export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotion = false } = {}) {
   const skin = resolveFighterSkin(player.classId, skinId);
   const band = healthBand(player);
@@ -29,8 +36,10 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     (n, c) => (31 * n + c.charCodeAt(0)) >>> 0,
     0,
   );
-  const checkSeed = Math.imul(seed, 0x9e3779b1) >>> 0;
-  const ambient = skin.ambient
+  const checkSeed = Math.imul(seed ^ (skin.classId.charCodeAt(0) << 8), 0x9e3779b1) >>> 0;
+  const idleSet = skin.idles ? ' data-idles-src="' + skin.idles + '"' +
+    (readySheets.has(skin.idles) ? ' data-idles-ready' : '') : '';
+  const ambient = skin.ambient && !skin.idles
     ? ' data-ambient-src="' +
       skin.ambient +
       '"' +
@@ -50,17 +59,17 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     (skin.motions ? '--motion-skin:url(' + skin.motions + ');' : '') +
     (skin.consume ? '--consume-skin:url(' + skin.consume + ');' : '') +
     (skin.footwork ? '--footwork-skin:url(' + skin.footwork + ');' : '') +
-    (skin.ambient
+    (skin.idles || skin.ambient
       ? '--check-skin:url(' +
-        skin.ambient +
+        (skin.idles || skin.ambient) +
         ');--check-time:' +
-        (9600 + (checkSeed % 4700)) +
+        (idlePeriod(skin.classId, band) + (checkSeed % 1050)) +
         'ms;--check-delay:-' +
-        (checkSeed % 8700) +
+        (checkSeed % 11600) +
         'ms;'
       : '') +
     '--idle-delay:-' +
-    (seed % 5300) +
+    (checkSeed % 5300) +
     'ms;' +
     '--pose-x:' +
     (fallen ? '66.666667%' : '0%') +
@@ -80,11 +89,11 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     motion +
     consume +
     steps +
-    ambient +
+    ambient + idleSet +
     ' style="' +
     style +
     '"><span class="arena-cel"></span>' +
-    (skin.ambient ? '<span class="arena-check-cel"></span>' : '') + beltHTML(player, band, skin.anchors) +
+    (skin.idles || skin.ambient ? '<span class="arena-check-cel"></span>' : '') + beltHTML(player, band, skin.anchors) +
     '</span>'
   );
 }
@@ -124,7 +133,8 @@ export function preloadArenaSkins(players = []) {
     ...scenePropImages,
     ...players.flatMap((p) => {
       const skin = resolveFighterSkin(p.classId, p.skinId);
-      return Object.keys(fighterLayout.layers).map(layer => skin[layer]).filter(Boolean);
+      return Object.keys(fighterLayout.layers).filter(layer => layer !== 'ambient' || !skin.idles)
+        .map(layer => skin[layer]).filter(Boolean);
     }),
   ]);
   return Promise.all(
@@ -145,7 +155,7 @@ export function preloadArenaSkins(players = []) {
                 return;
               }
               readySheets.add(url);
-              for (const layer of ['motion', 'ambient', 'consume']) {
+              for (const layer of ['motion', 'ambient', 'idles', 'consume']) {
                 document.querySelectorAll('[data-' + layer + '-src="' + url + '"]')
                   .forEach(el => el.setAttribute('data-' + layer + '-ready', ''));
               }

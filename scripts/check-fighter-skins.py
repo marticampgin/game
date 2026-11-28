@@ -24,7 +24,8 @@ def check_layer(path, layer):
     grid = LAYOUT['layers'][layer]
     columns = grid['columns']
     rows = len(grid['poses']) // columns if 'poses' in grid else len(grid.get('rows', ['default']))
-    width, height = CELL
+    left, top, right, bottom = grid.get('crop', (0,0,*CELL))
+    width, height = right-left, bottom-top
     with Image.open(path) as image:
         expected = (width * columns, height * rows * BANDS)
         if expected != image.size:
