@@ -611,12 +611,13 @@ function dialog(html) {
   }
 }
 function settings() {
-  dialog(`<h2>Settings &amp; rules</h2><label class="setting-line">Language<select data-language>
-    <option value="en" lang="en" translate="no" ${getLanguage() === 'en' ? 'selected' : ''}>English</option>
-    <option value="ru" lang="ru" translate="no" ${getLanguage() === 'ru' ? 'selected' : ''}>Русский</option>
-  </select></label><label class="setting-line">Sound effects<input type="checkbox" data-pref="sound" ${pref.sound ? 'checked' : ''}></label>
+  dialog(`<h2>Settings &amp; rules</h2><label class="setting-line">Sound effects<input type="checkbox" data-pref="sound" ${pref.sound ? 'checked' : ''}></label>
   <label class="setting-line">Faster bots in solo and hosted rooms<input type="checkbox" data-pref="fast" ${pref.fast ? 'checked' : ''}></label>
   <label class="setting-line">Reduce motion<input type="checkbox" data-pref="reduce" ${pref.reduce ? 'checked' : ''}></label>
+  <label class="setting-line">Language<select data-language>
+    <option value="en" lang="en" translate="no" ${getLanguage() === 'en' ? 'selected' : ''}>English</option>
+    <option value="ru" lang="ru" translate="no" ${getLanguage() === 'ru' ? 'selected' : ''}>Русский</option>
+  </select></label>
   <h3>How to play</h3><p>Pick one of three rewards, then take one action. Strike any living rival, use equipment, defend for a shield, or scavenge for another reward. The last contender standing wins.</p>
   <p>Armor reduces incoming damage before shields absorb it. Abilities recover at the start of your personal turn. Inspect a contender to see their build and status effects. Carried consumables stay secret until used.</p>
   <p>Every round gives each living contender a turn. Watch for announced arena events and increasing pressure in the Age of Chaos.</p>`);
