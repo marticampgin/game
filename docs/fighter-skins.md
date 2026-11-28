@@ -118,3 +118,9 @@ const players = [
 ];
 const state = createMatch({ seed: 'dawn', players });
 ```
+
+### Visible equipment
+
+Ward Lantern, Mender’s Bell and Vial Sash share a belt socket across all outfits. The last compatible equipped ability slot takes the hook, with the sash as the fallback. The renderer reads the public equipped slots and artifacts. A concealed consumable never appears on a rival. The held prop replaces the belt image during its own use gesture.
+
+Add a compatible reward to `public/worn-gear.js` with its pixel icon and width in native cel pixels. Each class has a default belt point and the motion tracks follow the waist through anticipation and recovery. An outfit can set `anchors.critical.belt: [x, y]` in the fighter manifest when its costume changes the fit. Weapons drawn as part of the outfit carry through its signature attack.

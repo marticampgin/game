@@ -350,3 +350,8 @@ body.reduce-motion .arena-sprite[data-pose='idle'] {
     opacity: 0;
   }
 }
+
+.belt-layer { position:absolute; inset:0; pointer-events:none; z-index:2; }
+.belt-layer img { position:absolute; left:var(--belt-x); top:var(--belt-y); width:var(--belt-width); height:auto; transform:translateX(-50%); image-rendering:pixelated; }
+[data-facing='left'] .belt-layer { transform:scaleX(-1); }
+.arena-sprite[data-pose='fallen'] .belt-layer { display:none; }

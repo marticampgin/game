@@ -1,3 +1,4 @@
+import { beltHTML, trackBelt } from './worn-gear.js';
 import { stageCombatProps, useExposures } from './combat-props.js';
 import { statusCue, statusIcon } from './status-effects.js';
 import { groupedTargets } from './effect-strip.js';
@@ -11,6 +12,7 @@ const standing = fighterLayout.layers.sheet;
 const motionSheet = fighterLayout.layers.motions;
 const standingRows = standing.poses.length / standing.columns * fighterLayout.health.length;
 function pose(element, name) {
+  trackBelt(element);
   delete element.dataset.track;
   element.style.removeProperty('--clip-row');
   element.querySelector('.arena-cel').style.removeProperty('background-position-x');
@@ -82,7 +84,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     ' style="' +
     style +
     '"><span class="arena-cel"></span>' +
-    (skin.ambient ? '<span class="arena-check-cel"></span>' : '') +
+    (skin.ambient ? '<span class="arena-check-cel"></span>' : '') + beltHTML(player, band, skin.anchors) +
     '</span>'
   );
 }
@@ -377,11 +379,13 @@ export function playArenaAction(arena, recap, options = {}) {
     // clock also lets a later reaction replace a still-unfolding recoil.
     const token = {};
     activeClips.set(element, token);
+    trackBelt(element, track);
     atlas.style.backgroundPositionX = '0%';
     frames.slice(1).forEach((time, i) => {
       at(time, () => {
         if (activeClips.get(element) !== token) return;
         const column = exposures?.[i + 1] ?? i + 1;
+        trackBelt(element, track, column);
         atlas.style.backgroundPositionX = column / (motionSheet.columns - 1) * 100 + '%';
       });
     });
@@ -621,6 +625,11 @@ export function playArenaAction(arena, recap, options = {}) {
     if (!still) {
       moveActor();
       if (score.family === 'cast') stageCasting();
+      const belt = art.querySelector('.belt-layer');
+      if (belt?.dataset.worn === action) {
+        at(actorFrames[1], () => { belt.hidden = true; });
+        at(duration, () => { belt.hidden = false; });
+      }
       stageCombatProps({ scene, ghost, box: start, anchors: resolveFighterSkin(role, art.dataset.skin).anchors,
         role, tier: art.dataset.tier, clip, score, dir, frames: actorFrames, duration, at, tween });
       if (score.effect === 'eclipse')

@@ -11,7 +11,7 @@ const localSheet = /^\/assets\/skins\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.(png|
 const bitmapFields = [...Object.keys(layout.layers), 'portrait', 'model'];
 const genericKit = { weapon: 'blade', emblem: 'sword', layers: [] };
 
-const sockets = ['hand', 'mouth', 'ground'];
+const sockets = ['hand', 'mouth', 'ground', 'belt'];
 const healthBands = new Set(layout.health.map(tier => tier.id));
 
 function checkedAnchors(input, allowBands = true) {
