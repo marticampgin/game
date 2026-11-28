@@ -23,6 +23,21 @@ const experiments = {
     { type: 'grant', rewardId: 'reverse-polarity' }, { type: 'grant', rewardId: 'quicksilver-lung' },
     { type: 'grant', rewardId: 'widows-brew' }, { type: 'status', status: 'poison', value: 4 },
   ] },
+  deck: { name: 'Loaded deck', classId: 'gambler', rival: 'guardian', edits: [
+    { type: 'stat', stat: 'rerolls', value: 3 }, { type: 'grant', rewardId: 'echo-rune' },
+  ] },
+  rites: { name: 'Funeral rites', classId: 'necromancer', rival: 'berserker', edits: [
+    { type: 'stat', stat: 'hp', value: 280 }, { type: 'status', status: 'curse', value: 3, playerId: rivalId },
+    { type: 'grant', rewardId: 'grave-bell' },
+  ] },
+  mirror: { name: 'Borrowed venom', classId: 'trickster', rival: 'alchemist', edits: [
+    { type: 'stat', stat: 'shield', value: 12 }, { type: 'grant', rewardId: 'ward-lantern' },
+    { type: 'grant', rewardId: 'whiteout', playerId: rivalId },
+  ] },
+  forge: { name: 'Piston workshop', classId: 'artificer', rival: 'chronomancer', edits: [
+    { type: 'grant', rewardId: 'ward-lantern' }, { type: 'grant', rewardId: 'amplify' },
+    { type: 'grant', rewardId: 'vial-sash' },
+  ] },
 };
 const choices = object => Object.entries(object).map(([key, value]) => option(key, value.name || value)).join('');
 const select = (name, label, markup) => `<label>${label}<select name="${name}" aria-label="${label}">${markup}</select></label>`;

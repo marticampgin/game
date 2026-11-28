@@ -1,18 +1,35 @@
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
 import { makeExperiment } from '../public/sandbox.js';
-import { applyCommand, botCommand, CLASSES, sandboxEdit, viewMatch } from '../src/game/index.js';
+import { applyCommand, botCommand, CLASSES, previewAction, sandboxEdit, viewMatch } from '../src/game/index.js';
 
 test('every sandbox preset creates a reproducible playable match', () => {
-  for (const id of ['fresh', 'molten', 'flame', 'venom']) {
+  for (const id of ['fresh','molten','flame','venom','deck','rites','mirror','forge']) {
     const state = makeExperiment(id, 'fixed-stars');
     assert.deepEqual(state, makeExperiment(id, 'fixed-stars'));
     const view = viewMatch(state, 'experimenter');
     assert.equal(view.players.filter(player => !player.bot).length, 1);
     assert.equal(view.phase, 'acquire');
-    const afterDraft = applyCommand(state, state.activeId, botCommand(state));
+    let afterDraft = applyCommand(state, state.activeId, botCommand(state));
+    if (afterDraft.phase === 'acquire') afterDraft = applyCommand(afterDraft,afterDraft.activeId,botCommand(afterDraft));
     assert.equal(afterDraft.phase, 'action');
     assert.doesNotThrow(() => applyCommand(afterDraft, afterDraft.activeId, botCommand(afterDraft)));
+  }
+});
+
+test('the new starting builds exercise their signature and accept a costume brought from another class',()=>{
+  for (const [preset,signature,expected] of [
+    ['deck','cut-the-deck',/even odds/],['rites','soul-tithe',/cursed rival.*heal/],
+    ['mirror','mirror-feint',/2 Poison/],['forge','rivet-drive',/3\/4 fittings/]
+  ]) {
+    const game=makeExperiment(preset,'ready-to-rehearse',8);
+    const view=viewMatch(game,'experimenter');
+    assert.match(previewAction(view,'experimenter',signature,'rival').text,expected);
+    assert.equal(new Set(game.players.map(p=>p.classId)).size,8);
+    const fitted=makeExperiment(preset,'fitting',8,{classId:'guardian',skinId:'harbor-warden',tier:'critical'});
+    assert.equal(fitted.players[0].skinId,'harbor-warden');
+    assert.equal(fitted.players[0].classId,'guardian');
+    assert.equal(fitted.career,undefined);
   }
 });
 
