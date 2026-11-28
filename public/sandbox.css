@@ -1,0 +1,101 @@
+/* The practice yard shares the arena's brass edges and crisp, dark control faces. */
+.rb-sandbox {
+  --bench-wall:#201a24; --bench-paper:#f1ddbe; --bench-ink:#17131d;
+  --bench-edge:#725943; --bench-gilt:#d9aa63; --bench-muted:#c6ada2;
+  --bench-cut:polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px));
+  width:min(1520px,100%); border:0; box-shadow:none; padding:0 clamp(20px,2.7vw,54px) 18px;
+  background:linear-gradient(180deg,#19131cbf,#18141eef 75%),url('/assets/atlas-sky.webp') center top / cover;
+}
+body:has(.rb-sandbox) { background:#19151e; }
+.rb-sandbox .rb-tool-head { min-height:66px; padding:9px 0; background:none; border-bottom:1px solid #71533e; }
+.rb-sandbox .rb-tool-head h1 { font-size:clamp(28px,3.1vw,42px); letter-spacing:0; }
+.rb-sandbox .rb-tool-head h1::before,.rb-sandbox .rb-tool-head h1::after { display:none; }
+.rb-sandbox .rb-head-extra { display:flex; justify-content:flex-end; gap:7px; }
+.rb-sandbox button,.rb-sandbox input,.rb-sandbox select { border-radius:0; }
+.rb-sandbox :is(.rb-tool-back,.rb-head-extra button,.rb-preset button,.rb-edit button,[data-pilot],[data-choose-class]) {
+  --face:#352935; --rim:#9b7655;
+  position:relative; isolation:isolate; border:0; clip-path:var(--bench-cut);
+  background:var(--rim); color:var(--bench-paper); min-height:34px; padding:7px 13px;
+  font:600 16px/1.15 var(--display); white-space:nowrap;
+}
+.rb-sandbox :is(.rb-tool-back,.rb-head-extra button,.rb-preset button,.rb-edit button,[data-pilot],[data-choose-class])::before {
+  content:''; position:absolute; z-index:-1; inset:1px; clip-path:var(--bench-cut);
+  background:linear-gradient(#ffffff0b,transparent 40%,#12091b2a),var(--face);
+}
+.rb-sandbox .rb-head-extra [data-play] { --face:#583069; --rim:#bc8bd1; padding-inline:17px; }
+.rb-sandbox .rb-head-extra [data-play] span { display:inline-block; margin-left:6px; }
+.rb-sandbox :is(.rb-tool-back,.rb-head-extra button,.rb-preset button,.rb-edit button,[data-pilot],[data-choose-class]):is(:hover,:focus-visible) { --rim:#f6d69a; color:#fff1cf; }
+.rb-sandbox button:focus-visible { outline:2px solid #fff0b3; outline-offset:1px; }
+.rb-sandbox :is(.rb-tool-back,.rb-head-extra button,.rb-preset button,.rb-edit button,[data-pilot],[data-choose-class]):focus-visible { text-decoration:underline; text-underline-offset:3px; }
+.rb-sandbox .rb-preset { display:grid; grid-template-columns:minmax(155px,1fr) minmax(145px,.75fr) minmax(72px,.29fr) auto; gap:12px; align-items:end; max-width:865px; margin:13px 0 17px; }
+.rb-sandbox label { display:grid; gap:4px; color:var(--bench-muted); font:600 13px/1.15 var(--body); }
+.rb-sandbox :is(select,input) { min-height:0; height:35px; padding:6px 9px; border:1px solid #785d50; box-shadow:inset 1px 2px 0 #120e15; color:#f4debd; background-color:#211a24; font:600 15px/1.25 var(--body); }
+.rb-sandbox select {
+  appearance:none; padding-right:28px;
+  background-image:linear-gradient(45deg,transparent 50%,#d2aa72 50%),linear-gradient(135deg,#d2aa72 50%,transparent 50%);
+  background-position:calc(100% - 14px) center,calc(100% - 10px) center;
+  background-size:4px 4px; background-repeat:no-repeat;
+}
+.rb-sandbox .bench-layout { display:grid; grid-template-columns:clamp(148px,15.4vw,216px) minmax(0,1.6fr) minmax(248px,.81fr); align-items:start; gap:14px; }
+.rb-sandbox .bench-panel { border:1px solid var(--bench-edge); background:linear-gradient(135deg,#30252d,#201b23 80%); box-shadow:inset 0 0 0 2px #141118; min-width:0; }
+.rb-sandbox .bench-panel-head { padding:11px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; background:linear-gradient(90deg,#32252c,#261e25); border-bottom:1px solid var(--bench-edge); min-height:44px; }
+.rb-sandbox .bench-panel-head :is(h2,h3) { font:600 clamp(19px,1.5vw,24px)/1.08 var(--display); color:var(--bench-paper); letter-spacing:0; margin:0; }
+.rb-sandbox .bench-panel-head small { font:600 12px/1.1 var(--body); color:#d0b58a; }
+.rb-sandbox .rb-contenders { display:grid; grid-template-columns:1fr; gap:3px; padding:6px; }
+.rb-sandbox .bench-seat { position:relative; display:grid; grid-template-columns:36px 1fr; align-items:center; gap:9px; padding:4px; text-align:left; background:#221a24; border:1px solid transparent; min-width:0; width:100%; }
+.rb-sandbox .bench-seat img,.rb-sandbox .bench-outfits img { image-rendering:pixelated; width:36px; height:36px; object-fit:cover; border:1px solid #6e5447; background:#301d31; }
+.rb-sandbox .bench-seat strong,.rb-sandbox .bench-seat small { display:block; min-width:0; }
+.rb-sandbox .bench-seat strong { font:600 16px/1.1 var(--display); color:#edd8bc; }
+.rb-sandbox .bench-seat small { font:400 13px/1.2 var(--body); color:#c9b3a8; margin-top:2px; }
+.rb-sandbox .bench-pilot { position:absolute; right:3px; top:3px; width:5px; height:5px; background:#e4b36c; }
+.rb-sandbox :is(.bench-seat,.bench-outfits button)[aria-pressed=true] { border-color:#c99c63; background:linear-gradient(110deg,#47332f,#392a32); box-shadow:inset 2px 0 #edc17b; }
+.rb-sandbox .bench-stage-panel .bench-panel-head { min-height:56px; }
+.rb-sandbox .bench-class { display:block; margin-bottom:2px; }
+.rb-sandbox .bench-vitals { width:clamp(84px,8vw,134px); text-align:right; }
+.rb-sandbox .bench-vitals strong { font:600 14px/1.2 var(--body); font-variant-numeric:tabular-nums; }
+.rb-sandbox .bench-life { display:block; height:6px; margin-top:3px; padding:1px; border:1px solid #9d715d; background:#291c28; }
+.rb-sandbox .bench-life i { display:block; height:100%; background:#c15c62; }
+.rb-sandbox .bench-yard {
+  position:relative; height:clamp(228px,31vh,350px); overflow:hidden; isolation:isolate;
+  background:#3a2934 url('/assets/practice-yard.webp') center 68% / cover no-repeat; image-rendering:pixelated;
+}
+.rb-sandbox .bench-body { position:absolute; width:clamp(132px,12.5vw,205px); aspect-ratio:1; left:50%; bottom:16%; transform:translateX(-50%); }
+.rb-sandbox .bench-body::before { content:''; position:absolute; width:54%; height:8%; bottom:-1%; left:23%; background:#25172699; border-radius:50%; }
+.rb-sandbox .bench-outfits { display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:5px; padding:9px; border-block:1px solid #705644; }
+.rb-sandbox .bench-outfits button { display:flex; align-items:center; gap:8px; padding:5px; text-align:left; background:#281e28; border:1px solid #644c40; }
+.rb-sandbox .bench-outfits img { width:clamp(31px,3.1vw,48px); height:clamp(31px,3.1vw,48px); }
+.rb-sandbox .bench-outfits span { font:600 clamp(13px,1.15vw,18px)/1.15 var(--display); overflow-wrap:anywhere; }
+.rb-sandbox .bench-vital-controls,.rb-sandbox .bench-pilot-controls { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; gap:8px; font:600 14px/1.2 var(--body); color:#d1bcaa; }
+.rb-sandbox .bench-vital-controls div { display:flex; gap:3px; }
+.rb-sandbox .bench-vital-controls button { padding:4px 9px; font-size:14px; background:#251c25; border-color:#705642; }
+.rb-sandbox .bench-vital-controls button[aria-pressed=true] { background:#49332d; border-color:#c49b66; color:#ffe3ae; }
+.rb-sandbox .bench-pilot-controls { min-height:36px; border-top:1px solid #544035; background:#211b23; }
+.rb-sandbox .bench-pilot-info::before { content:'◆'; color:#d5aa70; margin-right:6px; font-size:9px; }
+.rb-sandbox .bench-pilot-controls>div { display:flex; gap:5px; }
+.rb-sandbox :is([data-pilot],[data-choose-class]) { min-height:22px; padding:3px 9px; font-size:13px; }
+.rb-sandbox .rb-edit { display:grid; gap:12px; padding:13px 14px 9px; }
+.rb-sandbox .rb-edit-fields { display:grid; gap:9px; }
+.rb-sandbox .rb-field-note { font:400 15px/1.35 var(--body); color:#d8c4b9; min-height:2.65em; }
+.rb-sandbox .rb-edit .rb-gold-button { --face:#654935; --rim:#c49b64; width:100%; color:#ffe6bc; }
+.rb-sandbox .rb-feedback { min-height:0; margin:0; padding:0 14px 8px; color:#edca8e; font:400 14px/1.25 var(--body); }
+.rb-sandbox .rb-feedback.rb-error { color:#ffb3a0; }
+.rb-sandbox .bench-details { margin:0 14px; border-top:1px solid #654a3c; }
+.rb-sandbox .bench-details summary { padding:9px 0; cursor:pointer; font:600 17px/1.2 var(--display); }
+.rb-sandbox .bench-details summary::marker { font-size:12px; color:#cf9f64; }
+.rb-sandbox .rb-build,.rb-sandbox .rb-history { padding-bottom:10px; margin:0; }
+.rb-sandbox .rb-build h3 { display:none; }
+.rb-sandbox .rb-attribute-list { grid-template-columns:1fr 1fr; gap:0 10px; }
+.rb-sandbox .rb-attribute-list :is(dt,dd),.rb-sandbox .rb-inventory :is(dt,dd),.rb-sandbox .rb-history ol { font-size:14px; }
+.rb-sandbox .rb-loadout { display:block; }
+.rb-sandbox .rb-loadout>div { margin-block:4px; }
+.rb-sandbox .rb-history ol { max-height:220px; overflow:auto; }
+.rb-sandbox .bench-turn { display:flex; align-items:center; gap:13px; padding:11px 1px 0; margin-top:14px; border-top:1px solid #785c47; font:400 15px/1.2 var(--body); color:#d1baab; }
+.rb-sandbox .bench-round { color:#efcb98; }
+.rb-sandbox .bench-practice { margin-left:auto; text-align:right; color:#cbb4a0; }
+@media (min-width:960px) and (max-height:780px) {
+  .rb-sandbox .rb-tool-head { min-height:54px; }
+  .rb-sandbox .rb-preset { margin:9px 0 12px; }
+  .rb-sandbox .bench-panel-head { padding:8px 12px; }
+  .rb-sandbox .bench-seat { grid-template-columns:32px 1fr; }
+  .rb-sandbox .bench-seat img { width:32px; height:32px; }
+}
