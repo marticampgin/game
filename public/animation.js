@@ -5,6 +5,7 @@ import { groupedTargets } from './effect-strip.js';
 import { combatTiming, directOutcome } from './combat-timing.js';
 import { fighterKit, fighterLayout, healthBand, resolveFighterSkin } from './fighter-kit.js';
 import { actorClip, effectRows, impactCauses, missiles, motionScore } from './combat-motion.js';
+import { playFighterEnding, stopEnding } from './fighter-endings.js';
 export { healthBand, registerFighterSkin, resolveFighterSkin } from './fighter-kit.js';
 
 const readySheets = new Set();
@@ -21,7 +22,7 @@ function standingFrame(name) {
 function pose(element, name) {
   trackBelt(element);
   delete element.dataset.track;
-  delete element.dataset.collapsing;
+  stopEnding(element);
   delete element.dataset.pickup;
   element.style.removeProperty('--clip-row');
   element.querySelector('.arena-cel').style.removeProperty('background-position-x');
@@ -31,11 +32,6 @@ function pose(element, name) {
   element.style.setProperty('--pose-y', frame.y);
 }
 
-function startCollapse(sprite, still, speed = 1) {
-  if (still || !sprite.hasAttribute('data-collapse-ready')) return;
-  sprite.style.setProperty('--fall-time', 440 / speed + 'ms');
-  sprite.dataset.collapsing = '';
-}
 // Preview the same rest rows and standing paintings used by the arena. A
 // reduced-motion audition holds the representative drawing for inspection.
 export function playFittingPose(sprite, take) {
@@ -57,7 +53,7 @@ export function playFittingPose(sprite, take) {
   } else {
     const fallback = {rest:'breathe',check:'survey',focus:'settle',victory:'victory',fallen:'fallen'};
     pose(sprite,fallback[take] || 'idle');
-    if (take === 'fallen') startCollapse(sprite, still);
+    if (take === 'fallen' || take === 'victory') playFighterEnding(sprite, take === 'fallen' ? 'collapse' : 'celebrate', still);
   }
   let done = false;
   const timer = setTimeout(cancel,time);
@@ -102,6 +98,8 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     (readySheets.has(skin.variations) ? ' data-variations-ready' : '') : '';
   const collapse = skin.collapse ? ' data-collapse-src="' + skin.collapse + '"' +
     (readySheets.has(skin.collapse) ? ' data-collapse-ready' : '') : '';
+  const celebrate = skin.celebrate ? ' data-celebrate-src="' + skin.celebrate + '"' +
+    (readySheets.has(skin.celebrate) ? ' data-celebrate-ready' : '') : '';
   const motion = skin.motions
     ? ' data-motion-src="' + skin.motions + '"' + (readySheets.has(skin.motions) ? ' data-motion-ready' : '')
     : '';
@@ -111,7 +109,6 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     ');' +
     (skin.motions ? '--motion-skin:url(' + skin.motions + ');' : '') +
     (skin.variations ? '--variation-skin:url(' + skin.variations + ');' : '') +
-    (skin.collapse ? '--collapse-skin:url(' + skin.collapse + ');' : '') +
     (skin.consume ? '--consume-skin:url(' + skin.consume + ');' : '') +
     (skin.footwork ? '--footwork-skin:url(' + skin.footwork + ');' : '') +
     (skin.idles || skin.ambient
@@ -144,7 +141,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     motion +
     consume +
     steps +
-    ambient + idleSet + variations + collapse +
+    ambient + idleSet + variations + collapse + celebrate +
     ' style="' +
     style +
     '"><span class="arena-cel"></span>' +
@@ -208,7 +205,7 @@ export function preloadArenaSkins(players = [], {withEffects = true, layers = Ob
                 return;
               }
               readySheets.add(url);
-              for (const layer of ['motion', 'ambient', 'idles', 'consume', 'variations', 'collapse']) {
+              for (const layer of ['motion', 'ambient', 'idles', 'consume', 'variations', 'collapse', 'celebrate']) {
                 document.querySelectorAll('[data-' + layer + '-src="' + url + '"]')
                   .forEach(el => el.setAttribute('data-' + layer + '-ready', ''));
               }
@@ -232,6 +229,10 @@ export function warmActiveFighter(player) {
 }
 
 export async function preloadBattleOrder(view, stillOpen) {
+  if (view.phase === 'finished') {
+    await preloadArenaSkins(view.players, {withEffects:false, layers:['sheet']});
+    return;
+  }
   const byId = new Map(view.players.map(p => [p.id,p]));
   const order = [...new Set([view.activeId,...view.upcoming,...byId.keys()])].map(id => byId.get(id)).filter(Boolean);
   if (!order.length) return;
@@ -243,8 +244,9 @@ export async function preloadBattleOrder(view, stillOpen) {
   await first;
   if (!stillOpen()) return;
   void preloadArenaSkins(order, {withEffects:false, layers:['idles','ambient']});
+  const battleLayers = Object.keys(fighterLayout.layers).filter(layer => layer !== 'celebrate');
   for (let i = 0; i < order.length && stillOpen(); i += 2) {
-    await preloadArenaSkins(order.slice(i,i+2),{withEffects:false});
+    await preloadArenaSkins(order.slice(i,i+2),{withEffects:false,layers:battleLayers});
   }
 }
 
@@ -835,8 +837,8 @@ export function playArenaAction(arena, recap, options = {}) {
     const reaction = {
       damage: blocked ? 'guard' : 'hurt',
       elimination: 'fallen',
-      revival: 'victory',
-      heal: 'victory',
+      revival: 'breathe',
+      heal: 'settle',
       shield: 'guard',
     }[event.type];
     // A caster drinking a tonic or bracing a shield finishes its own authored motion.
@@ -846,7 +848,7 @@ export function playArenaAction(arena, recap, options = {}) {
       // Return the feet under the body before the victor's weapon returns home.
       // A subsequent impact or knockout owns the pose and supersedes this recovery.
       const body = subject === actor ? art : subject.sprite;
-      if (reaction === 'fallen') startCollapse(body, still, speed);
+      if (reaction === 'fallen') playFighterEnding(body, 'collapse', still, speed);
       const reactionClip = reaction === 'guard' ? 'brace' : reaction === 'hurt' ? 'hurt' : null;
       const illustrated = reactionClip && flipbook(body, reactionClip, [0, 15, 32, 46, 61, 78, 95, 135, 176, 227, 315, 402]);
       if (illustrated) {

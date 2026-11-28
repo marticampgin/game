@@ -19,20 +19,27 @@ for (const count of [2,8]) for (const reduced of [false,true]) {
   test(`a ${count}-seat knockout lands on the persistent costume pose with ${reduced ? 'reduced' : 'full'} motion`, async ({page}) => {
     await page.setViewportSize(count === 2 ? {width:1280,height:720} : {width:1440,height:900});
     await page.emulateMedia({reducedMotion:reduced ? 'reduce' : 'no-preference'});
-    await page.addInitScript(state => sessionStorage.setItem('rift-solo',JSON.stringify({state,viewerId:'p0'})), finalBlow(count));
+    await page.addInitScript(state => {
+      if (!sessionStorage.getItem('rift-solo')) sessionStorage.setItem('rift-solo',JSON.stringify({state,viewerId:'p0'}));
+    }, finalBlow(count));
     await page.goto('/');
     const sprite = page.locator('[data-seat="p1"] .arena-sprite');
     await expect(sprite).toHaveAttribute('data-collapse-ready','');
     const skin = await sprite.getAttribute('data-skin');
     await page.evaluate(() => {
       window.fallColumns = [];
+      window.winnerCues = [];
       function paint() {
         const body = document.querySelector('[data-seat="p1"] .arena-sprite');
         if (body?.hasAttribute('data-collapsing')) {
           const cel = getComputedStyle(body.querySelector('.arena-cel'));
           window.fallColumns.push([cel.backgroundPositionX,cel.backgroundPositionY]);
         }
-        if (!document.querySelector('[data-seat="p1"].fallen')) requestAnimationFrame(paint);
+        const champion = document.querySelector('.champion .arena-cel');
+        if (champion?.getAnimations().some(animation => animation.id === 'fighter-celebrate')) {
+          window.winnerCues.push(getComputedStyle(champion).backgroundPositionX);
+        }
+        if (!window.endPoseSampling) requestAnimationFrame(paint);
       }
       requestAnimationFrame(paint);
     });
@@ -48,5 +55,15 @@ for (const count of [2,8]) for (const reduced of [false,true]) {
       expect(columns.every(([,y]) => y === '100%')).toBe(true);
     }
     expect(await sprite.locator('.arena-cel').evaluate(cel => cel.getAnimations().length)).toBe(0);
+    if (count === 2) {
+      await expect(page.locator('.champion .arena-sprite')).toHaveAttribute('data-pose','victory');
+      if (!reduced) await expect.poll(() => page.evaluate(() => new Set(window.winnerCues).size)).toBeGreaterThanOrEqual(3);
+      else expect(await page.evaluate(() => window.winnerCues)).toHaveLength(0);
+      await page.reload();
+      await expect(page.locator('.result')).toBeVisible();
+      const replay = await page.locator('.champion .arena-cel').evaluate(cel => cel.getAnimations().map(animation => animation.id));
+      expect(replay).not.toContain('fighter-celebrate');
+    }
+    await page.evaluate(() => { window.endPoseSampling = true; });
   });
 }

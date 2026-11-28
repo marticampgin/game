@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 from art_output import publish
-from fighter_defeat import install as install_defeat
+from fighter_endings import PERFORMANCES, install as install_ending
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / 'public' / 'assets'
@@ -233,7 +233,8 @@ def build(role):
             consume.paste(cel, (CELL[0] * i, CELL[1] * tier))
         if tier == 0:
             publish(keys[0].crop(keys[0].getbbox()), ASSETS / f'{role}.png')
-    install_defeat(standing, ASSETS / 'skins' / f'{role}-collapse.webp', role)
+    for layer in PERFORMANCES:
+        install_ending(standing, ASSETS / 'skins' / f'{role}-founder.png', role, layer)
     publish(standing, ASSETS / 'skins' / f'{role}-founder.png')
     publish(moving, ASSETS / 'skins' / f'{role}-motions.webp')
     publish(ambient, ASSETS / 'skins' / f'{role}-ambient.webp')

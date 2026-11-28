@@ -7,7 +7,8 @@ import { clearRewardFlight, dealOffers, deliverReward, pickedEmblem } from './dr
 import { battleHTML, buildHTML, nextEventButton, roundCaption, turnRail } from './battle.js';
 import { historyHTML, filterHistory, refreshHistory } from './history.js';
 import { planBotStep } from './pacing.js';
-import { actionVisual, healthBand, playArenaAction, preloadBattleOrder, warmActiveFighter } from './animation.js';
+import { actionVisual, healthBand, playArenaAction, preloadArenaSkins, preloadBattleOrder, warmActiveFighter } from './animation.js';
+import { playFighterEnding } from './fighter-endings.js';
 import { glyph, esc } from './art.js';
 import { playContactSound } from './combat-sound.js';
 import { mountLobby, resumeLobby, roomRequest as request } from './lobby.js';
@@ -236,6 +237,10 @@ function refreshBattle() {
     }
   }
   if (playback) return;
+  if (v.winnerId && shownView && shownView.phase !== 'finished') {
+    const champion = v.players.find(player => player.id === v.winnerId);
+    if (champion) void preloadArenaSkins([champion],{withEffects:false,layers:['celebrate'],priority:'high'});
+  }
   const arena = app.querySelector('.arena-world');
   const continuation = bonusDraftContinuation(shownView, v);
   const action = continuation || v.lastAction;
@@ -365,6 +370,7 @@ function refreshBattle() {
 function renderBattle(v) {
   // Verification can finish while a cinematic still holds its earlier view.
   if (v.career && match.state?.careerUnavailable) v = current();
+  const justWon = v.winnerId && shownView && shownView.phase !== 'finished' && !document.hidden;
   const freshOffers = v.offers.length && (shownView?.globalTurn !== v.globalTurn ||
     shownView?.offers.join('|') !== v.offers.join('|'));
   if (v.career && shownView?.career?.runId === v.career.runId) {
@@ -418,6 +424,8 @@ function renderBattle(v) {
     }),
   );
   if (freshOffers) dealOffers(app);
+  if (justWon) playFighterEnding(app.querySelector('.champion .arena-sprite'),'celebrate',
+    pref.reduce || matchMedia('(prefers-reduced-motion: reduce)').matches);
   app.querySelector('.turn-rail ol').scrollLeft = railScroll;
   const chain = app.querySelector('.recap-events');
   if (chain) chain.scrollTop = chainScroll;

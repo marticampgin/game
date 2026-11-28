@@ -143,7 +143,7 @@ test('a crowded round keeps a single named result on each affected fighter, incl
   expect(opening.strip).toContain('Ember · Burn · Poison · −7 HP · −2 shield · +6 HP · +3 shield');
   expect(opening.ashPose).toBe('fallen');
   expect(revival.labels.Ember.text).toContain('Revived at 3 HP');
-  expect(revival.emberPose).toBe('victory');
+  expect(revival.emberPose).toBe('breathe');
 });
 
 test('Blood Moon reaches all eight seats in one readable round beat before the personal turn', async ({ page }) => {

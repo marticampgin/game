@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from art_output import publish
-from fighter_defeat import install as install_defeat
+from fighter_endings import PERFORMANCES, install as install_ending
 
 SCRIPT = Path(__file__).resolve().parent
 ROOT = SCRIPT.parent
@@ -307,7 +307,8 @@ def build(id, founder=False):
         packed = image.convert('RGB').quantize(palette=palette, dither=Image.Dither.NONE).convert('RGBA')
         packed.putalpha(image.getchannel('A'))
         if name == 'standing':
-            install_defeat(packed, asset_path(id, 'collapse', founder), id)
+            for layer in PERFORMANCES:
+                install_ending(packed, asset_path(id, 'standing', founder), id, layer)
         publish(packed, asset_path(id, name, founder))
         if name == 'standing':
             rest = tile(packed, 0, 0)

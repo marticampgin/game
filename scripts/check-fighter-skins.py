@@ -52,12 +52,14 @@ def check(skin):
     for layer in LAYOUT['layers']:
         if layer in skin:
             total += check_layer(PUBLIC / skin[layer].lstrip('/'), layer)
-    if 'collapse' in skin:
-        with Image.open(PUBLIC / skin['sheet'].lstrip('/')) as stand, Image.open(PUBLIC / skin['collapse'].lstrip('/')) as strip:
+    for layer, pose in [('collapse','fallen'), ('celebrate','victory')]:
+        if layer not in skin:
+            continue
+        with Image.open(PUBLIC / skin['sheet'].lstrip('/')) as stand, Image.open(PUBLIC / skin[layer].lstrip('/')) as strip:
             poses = LAYOUT['layers']['sheet']['poses']
             columns = LAYOUT['layers']['sheet']['columns']
-            row, column = divmod(poses.index('fallen'), columns)
-            last = LAYOUT['layers']['collapse']['columns'] - 1
+            row, column = divmod(poses.index(pose), columns)
+            last = LAYOUT['layers'][layer]['columns'] - 1
             for band in range(BANDS):
                 def cel(image, x, y):
                     return image.crop((x*CELL[0], y*CELL[1], (x+1)*CELL[0], (y+1)*CELL[1])).convert('RGBA')
@@ -66,7 +68,7 @@ def check(skin):
                 matte = Image.new('RGBA', CELL, '#453943')
                 a, b = (Image.alpha_composite(matte, frame).convert('RGB') for frame in (floor, end))
                 if ImageChops.difference(a, b).getbbox() or ImageChops.difference(floor.getchannel('A'),end.getchannel('A')).getbbox():
-                    raise ValueError(f'{skin["id"]}: collapse ends on a different painting from the standing sheet')
+                    raise ValueError(f'{skin["id"]}: {layer} ends on a different painting from the standing sheet')
     for key in ['portrait', 'model']:
         if key in skin:
             with Image.open(PUBLIC / skin[key].lstrip('/')) as image:

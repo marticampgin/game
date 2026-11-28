@@ -20,6 +20,7 @@ All sheets use the same health bands in the same order. Healthy fighters are abo
 | Alternate windups, optional | 1040 × 996, five columns and six rows | Five alternate preparation drawings for basic attack and signature in each band |
 | Drink and use, optional | 2496 × 498, twelve columns and three rows | One reach, raise, hold and return sequence per health band |
 | Collapse, optional | 1872 × 498, nine columns and three rows | Recoil, knee, hip and ground through each injury palette |
+| Celebration, optional | 1872 × 498, nine columns and three rows | Rest, preparation, signature gesture and winner’s hold in each injury band |
 
 Pack cels edge to edge with transparent space inside each cel. PNG and lossless WebP are both supported. Older standing sheets remain usable on their own.
 
@@ -66,6 +67,19 @@ python scripts/check-fighter-skins.py
 ```
 
 The packer connects the existing recoil with the three paintings and applies the corresponding outfit palette in each injury band. It copies the final floor drawing into the standing sheet as well. A replay, an eliminated seat, and a reduced-motion knockout can therefore show the same endpoint immediately. The standard fighter and costume builds pick up the registered paintings automatically.
+
+### Victory performances and injury overrides
+
+The winner’s gesture has its own three paintings. Guardian plants the shield and salutes with the hammer. Trickster bows with the mirror at the chest. Artificer checks the gauntlet and rests the hammer on one shoulder. In a live finish the winning outfit performs once. Reopening a finished match shows the held pose. Restorative effects in combat use the fighter’s recovery poses.
+
+Register a complete costume family as columns, or pass `--skin` and supply one vertical strip of three drawings. `--injury wounded` and `--injury critical` register independent paintings under `scripts/art/victories` or `scripts/art/defeats`. Each outfit can supply these independently. The builder uses the ordinary paintings with the band’s own palette wherever an override is absent.
+
+```sh
+python scripts/fighter_endings.py --layer celebrate --role guardian --skin harbor-warden --import-board harbor-salute.png
+python scripts/fighter_endings.py --layer celebrate --role guardian --skin harbor-warden --injury critical --import-board harbor-injured-salute.png
+```
+
+`endingTimingMs` in the class manifest sets three times in milliseconds for each performance. They mark the first pose, the accent and the final hold. The remaining exposures fall between these landmarks. Both the arena and Outfitter read the same timing and drawings. Packs that supply only a standing sheet use its victory and fallen paintings directly.
 
 ## Which animation plays
 
