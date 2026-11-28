@@ -91,6 +91,29 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
 const fxSheet = '/assets/skins/arena-effects.png';
 const missileSheet = '/assets/skins/arena-projectiles.png';
 const images = new Map();
+let decodeQueue = Promise.resolve();
+
+async function warmSheet(image) {
+  try {
+    await image.decode?.();
+    return true;
+  } catch {
+    // Chromium can refuse an explicit decode under texture pressure even
+    // after a successful load. Rasterize a small sample of the first cel to
+    // check whether the painter can still use the image.
+    const sample = document.createElement('canvas');
+    sample.width = 26;
+    sample.height = 21;
+    const ctx = sample.getContext('2d');
+    if (!ctx) return false;
+    const width = Math.min(fighterLayout.cell.width, image.naturalWidth);
+    const height = Math.min(fighterLayout.cell.height, image.naturalHeight);
+    ctx.drawImage(image, 0, 0, width, height, 0, 0, sample.width, sample.height);
+    const pixels = ctx.getImageData(0, 0, sample.width, sample.height).data;
+    return pixels.some((alpha, i) => i % 4 === 3 && alpha > 0);
+  }
+}
+
 export function preloadArenaSkins(players = []) {
   if (typeof Image === 'undefined') return Promise.resolve([]);
   const urls = new Set([
@@ -112,9 +135,11 @@ export function preloadArenaSkins(players = []) {
           url,
           new Promise((resolve) => {
             image.onload = async () => {
-              try {
-                await image.decode?.();
-              } catch {
+              // Requests can download together. Queue the bitmap work so an
+              // eight-seat arena doesn't reserve all of its decoded layers at once.
+              const ready = decodeQueue.then(() => warmSheet(image)).catch(() => false);
+              decodeQueue = ready;
+              if (!await ready) {
                 images.delete(url);
                 resolve(false);
                 return;
@@ -414,16 +439,8 @@ export function playArenaAction(arena, recap, options = {}) {
     // Both sheets have paintable layers before the attack starts. Mutating the
     // active background here can leave a blank compositor frame on first use.
     const stepLayer = part(art, 'arena-step-cel');
-    const baseLayer = art.querySelector('.arena-cel');
     at(begin, () => {
       art.dataset.footwork = '';
-      const span = end - begin;
-      const envelope = [
-        { offset: 0, opacity: .008 }, { offset: Math.min(.18, 38/span), opacity: 1 },
-        { offset: 1 - Math.min(.24, 75/span), opacity: 1 }, { offset: 1, opacity: .008 },
-      ];
-      tween(stepLayer, envelope, span);
-      tween(baseLayer, envelope.map(({offset,opacity}) => ({offset,opacity: 1.008 - opacity})), span);
       const timings = [0, 0.12, 0.27, 0.42, 0.52, 0.65, 0.8, 0.97, 1];
       const cells = [0, 1, 2, 3, 0, 1, 2, 3, 3];
       const steps = tween(

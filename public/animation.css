@@ -277,6 +277,14 @@ body.reduce-motion .arena-sprite[data-pose='idle'] {
   opacity: 0.008;
   will-change: opacity;
 }
+/* Swap the painted silhouettes on a single exposure. A crossfade leaves
+   two heads and two pairs of boots visible as a fighter changes footing. */
+.arena-sprite[data-footwork] > .arena-cel {
+  opacity: .008;
+}
+.arena-sprite[data-footwork] > .arena-step-cel {
+  opacity: 1;
+}
 [data-facing='left'] .arena-step-cel {
   transform: scaleX(-1);
 }

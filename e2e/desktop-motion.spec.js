@@ -40,6 +40,7 @@ async function perform(page, role, action) {
       floorLeft: false,
       steps: new Set(),
       minCoverage: 1,
+      maxOverlap: 0,
       fx: [],
     });
     let raf;
@@ -64,7 +65,9 @@ async function perform(page, role, action) {
       if (actor.hasAttribute('data-footwork')) {
         const stepStyle = getComputedStyle(actor.querySelector('.arena-step-cel'));
         const baseOpacity = parseFloat(getComputedStyle(actor.querySelector('.arena-cel')).opacity);
-        trace.minCoverage = Math.min(trace.minCoverage, baseOpacity + parseFloat(stepStyle.opacity));
+        const stepOpacity = parseFloat(stepStyle.opacity);
+        trace.minCoverage = Math.min(trace.minCoverage, baseOpacity + stepOpacity);
+        trace.maxOverlap = Math.max(trace.maxOverlap, Math.min(baseOpacity, stepOpacity));
         trace.steps.add(Math.round((parseFloat(stepStyle.backgroundPositionX) * 3) / 100));
       } else if (!trace.cells.includes(number)) trace.cells.push(number);
       if (scene.dataset.stage === 'impact' && trace.impact === null) trace.impact = number;
@@ -112,6 +115,7 @@ test('desktop weapon swing, shield drive and bottle throw use different illustra
     if (travels) {
       expect(sample.steps.length).toBeGreaterThanOrEqual(2);
       expect(sample.minCoverage).toBeGreaterThanOrEqual(0.99);
+      expect(sample.maxOverlap).toBeLessThan(.02);
     }
     if (action === 'venom-flask') expect(sample.fx).toContain('guard');
     await expect(page.locator('[data-travelling],.arena-fx,[data-playing="hidden"]')).toHaveCount(0);
