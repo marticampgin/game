@@ -34,7 +34,7 @@ In the original four-class recording, crests distinguish seats that share a face
 
 ## Eight-class wardrobe
 
-The reference pairs all 24 portraits with their healthy, wounded and critical stances. The full desktop arena shows the eight founders at playing size with their matching turn-order portraits. [Compare the wardrobe](class-outfits.webp) · [Open the eight-class arena](eight-class-ring.webp)
+The wardrobe pairs all 24 portraits with their healthy, wounded and critical stances. The arena screenshot shows round three with all eight classes visible. The Artificer has lined up Rivet Drive against Rook, and the target readout gives Rook’s current HP before the blow. [Compare the wardrobe](class-outfits.webp) · [Open the eight-class arena](eight-class-ring.webp)
 
 The 1440 × 900 capture shows four playable signatures at normal speed. Riverboat Duelist throws Cut the Deck in a duel, wounded Ossuary Queen casts Soul Tithe in an eight-seat match, critical Carnival Fox uses Mirror Feint in a duel, and Stormglass Engineer closes for Rivet Drive in the full ring. The captures use the normal game controls and frame timings. [Watch the four signatures](class-signatures.webm)
 
@@ -43,3 +43,18 @@ The 1440 × 900 capture shows four playable signatures at normal speed. Riverboa
 The normal-speed stage recording shows Wolf Tracker striking into open space, opening a coffer and stowing its find. Star Cartographer then casts Time Bolt across the fitting stage. [Watch the gestures](workshop-gestures.mp4)
 
 The 22-second PC walkthrough follows a new profile from the main menu to the locked Wolf Tracker outfit. The player previews the wounded Berserker’s Blood Cleave, takes the outfit into Sandbox, then drafts Fang Shard and lands an 18-damage cleave in a duel. The capture runs uninterrupted at normal speed with game audio. [Watch Wolf Tracker go from Outfitter to arena](wolf-tracker-walkthrough.mp4)
+
+## The last blow
+
+Four normal-speed finishes show the loser falling, the champion settling into their own gesture, and the result appearing over the ring. Each pair keeps the outfit and injury it had at contact. The clips alternate between duels and eight-seat Sandbox matches at 1440 × 900 with game audio. [Watch the 15-second film](finishing-blows.mp4) · [See the eight-seat result](champion.webp)
+
+| Champion | Final blow | What to watch |
+| --- | --- | --- |
+| Harbor Warden | Bastion Bash | The wounded Guardian settles behind the shield as Carnival Fox falls. |
+| Ossuary Queen | Soul Tithe | The critical Necromancer leans into the lantern after the last opponent falls. |
+| Mirror Regent | Mirror Feint | A court bow follows the strike against Gilded Jack. |
+| Railway Smith | Rivet Drive | The wounded Artificer shoulders the wrench after defeating Glass Oracle. |
+
+In the Outfitter, **Poses** can replay Knockout or Victory at each health band. At the end of a live match the winner performs the gesture once. Reopening a finished match, or playing with reduced motion, shows its held drawing.
+
+For a cold eight-outfit arena at 8 Mbps with 50 ms of latency, prioritizing the opening fighter’s motion reduced the wait for its illustrated attack strip from 13.47 s to 3.35 s in the measured pair. A full-speed two-seat browser game ended in round 45 and an eight-seat solo game ended in round 61. A separate online room with eight player sessions agreed on the winner after 35 rounds and a host reconnect. [Read the seeded roster and armor results](../roster-balance.md)
