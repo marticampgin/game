@@ -1,5 +1,5 @@
 import { beltHTML, trackBelt } from './worn-gear.js';
-import { stageCombatProps, useExposures } from './combat-props.js';
+import { scenePropImages, stageCombatProps, useExposures } from './combat-props.js';
 import { statusCue, statusIcon } from './status-effects.js';
 import { groupedTargets } from './effect-strip.js';
 import { combatTiming, directOutcome } from './combat-timing.js';
@@ -121,7 +121,7 @@ export function preloadArenaSkins(players = []) {
     missileSheet,
     '/assets/skins/status-effects.png',
     '/assets/skins/status-icons.png',
-    '/assets/skins/held-bottles.png',
+    ...scenePropImages,
     ...players.flatMap((p) => {
       const skin = resolveFighterSkin(p.classId, p.skinId);
       return Object.keys(fighterLayout.layers).map(layer => skin[layer]).filter(Boolean);
@@ -266,8 +266,13 @@ export function playArenaAction(arena, recap, options = {}) {
     return { x: (r.left - rect.left) * kx, y: (r.top - rect.top) * ky, w: r.width * kx, h: r.height * ky };
   }
   const bounds = (subject) => boxFor(subject.sprite.closest('.fighter-art') ?? subject.seat);
-  const start = bounds(actor),
-    end = bounds(target);
+  const start = bounds(actor);
+  const rehearsal = options.rehearsal === true;
+  const travel = score.family === 'cast' ? 1.5 : score.family === 'melee' ? .82 : 0;
+  const direction = actor.seat.dataset.facing === 'left' ? -1 : 1;
+  // Shadow-boxing takes one small step. A cast continues into the available
+  // stage space so its missile can dissipate in flight without hitting a decoy.
+  const end = rehearsal ? { ...start, x: start.x + direction * start.w * travel } : bounds(target);
   const horizontal = centerX(end) - centerX(start);
   const facing =
     Math.abs(horizontal) < 2 ? (actor.seat.dataset.facing ?? 'right') : horizontal > 0 ? 'right' : 'left';
@@ -555,7 +560,7 @@ export function playArenaAction(arena, recap, options = {}) {
     const keyframes = Array.from({ length: 17 }, (_, i) => {
       const t = i / 16,
         p = projectilePoint(t);
-      return { offset: t, transform: translated(p.x, p.y, 1, p.angle) };
+      return { offset: t, transform: translated(p.x, p.y, 1, p.angle), opacity: rehearsal && t > .72 ? (1 - t) / .28 : 1 };
     });
     tween(el, keyframes, travel);
     at(travel, () => el.remove());
@@ -820,8 +825,8 @@ export function playArenaAction(arena, recap, options = {}) {
   }
   at(timing.contact, () => {
     scene.dataset.stage = 'impact';
-    if (!effectsOnly && !timing.primary) {
-      contactBurst(target, score.effect, 0);
+    if (!effectsOnly && !timing.primary && !rehearsal) {
+      if (score.gesture !== 'scavenge') contactBurst(target, score.effect, 0);
       options.onCue?.({ action, role, effect: score.effect, event: null, first: true });
     }
   });

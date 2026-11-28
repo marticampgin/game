@@ -13,9 +13,14 @@
   z-index: 2;
 }
 .arena-fx-prop[data-prop='cache'] {
-  transform-origin: center bottom;
-  filter: drop-shadow(1px 2px 0 #291c2fb0);
+  background: url('/assets/skins/field-coffer.png') 0 0 / 600% 100% no-repeat;
+  transform: scaleX(var(--coffer-facing, 1));
 }
+.arena-fx-prop[data-prop='parcel'] { background-image: url('/assets/skins/field-parcel.png'); }
+.arena-fx-prop[data-icon='lantern'] { background-image: url('/assets/skins/held-lantern.png'); }
+.arena-fx-prop[data-icon='bell'] { background-image: url('/assets/skins/held-bell.png'); }
+.arena-fx-prop[data-icon='clock'] { background-image: url('/assets/skins/held-clock.png'); }
+.arena-fx-prop[data-icon='shield'] { background-image: url('/assets/skins/held-shield.png'); }
 .arena-fx-prop[data-prop='bottle'] {
   background-image: url('/assets/skins/held-bottles.png');
   background-size: 300% 100%;

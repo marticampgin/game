@@ -29,14 +29,18 @@ async function play(page, save, action) {
   expect(await page.evaluate(async players => (await (await import('/animation.js')).preloadArenaSkins(players)).every(Boolean), save.state.players)).toBe(true);
   await page.evaluate(() => {
     const world = document.querySelector('.arena-world');
-    const data = window.propSample = { countCoins: 0 };
+    const data = window.propSample = { lid: [], pickedUp: false, legacyProps: false };
     const observer = new MutationObserver(() => {
       const scene = world.querySelector('.arena-fx');
       if (!scene) {
         if (data.impact) { data.done = true; observer.disconnect(); }
         return;
       }
-      data.countCoins = Math.max(data.countCoins, scene.querySelectorAll('[data-prop="coin"]').length);
+      const coffer = scene.querySelector('[data-prop="cache"]');
+      if (coffer && data.lid.at(-1) !== coffer.dataset.lid) data.lid.push(coffer.dataset.lid);
+      data.pickedUp ||= !!scene.querySelector('[data-prop="parcel"]');
+      data.legacyProps ||= [...scene.querySelectorAll('[data-prop]')].some(node =>
+        getComputedStyle(node).backgroundImage.includes('/assets/i-') || node.dataset.prop === 'coin');
       if (scene.dataset.stage !== 'impact' || data.impact) return;
       const actor = scene.querySelector('.arena-fx-actor');
       const sprite = actor.querySelector('.arena-sprite');
@@ -46,7 +50,7 @@ async function play(page, save, action) {
       const cel = getComputedStyle(sprite.querySelector('.arena-cel'));
       const style = getComputedStyle(element);
       data.impact = {
-        kind: element.dataset.prop, icon: element.dataset.icon,
+        kind: element.dataset.prop, icon: element.dataset.icon, propArt: style.backgroundImage,
         inHand: element.parentElement === actor, facing: actor.dataset.facing,
         band: sprite.dataset.tier, clip: sprite.dataset.track, sheet: cel.backgroundImage,
         exposure: Math.round(parseFloat(cel.backgroundPositionX) * .11),
@@ -56,7 +60,7 @@ async function play(page, save, action) {
         rotation: new DOMMatrix(style.transform).b,
       };
     });
-    observer.observe(world, { attributes: true, subtree: true, childList: true, attributeFilter: ['data-stage'] });
+    observer.observe(world, { attributes: true, subtree: true, childList: true, attributeFilter: ['data-stage','data-lid'] });
   });
   await page.locator('[data-execute="' + action + '"]').click();
   await expect.poll(() => page.evaluate(() => !!window.propSample.done)).toBe(true);
@@ -67,7 +71,11 @@ for (const [count, index, role, band] of [[2, 0, 'guardian', 'healthy'], [8, 6, 
   test('scavenge sets a reachable foreground cache on the floor in a ' + count + '-seat arena', async ({ page }) => {
     await page.goto('/');
     const trace = await play(page, turn(count, index, role, 'scavenge', band), 'scavenge');
-    expect(trace.countCoins).toBeGreaterThanOrEqual(2);
+    expect(trace.pickedUp).toBe(true);
+    expect(trace.lid).toEqual(expect.arrayContaining(['1','5','0']));
+    expect(trace.lid.at(-1)).toBe('0');
+    expect(trace.legacyProps).toBe(false);
+    expect(trace.impact.propArt).toContain('/skins/field-coffer.png');
     expect(trace.impact).toMatchObject({ kind: 'cache', inHand: false, band, clip: 'utility', facing: index ? 'left' : 'right' });
     expect(trace.impact.z).toBeGreaterThan(0);
     expect(trace.impact.bottom).toBeGreaterThan(.90);
@@ -95,5 +103,6 @@ test('four founder grips lift and tip the bottle, then use a bell below the mout
   }
   const bell = (await play(page, turn(8, 7, 'alchemist', 'menders-bell', 'critical'), 'menders-bell')).impact;
   expect(bell).toMatchObject({ kind: 'held', icon: 'bell', clip: 'consume', inHand: true, exposure: 4 });
+  expect(bell.propArt).toContain('/skins/held-bell.png');
   expect(Math.abs(bell.rotation)).toBeLessThan(.32);
 });

@@ -1,8 +1,8 @@
 // One visible belt hook per fighter. Slots nearer the end of the equipped rack
 // take priority. Only public gear is eligible, so rival packs stay private.
 const gear = {
-  'ward-lantern': {image:'/assets/i-lantern.png', width:17},
-  'menders-bell': {image:'/assets/i-bell.png', width:19},
+  'ward-lantern': {image:'/assets/skins/held-lantern.png', width:17},
+  'menders-bell': {image:'/assets/skins/held-bell.png', width:19},
   'vial-sash': {image:'/assets/skins/worn-vial-sash.png', width:20},
 };
 const waists = {guardian:[101,72], berserker:[105,73], chronomancer:[110,73], alchemist:[108,76]};
