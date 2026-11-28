@@ -1,3 +1,5 @@
+import { fighterKit } from './fighter-kit.js';
+
 // One visible belt hook per fighter. Slots nearer the end of the equipped rack
 // take priority. Only public gear is eligible, so rival packs stay private.
 const gear = {
@@ -18,7 +20,9 @@ export function wornGear(player) {
 }
 export function beltPoint(role, band, track, column = 0, override) {
   const resting = waists[role] || waists.guardian;
-  const [x,y] = override || [resting[0], resting[1] + ({wounded:6,critical:17}[band] || 0)];
+  const founder = fighterKit(role).anchors;
+  const [x,y] = override ?? founder?.[band]?.belt ?? founder?.belt ??
+    [resting[0], resting[1] + ({wounded:6,critical:17}[band] || 0)];
   const [chamber, release] = bends[track] || [[0,0],[0,0]];
   const keys = [[0,0],chamber,release,[0,0]];
   const times = [0,4,7,11];

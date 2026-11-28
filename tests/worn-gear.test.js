@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { beltHTML, beltPoint, wornGear } from '../public/worn-gear.js';
+import { fighterLayout } from '../public/fighter-kit.js';
 
 test('visible belt equipment comes from the public equipped slots and respects replacement', () => {
   const pack = {classId:'guardian',artifacts:['vial-sash'],abilities:[{id:'ward-lantern'},{id:'menders-bell'}],consumables:['snare']};
@@ -13,10 +14,11 @@ test('visible belt equipment comes from the public equipped slots and respects r
   assert.equal(beltHTML({consumables:['menders-bell']},'healthy'),'');
 });
 test('equipped props stay on the selected skin and recover to its own belt point', () => {
-  for (const classId of ['guardian','alchemist','berserker','chronomancer']) {
+  for (const [classId, kit] of Object.entries(fighterLayout.founders)) {
     const start = beltPoint(classId,'healthy','idle');
     const critical = beltPoint(classId,'critical','idle');
     assert.ok(critical[1] > start[1]);
+    if (kit.anchors?.critical?.belt) assert.deepEqual(critical,kit.anchors.critical.belt);
     const override = [90,70];
     const end = beltPoint(classId,'healthy','utility',11,override);
     assert.deepEqual(end,override);
