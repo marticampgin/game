@@ -1,12 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyCommand, createMatch, sandboxEdit, viewMatch, REWARDS } from '../src/game/index.js';
+import { applyCommand, CLASSES, createMatch, sandboxEdit, viewMatch, REWARDS } from '../src/game/index.js';
 import { deal, grantReward } from '../src/game/combat.js';
 import { drawOffers } from '../src/game/draft.js';
 import { SHOP, awardLifetimeQuests, buy, credit, equip, newProfile, MASTERY_TARGET, isDraftUnlocked } from '../src/game/progression.js';
 
 const players = [{id:'a',name:'Moss',classId:'guardian'},{id:'b',name:'June',classId:'alchemist'}];
 const tracked = (seats={a:[],b:[]}) => createMatch({seed:'ticket',players,career:{runId:'unique-run',seats}});
+
+test('each class has two distinct purchasable outfits and earns its own final outfit through mastery',()=>{
+  for(const classId of Object.keys(CLASSES)) {
+    const choices=SHOP.filter(i=>i.kind==='skin' && i.classId===classId);
+    assert.equal(choices.length,2);
+    const p=newProfile();
+    assert.ok(choices[0].price<choices[1].price);
+    p.coins=choices[0].price;
+    buy(p,choices[0].id);
+    equip(p,classId,choices[0].id);
+    assert.equal(p.equipped[classId],choices[0].id);
+    assert.throws(()=>equip(p,classId,choices[1].id));
+    const game=createMatch({seed:'award',players:[{id:'p1',name:'Moss',classId},{id:'p2',name:'June',classId:'guardian'}],career:{runId:'award',seats:{p1:[]}}});
+    game.phase='finished'; game.players[0].personalTurn=1;
+    p.classes[classId]={matches:MASTERY_TARGET-1,damage:0,wins:0};
+    credit(p,{},game,'p1');
+    equip(p,classId,choices[1].id);
+    assert.equal(p.equipped[classId],choices[1].id);
+    assert.deepEqual(p.unlocks,[choices[0].id,choices[1].id]);
+  }
+});
 
 test('two private objectives for each seat survive reloads and consume no combat randomness', () => {
   const eight = Array.from({length:8},(_,i)=>({...players[i%2],id:'p'+i}));

@@ -6,6 +6,10 @@ const outfits = {
   berserker: [['wolf-tracker', 'Wolf Tracker', 'A wolf pelt and fang-laced hunting leathers.'], ['ash-dragon', 'Ash Dragon', 'Obsidian scales and ember-tipped horns.']],
   chronomancer: [['star-cartographer', 'Star Cartographer', 'Midnight robes and a brass sextant.'], ['glass-oracle', 'Glass Oracle', 'Lilac crystal and faceted clockglass.']],
   alchemist: [['apiarist', 'Apiarist', 'A straw brim and a field kit of honeycomb.'], ['nightshade-apothecary', 'Nightshade Apothecary', 'A mushroom mantle and a glowing distillery.']],
+  gambler: [['riverboat-duelist','Riverboat Duelist','A river duelist’s finery and a marked deck.'],['gilded-jack','Gilded Jack','A court card come to life in gilded regalia.']],
+  necromancer: [['marsh-medium','Marsh Medium','Bog-worn vestments for a speaker to the drowned.'],['ossuary-queen','Ossuary Queen','Ivory ceremonial armor fit for the keeper of an ossuary.']],
+  trickster: [['carnival-fox','Carnival Fox','A fox masque and the dress of a traveling performer.'],['mirror-regent','Mirror Regent','An ornate mirror mask and the regalia of a reflected court.']],
+  artificer: [['railway-smith','Railway Smith','A line mechanic’s workwear and riveted tools.'],['stormglass-engineer','Stormglass Engineer','A gauntlet assembly powered by stormglass.']],
 };
 const rewardPrices = {
   'glass-orchard': 65, 'phoenix-heart': 75, 'starfall-cache': 90,
