@@ -13,7 +13,7 @@ Lifetime milestones include the first completed match, 1,000 damage, ten wins an
 | Chronomancer | Founder | Star Cartographer | Glass Oracle |
 | Alchemist | Founder | Apiarist | Nightshade Apothecary |
 | Gambler | Founder | Riverboat Duelist | Gilded Jack |
-| Necromancer | Founder | Marsh Medium | Ossuary Queen |
+| Necromancer | Founder | Marsh Medium | Ossuary Sovereign |
 | Trickster | Founder | Carnival Fox | Mirror Regent |
 | Artificer | Founder | Railway Smith | Stormglass Engineer |
 
