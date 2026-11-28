@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createArenaServer } from '../server/index.js';
+import { listenForBrowser } from './browser-server.js';
 import { registerFighterSkin } from '../public/fighter-kit.js';
 
 const festival = {
@@ -12,8 +13,7 @@ let server, address;
 test.beforeAll(async () => {
   registerFighterSkin(festival.classId, festival.id, festival);
   server = createArenaServer();
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  address = 'http://127.0.0.1:' + server.address().port;
+  address = await listenForBrowser(server);
 });
 test.afterAll(async () => {
   server?.closeAllConnections();

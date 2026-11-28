@@ -4,6 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createArenaServer } from '../server/index.js';
+import { listenForBrowser } from './browser-server.js';
 import { applyCommand, botCommand } from '../src/game/index.js';
 import { MATCH_QUESTS, SHOP } from '../src/game/progression.js';
 
@@ -12,8 +13,7 @@ let server, address, profileDirectory;
 test.beforeAll(async () => {
   profileDirectory = await mkdtemp(join(tmpdir(), 'rift-outfitter-'));
   server = createArenaServer({profileDirectory});
-  await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
-  address = 'http://127.0.0.1:' + server.address().port;
+  address = await listenForBrowser(server);
 });
 test.afterAll(async () => {
   server?.closeAllConnections();
