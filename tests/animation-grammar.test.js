@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { access } from 'node:fs/promises';
+import { SHOP } from '../src/game/progression.js';
 import { CLASSES, REWARDS } from '../src/game/catalog.js';
 import { actorClip, effectRows, missiles, motionScore, rewardMotion } from '../public/combat-motion.js';
 import { fighterAnchors, fighterLayout, fighterModel, fighterPortrait, fighterSkins, registerFighterSkin, resolveFighterSkin } from '../public/fighter-kit.js';
@@ -96,5 +98,19 @@ test('prop attachments follow the selected painting and inherit missing points i
   for (const invalid of [{ injured: { mouth: [112, 41] } }, { critical: { wounded: {} } },
     { healthy: ['hand'] }, { wounded: { ground: [-1, 144] } }]) {
     assert.throws(() => registerFighterSkin('guardian', 'winter-invalid', { sheet, anchors: invalid }));
+  }
+});
+
+test('every costume offered for coins or mastery ships its own complete painted kit', async () => {
+  const listed = SHOP.filter(item => item.kind === 'skin');
+  assert.equal(new Set(listed.map(item => item.skinId)).size, listed.length);
+  for (const item of listed) {
+    const skin = resolveFighterSkin(item.classId,item.skinId);
+    assert.equal(skin.id,item.skinId,item.name + ' must not resolve to the Founder fallback');
+    assert.equal(skin.name,item.name);
+    for (const layer of [...Object.keys(fighterLayout.layers),'portrait','model']) {
+      assert.ok(skin[layer],item.name + ' is missing ' + layer);
+      await access(new URL('../public' + skin[layer],import.meta.url));
+    }
   }
 });

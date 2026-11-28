@@ -1,9 +1,9 @@
 // One visible belt hook per fighter. Slots nearer the end of the equipped rack
 // take priority. Only public gear is eligible, so rival packs stay private.
 const gear = {
-  'ward-lantern': {icon:'lantern', width:17},
-  'menders-bell': {icon:'bell', width:19},
-  'vial-sash': {icon:'sash', width:24},
+  'ward-lantern': {image:'/assets/i-lantern.png', width:17},
+  'menders-bell': {image:'/assets/i-bell.png', width:19},
+  'vial-sash': {image:'/assets/skins/worn-vial-sash.png', width:20},
 };
 const waists = {guardian:[101,72], berserker:[105,73], chronomancer:[110,73], alchemist:[108,76]};
 const bends = {
@@ -33,7 +33,7 @@ export function beltHTML(player, band, anchors) {
   const item = gear[id];
   return '<span class="belt-layer" data-worn="' + id + '" data-x="' + x + '" data-y="' + y +
     '" style="--belt-x:' + x/208*100 + '%;--belt-y:' + y/166*100 + '%;--belt-width:' + item.width/208*100 +
-    '%"><img alt="" src="/assets/i-' + item.icon + '.png"></span>';
+    '%"><img alt="" src="' + item.image + '"></span>';
 }
 export function trackBelt(element, track = 'idle', column = 0) {
   const layer = element.querySelector('.belt-layer');
