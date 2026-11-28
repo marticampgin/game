@@ -200,7 +200,7 @@ export function buildHTML(p, own, view) {
       : '<p class="muted">' + empty + '</p>';
   const stats = Object.entries(p.statuses).filter(([, v]) => v);
   const talent = talentState(view,p);
-  return `<div class="inspect-top"><img src="${fighterModel(p)}" alt=""><div><small>${esc(CLASSES[p.classId].name)}${outfit.id !== 'founder' ? ' · ' + esc(outfit.name) : ''}</small><h2>${esc(p.name)}</h2><p>${esc(CLASSES[p.classId].innate)}</p>${talent ? '<p class="talent-state">' + esc(talent) + '</p>' : ''}</div></div>
+  return `<div class="inspect-top" data-build-seat="${esc(p.id)}"><img src="${fighterModel(p)}" alt=""><div><small>${esc(CLASSES[p.classId].name)}${outfit.id !== 'founder' ? ' · ' + esc(outfit.name) : ''}</small><h2>${esc(p.name)}</h2><p>${esc(CLASSES[p.classId].innate)}</p>${talent ? '<p class="talent-state">' + esc(talent) + '</p>' : ''}</div></div>
   <dl class="stats-row">${[
     ['Health', p.hp + '/' + p.maxHp],
     ['Shield', p.shield],

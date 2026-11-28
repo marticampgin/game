@@ -2,7 +2,7 @@ import { applyCommand, REWARDS, viewMatch } from '/src/game/index.js';
 import { mountEffectStrip, statusBankHTML } from './effect-strip.js';
 import { bonusDraftContinuation } from './combat-timing.js';
 import { statusCue } from './status-effects.js';
-import { renderArena } from './arena-render.js';
+import { reconcile, renderArena } from './arena-render.js';
 import { clearRewardFlight, dealOffers, deliverReward, pickedEmblem } from './draft-motion.js';
 import { battleHTML, buildHTML, nextEventButton, roundCaption, turnRail } from './battle.js';
 import { historyHTML, filterHistory, refreshHistory } from './history.js';
@@ -230,6 +230,9 @@ function refreshBattle() {
     sessionStorage.setItem('rift-solo', JSON.stringify({ state: match.state, viewerId: match.viewerId }));
   if (modal.open) {
     refreshHistory(contents, v);
+    const inspectedId = contents.querySelector('[data-build-seat]')?.dataset.buildSeat;
+    const inspected = inspectedId && v.players.find(player => player.id === inspectedId);
+    if (inspected) dialog(buildHTML(inspected, inspected.id === match.viewerId, v));
     const ledger = contents.querySelector('.live-objectives');
     if (ledger && v.career) {
       const rows = objectiveRows(v.career.objectives);
@@ -574,15 +577,26 @@ function pick(id) {
   } else command({ type: 'pick', rewardId: id });
 }
 function dialog(html) {
-  contents.innerHTML =
+  const next = contents.cloneNode(false);
+  next.innerHTML =
     '<div class="dialog-head"><button class="icon-button" aria-label="Close dialog" data-ui="close">' +
     glyph('close') +
     '</button></div><div class="dialog-body">' + html + '</div>';
-  const heading = contents.querySelector('h2');
+  const heading = next.querySelector('h2');
   heading.id = 'dialog-title';
-  contents.querySelector('.dialog-head').prepend(heading);
+  next.querySelector('.dialog-head').prepend(heading);
+  const inspection = next.querySelector('[data-build-seat]')?.closest('.dialog-body');
+  if (inspection) {
+    inspection.tabIndex = 0;
+    inspection.setAttribute('role', 'region');
+    inspection.setAttribute('aria-label', 'Stats and equipment');
+  }
   modal.setAttribute('aria-labelledby', heading.id);
-  if (!modal.open) modal.showModal();
+  if (modal.open) reconcile(contents, next);
+  else {
+    contents.replaceChildren(...next.childNodes);
+    modal.showModal();
+  }
 }
 function settings() {
   dialog(`<h2>Settings &amp; rules</h2><label class="setting-line">Sound effects<input type="checkbox" data-pref="sound" ${pref.sound ? 'checked' : ''}></label>
