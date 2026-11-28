@@ -196,17 +196,29 @@ for (const [width, height, receiverId, seed] of [
     executeEffects(state, caster, receiver, [{kind:'status', key:'burn', amount:5}], {label:'Ember'});
     await mount(page, state);
     await page.locator('[data-action="defend"]').click();
-    await page.locator('[data-execute="defend"]').click();
-    const read = await page.locator('.arena-status-label[data-status="burn"]').evaluate(label => {
-      const rect = label.getBoundingClientRect();
-      const blockedBy = ['.scene-callout', '.turn-rail'].filter(selector => {
-        const hud = document.querySelector(selector).getBoundingClientRect();
-        return rect.left < hud.right && rect.right > hud.left && rect.top < hud.bottom && rect.bottom > hud.top;
+    await page.evaluate(() => {
+      const shell = document.querySelector('.battle-shell');
+      window.rearBurnRead = new Promise(resolve => {
+        const observer = new MutationObserver(() => {
+          const label = shell.querySelector('.arena-status-label[data-status="burn"]');
+          if (!label) return;
+          const callout = shell.querySelector('.scene-callout');
+          const rail = shell.querySelector('.turn-rail');
+          if (!callout || !rail) return;
+          const [rect, calloutBox, railBox] = [label,callout,rail].map(element => element.getBoundingClientRect());
+          if ([rect,calloutBox,railBox].some(box => !box.width || !box.height)) return;
+          const overlaps = hud => rect.left < hud.right && rect.right > hud.left && rect.top < hud.bottom && rect.bottom > hud.top;
+          observer.disconnect();
+          resolve({text:label.innerText, phase:callout.innerText, coversCallout:overlaps(calloutBox), coversRail:overlaps(railBox)});
+        });
+        observer.observe(shell,{subtree:true,childList:true,characterData:true,attributeFilter:['class','style','data-status']});
       });
-      return {blockedBy, text:label.innerText, phase:document.querySelector('.scene-callout').innerText};
     });
+    await page.locator('[data-execute="defend"]').click();
+    const read = await page.evaluate(() => window.rearBurnRead);
     expect(read.phase).toBe(receiverId + ' · Turn start');
     expect(read.text).toContain('−5 HP');
-    expect(read.blockedBy).toEqual([]);
+    expect(read.coversCallout).toBe(false);
+    expect(read.coversRail).toBe(false);
   });
 }

@@ -98,13 +98,14 @@ for (const own of [true, false]) {
       await expect(dialog).toContainText('Only the owner can see these items.');
     }
     const body = dialog.getByRole('region',{name:'Stats and equipment'});
+    const distanceFromBottom = () => body.evaluate(el => Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop));
     if (own) {
       await close.press('Tab');
       await expect(body).toBeFocused();
       await page.keyboard.press('End');
-      await expect.poll(() => body.evaluate(el => el.scrollTop > 0 && el.scrollTop >= el.scrollHeight - el.clientHeight - 1)).toBe(true);
+      await expect.poll(distanceFromBottom).toBeLessThanOrEqual(1);
+      expect(await body.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
     }
-    const offset = await body.evaluate(el => el.scrollTop);
     await page.clock.runFor(2300);
     if (own) {
       const viewer = after.players.find(player => player.id === 'p0');
@@ -116,7 +117,10 @@ for (const own of [true, false]) {
       await expect(dialog).not.toContainText('Second Breath');
     }
     await expect(own ? body : close).toBeFocused();
-    expect(await body.evaluate(el => el.scrollTop)).toBe(offset);
+    if (own) {
+      expect(await body.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
+      expect(await distanceFromBottom()).toBeLessThanOrEqual(1);
+    } else expect(await body.evaluate(el => el.scrollTop)).toBe(0);
     await page.keyboard.press('Escape');
     await expect(origin).toBeFocused();
   });
