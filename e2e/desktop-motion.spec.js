@@ -17,6 +17,10 @@ async function perform(page, role, action, take = 1, seats = roles) {
   const state = readySeat(role, seats);
   state.players.find((p) => p.id === role).personalTurn = take;
   if (action === 'venom-flask') state.players.find((p) => p.id === 'berserker').shield = 500;
+  // Replacing the save navigates away from the current page. Let its real
+  // startup request finish before WebKit tears down that document.
+  await expect.poll(() => page.evaluate(async () => (await import('/career-client.js')).readCareerStatus()),
+    {message:'the real profile request has completed',timeout:10000}).toBe('online');
   await page.evaluate((save) => sessionStorage.setItem('rift-solo', JSON.stringify(save)), {
     state,
     viewerId: role,
@@ -114,9 +118,9 @@ test('desktop weapon swing, shield drive and bottle throw use different illustra
   page,
 }, info) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/');
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/',{waitUntil:'domcontentloaded'});
   for (const [role, action, score, clip, effect, travels] of [
     ['guardian', 'attack', 'swing', 'attack', 'slash', true],
     ['guardian', 'bastion-bash', 'bash', 'signature', 'bastion', true],

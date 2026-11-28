@@ -23,10 +23,16 @@ function turn(count, index, role, action, band) {
 // Observe the impact on the game's own paint clock. The browser driver can
 // arrive well after the chest, shared consumable strip and bottle are removed.
 async function play(page, save, action) {
-  await page.evaluate(save => sessionStorage.setItem('rift-solo', JSON.stringify(save)), save);
-  await page.reload();
+  await page.addInitScript(save => sessionStorage.setItem('rift-solo', JSON.stringify(save)), save);
+  await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.locator('[data-action="' + action + '"]').click();
-  expect(await page.evaluate(async players => (await (await import('/animation.js')).preloadArenaSkins(players)).every(Boolean), save.state.players)).toBe(true);
+  const actor = save.state.players.find(player => player.id === save.viewerId);
+  const layers = action === 'scavenge' ? ['sheet','motions'] : ['sheet','motions','consume'];
+  const loaded = await page.evaluate(async ({actor,layers}) => {
+    const {preloadArenaSkins} = await import('/animation.js');
+    return (await preloadArenaSkins([actor],{layers,withEffects:true})).every(Boolean);
+  },{actor,layers});
+  expect(loaded).toBe(true);
   await page.evaluate(() => {
     const world = document.querySelector('.arena-world');
     const data = window.propSample = { lid: [], pickedUp: false, legacyProps: false };
@@ -69,7 +75,6 @@ async function play(page, save, action) {
 
 for (const [count, index, role, band] of [[2, 0, 'guardian', 'healthy'], [8, 6, 'berserker', 'wounded']]) {
   test('scavenge sets a reachable foreground cache on the floor in a ' + count + '-seat arena', async ({ page }) => {
-    await page.goto('/');
     const trace = await play(page, turn(count, index, role, 'scavenge', band), 'scavenge');
     expect(trace.pickedUp).toBe(true);
     expect(trace.lid).toEqual(expect.arrayContaining(['1','5','0']));
@@ -86,21 +91,25 @@ for (const [count, index, role, band] of [[2, 0, 'guardian', 'healthy'], [8, 6, 
   });
 }
 
-test('four founder grips lift and tip the bottle, then use a bell below the mouth', async ({ page }) => {
-  await page.goto('/');
-  for (const [i, role] of classes.entries()) {
-    const band = ['healthy', 'critical', 'wounded', 'critical'][i];
-    const rightSeat = i % 2 === 0;
-    const action = rightSeat ? 'red-tonic' : 'antidote';
-    const sample = (await play(page, turn(2, i % 2, role, action, band), action)).impact;
-    expect(sample).toMatchObject({ kind: 'bottle', icon: rightSeat ? 'tonic' : 'antidote', clip: 'consume', inHand: true, band });
+for (const [role,band,seat,action,icon] of [
+  ['guardian','healthy',0,'red-tonic','tonic'],
+  ['berserker','critical',1,'antidote','antidote'],
+  ['chronomancer','wounded',0,'red-tonic','tonic'],
+  ['alchemist','critical',1,'antidote','antidote'],
+]) {
+  test(role + ' lifts and tips its ' + action + ' bottle', async ({page}) => {
+    const sample = (await play(page, turn(2, seat, role, action, band), action)).impact;
+    expect(sample).toMatchObject({ kind: 'bottle', icon, clip: 'consume', inHand: true, band });
     expect(sample.sheet).toContain(role + '-consume.webp');
     expect(sample.cellY).toBe(({ healthy: 0, wounded: 50, critical: 100 })[band]);
     expect(sample.exposure).toBeGreaterThanOrEqual(6);
     expect(sample.bottom).toBeLessThan(.48);
     expect(sample.size).toBeLessThan(.22);
-    expect(sample.rotation * (rightSeat ? -1 : 1)).toBeGreaterThan(.85);
-  }
+    expect(sample.rotation * (seat === 0 ? -1 : 1)).toBeGreaterThan(.85);
+  });
+}
+
+test('critical alchemist uses a bell below the mouth in an eight-seat arena', async ({page}) => {
   const bell = (await play(page, turn(8, 7, 'alchemist', 'menders-bell', 'critical'), 'menders-bell')).impact;
   expect(bell).toMatchObject({ kind: 'held', icon: 'bell', clip: 'consume', inHand: true, exposure: 4 });
   expect(bell.propArt).toContain('/skins/held-bell.png');
