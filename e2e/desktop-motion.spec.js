@@ -21,7 +21,7 @@ async function perform(page, role, action, take = 1, seats = roles) {
     state,
     viewerId: role,
   });
-  await page.reload();
+  await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('[data-action="' + action + '"]').click();
   await page.locator('[data-aim="berserker"]').click();
   const loaded = await page.evaluate(
@@ -147,9 +147,9 @@ for (const [role, action, track, missile] of [
   ['trickster','mirror-feint','mirror-feint',null],
   ['artificer','rivet-drive','rivet-drive',null],
 ]) {
-  test(role + ' performs its signature and yields the arena at two and eight seats', async ({page}) => {
-    await page.goto('/');
-    for (const seats of [[role,'berserker'], fullRoster]) {
+  for (const seats of [[role,'berserker'], fullRoster]) {
+    test(role + ' performs its signature and yields the ' + seats.length + '-seat arena', async ({page}) => {
+      await page.goto('/',{waitUntil:'domcontentloaded'});
       const trace = await perform(page, role, action, 2, seats);
       expect(trace.score).toBe(track);
       expect(trace.clip).toBe('signature');
@@ -158,8 +158,8 @@ for (const [role, action, track, missile] of [
       else expect(trace.floorLeft).toBe(true);
       await expect(page.locator('[data-seat] .arena-sprite[data-idles-ready]')).toHaveCount(seats.length);
       await expect(page.locator('.arena-fx,[data-pickup],[data-travelling]')).toHaveCount(0);
-    }
-  });
+    });
+  }
 }
 
 test('alternate weapon and signature preparations land on their original contact drawing', async ({ page }) => {
