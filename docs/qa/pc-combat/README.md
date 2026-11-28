@@ -41,3 +41,5 @@ The 1440 × 900 capture shows four playable signatures at normal speed. Riverboa
 ## Outfitter rehearsal
 
 The normal-speed stage recording shows Wolf Tracker striking into open space, opening a coffer and stowing its find. Star Cartographer then casts Time Bolt across the fitting stage. [Watch the gestures](workshop-gestures.mp4)
+
+The 22-second PC walkthrough follows a new profile from the main menu to the locked Wolf Tracker outfit. The player previews the wounded Berserker’s Blood Cleave, takes the outfit into Sandbox, then drafts Fang Shard and lands an 18-damage cleave in a duel. The capture runs uninterrupted at normal speed with game audio. [Watch Wolf Tracker go from Outfitter to arena](wolf-tracker-walkthrough.mp4)
