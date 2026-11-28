@@ -68,3 +68,72 @@ test('a solo match started offline still plays and exposes no payable objectives
   });
   expect(result).toEqual({offline:'offline',unavailable:true,objectives:undefined,coins:0});
 });
+
+test('a duplicate solo tab can finish as practice while its verified sibling keeps the wallet', async({context,page})=>{
+  const copy=await context.newPage();
+  const tabs=[page,copy];
+  await Promise.all(tabs.map(tab=>tab.goto('/')));
+  const initial=await page.evaluate(async()=>{
+    const {startCareerSolo}=await import('/career-client.js');
+    const {applyCommand,botCommand}=await import('/src/game/index.js');
+    const players=[{id:'p1',name:'Moss',classId:'guardian',bot:false},{id:'p2',name:'Ash',classId:'alchemist',bot:true}];
+    let state=await startCareerSolo({seed:'duplicate-window',players});
+    while(state.activeId!=='p1') state=applyCommand(state,state.activeId,botCommand(state));
+    return state;
+  });
+  await Promise.all(tabs.map(async tab=>{
+    await tab.evaluate(state=>sessionStorage.setItem('rift-solo',JSON.stringify({state,viewerId:'p1'})),initial);
+    await tab.reload();
+    await expect(tab.locator('[data-ui="objectives"]')).toBeVisible();
+  }));
+  async function pick(tab,index) {
+    const id=initial.offers[index];
+    await tab.locator('[data-draft-select="'+id+'"]').click();
+    await tab.locator('[data-pick="'+id+'"]').click();
+  }
+  const url='/api/profile/solo/'+initial.career.runId;
+  const saved=page.waitForResponse(r=>r.url().endsWith(url) && r.ok() && r.request().postData()?.includes(initial.offers[0]));
+  await pick(page,0);
+  await saved;
+  // Both branches now accrue unsent turns. Whichever tab flushes the shared
+  // outbox must keep the journal that matches the already-verified choice.
+  await context.route('**'+url,route=>route.abort('failed'));
+  await pick(copy,1);
+  await copy.locator('[data-ui="objectives"]').click();
+  const damage=await page.evaluate(async()=>{
+    const {syncCareerSolo}=await import('/career-client.js');
+    const {applyCommand,botCommand}=await import('/src/game/index.js');
+    let {state}=JSON.parse(sessionStorage.getItem('rift-solo'));
+    while(state.phase!=='finished') state=applyCommand(state,state.activeId,botCommand(state));
+    await syncCareerSolo(state);
+    return state.career.seats.p1.metrics.damage;
+  });
+  await context.unroute('**'+url);
+  await page.evaluate(async()=>{ await (await import('/career-client.js')).loadProfile(); });
+  await expect(copy.locator('[data-ui="objectives"]')).toHaveCount(0);
+  await expect(copy.getByRole('dialog')).toHaveCount(0);
+  await expect(copy.locator('#notice')).toContainText('Another copy advanced');
+  await copy.reload();
+  await expect(copy.locator('#notice')).toContainText('Another copy advanced');
+  await expect(copy.locator('[data-execute="attack"]')).toBeVisible();
+  await expect(copy.locator('[data-ui="objectives"]')).toHaveCount(0);
+  await expect.poll(()=>page.evaluate(async()=>(await import('/career-client.js')).readProfile().totals)).toMatchObject({damage,matches:1});
+  await expect(page.locator('[data-ui="objectives"]')).toBeVisible();
+});
+
+test('a missing solo checkpoint removes payable objectives and explains the saved practice match',async({page})=>{
+  await page.goto('/');
+  await page.route('**/api/profile/solo/*',r=>r.fulfill({status:404,json:{error:'This match checkpoint is unavailable.'}}));
+  await page.evaluate(async()=>{
+    const {startCareerSolo}=await import('/career-client.js');
+    const {applyCommand,botCommand}=await import('/src/game/index.js');
+    const players=[{id:'p1',name:'Moss',classId:'guardian',bot:false},{id:'p2',name:'Ash',classId:'alchemist',bot:true}];
+    const state=await startCareerSolo({seed:'expired-copy',players});
+    const next=applyCommand(state,state.activeId,botCommand(state));
+    sessionStorage.setItem('rift-solo',JSON.stringify({state:next,viewerId:'p1'}));
+  });
+  await page.reload();
+  await expect(page.locator('#notice')).toContainText('could not be verified');
+  await expect(page.locator('[data-ui="objectives"]')).toHaveCount(0);
+  expect(await page.evaluate(()=>JSON.parse(sessionStorage.getItem('rift-solo')).state.careerUnavailable)).toBe('checkpoint');
+});

@@ -3,6 +3,13 @@ import { newProfile } from '../src/game/progression.js';
 
 const cacheKey = 'rift-career-profile', identityKey = 'rift-career-key';
 const listeners = new Set(), queued = new Map(), fallbackQueue = new Map();
+// Duplicating a browser tab copies its solo save. A separate outbox key per
+// open page lets the server decide which history won, even after offline play.
+const pageId = generateKey();
+const soloQueueKey = id => id + '/' + pageId;
+const rejectionListeners = new Set(), rejected = new Set();
+const rejectionChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('rift-career-checkpoints') : null;
+const rejectionKey = 'rift-career-rejected';
 let profile = newProfile(), identity, database, identityReady, draining, dirty, retryTimer, loading;
 let status = 'connecting';
 try {
@@ -49,6 +56,21 @@ export const profileHeaders = () => identity ? {'X-Rift-Profile':identity} : {};
 export const readProfile = () => profile;
 export const readCareerStatus = () => status;
 export const subscribeProfile = fn => { listeners.add(fn); return ()=>listeners.delete(fn); };
+export const onSoloRejected = fn => { rejectionListeners.add(fn); return ()=>rejectionListeners.delete(fn); };
+function acceptRejection(message) {
+  if (!message || message.queueKey !== soloQueueKey(message.id) || rejected.has(message.id)) return;
+  rejected.add(message.id);
+  for (const fn of rejectionListeners) fn(message.id,message.reason);
+}
+if (rejectionChannel) rejectionChannel.onmessage = event => acceptRejection(event.data);
+function rejectCheckpoint(run, reason) {
+  const message = {id:run.id,queueKey:run.queueKey,reason};
+  acceptRejection(message);
+  if (rejectionChannel) rejectionChannel.postMessage(message);
+  else {
+    try { localStorage.setItem(rejectionKey,JSON.stringify(message)); } catch { /* Storage is optional. */ }
+  }
+}
 function announce() { for (const fn of listeners) fn(profile); }
 function connection(next) { if (status !== next) { status=next; announce(); } }
 export function acceptProfile(next) {
@@ -136,19 +158,26 @@ async function drain() {
     do {
       dirty=false;
       for (const run of await entries()) {
-        let offset=run.offset;
+        const key=run.queueKey || run.id; // Earlier saves used one entry per run.
+        let offset=run.offset, retried=false;
         while (offset<run.commands.length) {
-          const result=await api('/solo/'+run.id,{from:offset,commands:run.commands.slice(offset,offset+48)}).catch(async error=>{
-            if (error.status === 400 || error.status === 404 || error.status === 409) {
-              // A divergent copy of an old save cannot replace verified turns.
-              await pending(run.id,cur=>cur && cur.commands.length>run.commands.length ? cur : undefined);
-            } else throw error;
-            return null;
-          });
-          if (!result) break;
+          let result;
+          try {
+            result=await api('/solo/'+run.id,{from:offset,commands:run.commands.slice(offset,offset+48)});
+          } catch (error) {
+            if (![400,404,409].includes(error.status)) throw error;
+            if (error.status===409 && offset>0 && !retried) {
+              // An earlier server checkpoint can recover from the full journal.
+              offset=0; retried=true; continue;
+            }
+            rejectCheckpoint(run,error.status===409 ? 'diverged' : 'checkpoint');
+            await pending(key,()=>undefined);
+            break;
+          }
           offset=result.offset;
-          queued.set(run.id,{length:Math.max(queued.get(run.id)?.length ?? 0,run.commands.length),offset});
-          await pending(run.id,cur=>!cur || offset>=cur.commands.length ? undefined : {...cur,offset:Math.max(cur.offset,offset)});
+          if (key===soloQueueKey(run.id))
+            queued.set(run.id,{length:Math.max(queued.get(run.id)?.length ?? 0,run.commands.length),offset});
+          await pending(key,cur=>!cur || offset>=cur.commands.length ? undefined : {...cur,offset:Math.max(cur.offset,offset)});
           acceptProfile(result.profile);
         }
       }
@@ -163,17 +192,22 @@ async function drain() {
 export async function syncCareerSolo(state) {
   if (!state?.careerJournal?.length || !state.career || state.careerUnavailable) return;
   const id=state.career.runId, commands=state.careerJournal;
+  if (rejected.has(id)) return;
+  const queueKey=soloQueueKey(id);
   const previous=queued.get(id) || {offset:0,length:0};
   if (commands.length <= previous.length) return;
   queued.set(id,{...previous,length:commands.length});
   try {
-    await pending(id,cur=>cur && cur.commands.length>=commands.length ? cur :
-      {id,commands,offset:Math.max(previous.offset,cur?.offset ?? 0)});
+    await pending(queueKey,cur=>cur && cur.commands.length>=commands.length ? cur :
+      {id,queueKey,commands,offset:Math.max(previous.offset,cur?.offset ?? 0)});
     await drain();
   } catch { queued.delete(id); connection('offline'); }
 }
 window.addEventListener('online',()=>{ void loadProfile(); });
 window.addEventListener('storage',event=>{
+  if (event.key === rejectionKey && event.newValue) {
+    try { acceptRejection(JSON.parse(event.newValue)); } catch { /* Ignore a malformed notification. */ }
+  }
   if (event.key === cacheKey && event.newValue) {
     try { acceptProfile(JSON.parse(event.newValue)); } catch { /* Ignore a malformed cached view. */ }
   }

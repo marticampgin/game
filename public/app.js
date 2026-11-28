@@ -12,7 +12,7 @@ import { glyph, esc } from './art.js';
 import { playContactSound } from './combat-sound.js';
 import { mountLobby, resumeLobby, roomRequest as request } from './lobby.js';
 
-import { loadProfile, readProfile, subscribeProfile, syncCareerSolo } from './career-client.js';
+import { loadProfile, onSoloRejected, readProfile, subscribeProfile, syncCareerSolo } from './career-client.js';
 import { objectiveRows } from './progression-objectives.js';
 
 const app = document.querySelector('#app');
@@ -163,6 +163,22 @@ function clearInvite() {
   url.searchParams.delete('room');
   history.replaceState(null, '', url);
 }
+function careerUnavailableMessage(reason) {
+  if (reason === 'diverged') return 'Another copy advanced this match. You can keep playing here without earning coins or mastery.';
+  if (reason === 'checkpoint') return 'This match could not be verified. You can keep playing without earning coins or mastery.';
+  return 'Playing offline. Career progress is unavailable for this match.';
+}
+onSoloRejected((id,reason) => {
+  if (match?.state?.career?.runId !== id || match.state.careerUnavailable) return;
+  match.state = {...match.state,careerUnavailable:reason};
+  delete match.state.careerJournal;
+  sessionStorage.setItem('rift-solo', JSON.stringify({state:match.state, viewerId:match.viewerId}));
+  if (screen === 'battle') {
+    if (modal.open && contents.querySelector('.live-objectives')) modal.close();
+    refreshBattle();
+    notice(careerUnavailableMessage(reason));
+  }
+});
 function startBattle(payload) {
   setScreen('battle');
   match = payload;
@@ -175,7 +191,7 @@ function startBattle(payload) {
   draftHidden = false;
   planCache = null;
   preloadArenaSkins(current().players);
-  if (match.state?.careerUnavailable) notice('Playing offline. Career progress is unavailable for this match.');
+  if (match.state?.careerUnavailable) notice(careerUnavailableMessage(match.state.careerUnavailable));
   busy = false;
   shownView = null;
   pollFailed = false;
@@ -332,6 +348,8 @@ function refreshBattle() {
 }
 
 function renderBattle(v) {
+  // Verification can finish while a cinematic still holds its earlier view.
+  if (v.career && match.state?.careerUnavailable) v = current();
   const freshOffers = v.offers.length && (shownView?.globalTurn !== v.globalTurn ||
     shownView?.offers.join('|') !== v.offers.join('|'));
   if (v.career && shownView?.career?.runId === v.career.runId) {
