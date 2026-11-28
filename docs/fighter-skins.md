@@ -78,7 +78,7 @@ To paint a new condition, register its row, color, target anchor and sound in [s
 
 ## Founder art sources
 
-The individual base and breakdown paintings are packed under [scripts/art/founders](../scripts/art/founders). Each class has 16 primary paintings and four extra weapon or arm breakdowns in each of the three health bands. The builder registers the painted surfaces to create intermediate exposures, keeps the hard silhouette edge, preserves the original color palette and packs the sheets for the browser. Each class also has twelve separately painted footwork drawings in the shipped footwork sheet.
+Guardian, Berserker, Chronomancer and Alchemist use the original [founder paintings](../scripts/art/founders). Each has 16 primary paintings and four weapon or arm breakdowns in every health band. The builder registers the painted surfaces to create intermediate exposures and keeps the hard silhouette edge. Gambler, Necromancer, Trickster and Artificer use the five-column costume format below for their founders and alternates.
 
 With Python, Pillow, NumPy and OpenCV installed, regenerate the standing and motion atlases and save a health-stage comparison. The game serves prebuilt images directly.
 
@@ -112,6 +112,16 @@ python scripts/build-costume-skins.py --skin harbor-warden --class-id guardian -
 python scripts/build-costume-skins.py --skin harbor-warden --class-id guardian --health critical --import-board critical.png
 python scripts/build-costume-skins.py --skin harbor-warden --import-portrait portrait.png
 python scripts/build-costume-skins.py --skin harbor-warden
+```
+
+For a founder, substitute `--founder --class-id gambler` for the skin selection. The builder establishes the class's foot position and emits the conventional founder sheet, portrait and inspection paths. Subsequent costumes use that founder’s individual poses as fitting guides.
+
+An optional detail sheet supplies **six columns with one row per health band**. Paint an empty grip at the belt, the same grip at the lips, early weapon wind-up, weapon acceleration, signature acceleration, and the recovery toward rest. The compiler uses those four weapon breakdowns in the basic and native signature tracks. Each track retains its contact on frame seven. To rebuild the Gambler’s corrected gestures, import its detail sheet and repack both motion sets.
+
+```sh
+python scripts/build-costume-skins.py --founder --class-id gambler --import-details gambler-details.png
+python scripts/build-fighter-skins.py --role gambler
+python scripts/build-idle-performances.py --role gambler --skin founder
 ```
 
 Measure the occupied waist in the rest pose, the hand and mouth in the two empty-grip poses, and the cache beside the reaching hand. Register those four points for each health band. A painted weapon remains with its outfit through every take. Acquired trinkets and held consumables use the shared renderer at the measured sockets.

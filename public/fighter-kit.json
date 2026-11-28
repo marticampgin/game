@@ -58,33 +58,33 @@
     "gambler": {
       "weapon": "rapier", "emblem": "dice", "title": "Riverboat cardsharp", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
-        "healthy": {"hand": [132, 50], "mouth": [107, 45], "ground": [147, 149], "belt": [103, 82]},
-        "wounded": {"hand": [129, 59], "mouth": [108, 53], "ground": [146, 149], "belt": [103, 85]},
-        "critical": {"hand": [132, 68], "mouth": [109, 60], "ground": [150, 149], "belt": [102, 96]}
+        "healthy": {"hand": [102, 91], "mouth": [106, 53], "ground": [140, 147], "belt": [106, 85]},
+        "wounded": {"hand": [101, 94], "mouth": [105, 59], "ground": [141, 147], "belt": [104, 85]},
+        "critical": {"hand": [104, 102], "mouth": [109, 69], "ground": [145, 147], "belt": [105, 97]}
       }
     },
     "necromancer": {
       "weapon": "staff", "emblem": "skull", "title": "Keeper of the departed", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
-        "healthy": {"hand": [103, 76], "mouth": [111, 38], "ground": [151, 149], "belt": [107, 80]},
-        "wounded": {"hand": [103, 83], "mouth": [112, 45], "ground": [153, 149], "belt": [105, 83]},
-        "critical": {"hand": [101, 96], "mouth": [117, 57], "ground": [154, 149], "belt": [108, 97]}
+        "healthy": {"hand": [102, 82], "mouth": [116, 48], "ground": [149, 149], "belt": [107, 78]},
+        "wounded": {"hand": [106, 89], "mouth": [115, 52], "ground": [148, 149], "belt": [108, 86]},
+        "critical": {"hand": [98, 97], "mouth": [113, 65], "ground": [146, 149], "belt": [108, 95]}
       }
     },
     "trickster": {
       "weapon": "dagger", "emblem": "dagger", "title": "Mirror duelist", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
-        "healthy": {"hand": [121, 49], "mouth": [109, 42], "ground": [143, 149], "belt": [105, 83]},
-        "wounded": {"hand": [122, 59], "mouth": [110, 46], "ground": [150, 149], "belt": [106, 87]},
-        "critical": {"hand": [130, 69], "mouth": [113, 59], "ground": [145, 149], "belt": [108, 95]}
+        "healthy": {"hand": [101, 83], "mouth": [113, 49], "ground": [144, 149], "belt": [106, 81]},
+        "wounded": {"hand": [101, 88], "mouth": [114, 55], "ground": [143, 149], "belt": [106, 86]},
+        "critical": {"hand": [97, 97], "mouth": [120, 69], "ground": [145, 149], "belt": [109, 96]}
       }
     },
     "artificer": {
       "weapon": "hammer", "emblem": "hammer", "title": "Forge mechanic", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
-        "healthy": {"hand": [124, 53], "mouth": [108, 45], "ground": [148, 149], "belt": [107, 83]},
-        "wounded": {"hand": [124, 62], "mouth": [110, 54], "ground": [148, 149], "belt": [108, 89]},
-        "critical": {"hand": [120, 72], "mouth": [113, 58], "ground": [146, 149], "belt": [105, 94]}
+        "healthy": {"hand": [105, 87], "mouth": [112, 53], "ground": [150, 149], "belt": [104, 82]},
+        "wounded": {"hand": [104, 86], "mouth": [113, 61], "ground": [149, 149], "belt": [102, 87]},
+        "critical": {"hand": [103, 98], "mouth": [113, 63], "ground": [148, 149], "belt": [103, 95]}
       }
     }
   },
@@ -255,9 +255,9 @@
       "portrait": "/assets/skins/outfits/riverboat-duelist/portrait.webp",
       "model": "/assets/skins/outfits/riverboat-duelist/model.webp",
       "anchors": {
-        "healthy": {"hand": [132, 55], "mouth": [106, 49], "ground": [141, 149], "belt": [104, 82]},
-        "wounded": {"hand": [129, 62], "mouth": [106, 56], "ground": [141, 149], "belt": [103, 87]},
-        "critical": {"hand": [131, 69], "mouth": [108, 62], "ground": [141, 149], "belt": [103, 97]}
+        "healthy": {"hand": [103, 93], "mouth": [110, 53], "ground": [141, 149], "belt": [104, 82]},
+        "wounded": {"hand": [104, 99], "mouth": [109, 62], "ground": [141, 149], "belt": [103, 87]},
+        "critical": {"hand": [102, 99], "mouth": [102, 62], "ground": [141, 149], "belt": [103, 97]}
       }
     },
     {
@@ -274,9 +274,9 @@
       "portrait": "/assets/skins/outfits/gilded-jack/portrait.webp",
       "model": "/assets/skins/outfits/gilded-jack/model.webp",
       "anchors": {
-        "healthy": {"hand": [133, 59], "mouth": [107, 53], "ground": [150, 149], "belt": [108, 84]},
-        "wounded": {"hand": [129, 62], "mouth": [108, 60], "ground": [146, 149], "belt": [104, 85]},
-        "critical": {"hand": [133, 71], "mouth": [109, 64], "ground": [146, 149], "belt": [104, 95]}
+        "healthy": {"hand": [100, 94], "mouth": [113, 57], "ground": [150, 149], "belt": [108, 84]},
+        "wounded": {"hand": [100, 100], "mouth": [109, 65], "ground": [146, 149], "belt": [104, 85]},
+        "critical": {"hand": [100, 100], "mouth": [105, 67], "ground": [146, 149], "belt": [104, 95]}
       }
     },
     {
@@ -293,9 +293,9 @@
       "portrait": "/assets/skins/outfits/marsh-medium/portrait.webp",
       "model": "/assets/skins/outfits/marsh-medium/model.webp",
       "anchors": {
-        "healthy": {"hand": [96, 83], "mouth": [109, 41], "ground": [150, 149], "belt": [107, 80]},
-        "wounded": {"hand": [96, 86], "mouth": [111, 49], "ground": [150, 149], "belt": [103, 85]},
-        "critical": {"hand": [95, 99], "mouth": [117, 62], "ground": [151, 149], "belt": [109, 94]}
+        "healthy": {"hand": [101, 92], "mouth": [112, 41], "ground": [150, 149], "belt": [107, 80]},
+        "wounded": {"hand": [98, 98], "mouth": [112, 50], "ground": [150, 149], "belt": [103, 85]},
+        "critical": {"hand": [100, 106], "mouth": [118, 66], "ground": [151, 149], "belt": [109, 94]}
       }
     },
     {
@@ -312,9 +312,9 @@
       "portrait": "/assets/skins/outfits/ossuary-queen/portrait.webp",
       "model": "/assets/skins/outfits/ossuary-queen/model.webp",
       "anchors": {
-        "healthy": {"hand": [96, 92], "mouth": [112, 54], "ground": [151, 149], "belt": [107, 85]},
-        "wounded": {"hand": [96, 91], "mouth": [112, 58], "ground": [149, 149], "belt": [105, 94]},
-        "critical": {"hand": [96, 105], "mouth": [117, 74], "ground": [151, 149], "belt": [108, 103]}
+        "healthy": {"hand": [109, 94], "mouth": [119, 50], "ground": [151, 149], "belt": [107, 85]},
+        "wounded": {"hand": [111, 100], "mouth": [117, 61], "ground": [149, 149], "belt": [105, 94]},
+        "critical": {"hand": [112, 104], "mouth": [119, 72], "ground": [151, 149], "belt": [108, 103]}
       }
     },
     {
@@ -331,9 +331,9 @@
       "portrait": "/assets/skins/outfits/carnival-fox/portrait.webp",
       "model": "/assets/skins/outfits/carnival-fox/model.webp",
       "anchors": {
-        "healthy": {"hand": [122, 55], "mouth": [110, 44], "ground": [153, 149], "belt": [107, 82]},
-        "wounded": {"hand": [120, 62], "mouth": [110, 50], "ground": [140, 149], "belt": [109, 87]},
-        "critical": {"hand": [127, 71], "mouth": [115, 63], "ground": [141, 149], "belt": [109, 96]}
+        "healthy": {"hand": [100, 88], "mouth": [115, 49], "ground": [153, 149], "belt": [107, 82]},
+        "wounded": {"hand": [99, 93], "mouth": [115, 54], "ground": [140, 149], "belt": [109, 87]},
+        "critical": {"hand": [96, 99], "mouth": [118, 65], "ground": [141, 149], "belt": [109, 96]}
       }
     },
     {
@@ -350,9 +350,9 @@
       "portrait": "/assets/skins/outfits/mirror-regent/portrait.webp",
       "model": "/assets/skins/outfits/mirror-regent/model.webp",
       "anchors": {
-        "healthy": {"hand": [123, 54], "mouth": [110, 43], "ground": [145, 149], "belt": [106, 81]},
-        "wounded": {"hand": [121, 61], "mouth": [110, 48], "ground": [145, 149], "belt": [107, 87]},
-        "critical": {"hand": [129, 69], "mouth": [115, 60], "ground": [145, 149], "belt": [108, 96]}
+        "healthy": {"hand": [107, 88], "mouth": [114, 48], "ground": [145, 149], "belt": [106, 81]},
+        "wounded": {"hand": [106, 96], "mouth": [114, 52], "ground": [145, 149], "belt": [107, 87]},
+        "critical": {"hand": [104, 99], "mouth": [116, 64], "ground": [145, 149], "belt": [108, 96]}
       }
     },
     {
@@ -369,9 +369,9 @@
       "portrait": "/assets/skins/outfits/railway-smith/portrait.webp",
       "model": "/assets/skins/outfits/railway-smith/model.webp",
       "anchors": {
-        "healthy": {"hand": [117, 53], "mouth": [109, 46], "ground": [145, 149], "belt": [104, 81]},
-        "wounded": {"hand": [119, 63], "mouth": [110, 52], "ground": [147, 149], "belt": [106, 87]},
-        "critical": {"hand": [119, 71], "mouth": [115, 60], "ground": [148, 149], "belt": [107, 96]}
+        "healthy": {"hand": [96, 91], "mouth": [107, 52], "ground": [145, 149], "belt": [104, 81]},
+        "wounded": {"hand": [96, 97], "mouth": [109, 60], "ground": [147, 149], "belt": [106, 87]},
+        "critical": {"hand": [95, 102], "mouth": [112, 63], "ground": [148, 149], "belt": [107, 96]}
       }
     },
     {
@@ -388,9 +388,9 @@
       "portrait": "/assets/skins/outfits/stormglass-engineer/portrait.webp",
       "model": "/assets/skins/outfits/stormglass-engineer/model.webp",
       "anchors": {
-        "healthy": {"hand": [121, 53], "mouth": [108, 44], "ground": [145, 149], "belt": [105, 83]},
-        "wounded": {"hand": [122, 63], "mouth": [110, 53], "ground": [145, 149], "belt": [106, 87]},
-        "critical": {"hand": [121, 70], "mouth": [112, 60], "ground": [145, 149], "belt": [107, 96]}
+        "healthy": {"hand": [98, 94], "mouth": [111, 56], "ground": [145, 149], "belt": [105, 83]},
+        "wounded": {"hand": [98, 99], "mouth": [112, 61], "ground": [145, 149], "belt": [106, 87]},
+        "critical": {"hand": [99, 104], "mouth": [113, 61], "ground": [145, 149], "belt": [107, 96]}
       }
     }
   ]

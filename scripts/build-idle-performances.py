@@ -9,6 +9,7 @@ from pathlib import Path
 import importlib.util
 import math
 import json
+import runpy
 import sys
 
 import cv2
@@ -125,6 +126,20 @@ def register(board, role, breakdown=False, wardrobe=None):
         masters.save(MASTERS / (role+'-'+skin['id']+suffix), lossless=True,method=6)
 
 
+def register_sequence(source, skin):
+    """Fit a single costume's resting, intermediate and held gesture board."""
+    packer = runpy.run_path(str(HERE / 'build-costume-skins.py'))
+    figures = packer['separate'](Image.open(source), columns=3, rows=len(BANDS))
+    for column in (1, 2):
+        poses = figures[column::3]
+        width = max(pose.width for pose in poses)
+        height = max(pose.height for pose in poses)
+        board = Image.new('RGBA', (width, height * len(poses)))
+        for row, pose in enumerate(poses):
+            board.paste(pose, ((width - pose.width) // 2, (row + 1) * height - pose.height))
+        register(board, skin['classId'], column == 1, [skin])
+
+
 def ripple(image, role, band, phase, strength):
     # An asymmetric inhale and release with delayed shoulder/cloth follow-through.
     dx, dy = np.zeros_like(XX), np.zeros_like(YY)
@@ -140,14 +155,7 @@ def ripple(image, role, band, phase, strength):
                                      cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT))
 
 
-def planted(rest, target):
-    # Blend displacement rather than opacity to restore the stance below the
-    # hips. This avoids transparency seams or doubled boots in new paintings.
-    field = np.clip((131-YY)/29,0,1)[:, :, None]
-    solver = founder_art.Inbetweens([rest,target])
-    src = solver.sample(0,1,field)
-    dst = solver.sample(1,0,1-field)
-    return Image.fromarray(np.where(field < .5,src,dst))
+planted = founder_art.planted
 
 
 def exposure(frame, timing):
@@ -256,11 +264,7 @@ if __name__ == '__main__':
         if not args.role or not args.skin: parser.error('--import-sequence requires --role and --skin')
         selected = [skin for skin in skins(args.role) if skin['id'] == args.skin]
         if len(selected) != 1: parser.error('unknown skin')
-        sequence = Image.open(args.import_sequence).convert('RGBA')
-        w,h = sequence.size
-        for col in (1,2):
-            column = sequence.crop((round(w*col/3),0,round(w*(col+1)/3),h))
-            register(column,args.role,col == 1,selected)
+        register_sequence(args.import_sequence,selected[0])
     if args.import_board:
         if not args.role: parser.error('--import-board requires --role')
         register(Image.open(args.import_board).convert('RGBA'),args.role,args.breakdown)

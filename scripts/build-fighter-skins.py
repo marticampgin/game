@@ -108,6 +108,15 @@ class Inbetweens:
         return limited
 
 
+def planted(rest, target):
+    """Let the upper body act while retaining one planted stance below the hips."""
+    solver = Inbetweens([rest, target])
+    field = np.clip((131 - solver.xy[:, :, 1]) / 29, 0, 1)[:, :, None]
+    departing = solver.sample(0, 1, field)
+    arriving = solver.sample(1, 0, 1 - field)
+    return Image.fromarray(np.where(field < .5, departing, arriving))
+
+
 def idle_glint(frame, role, tier, exposure):
     if role not in GLINT_ORIGIN or exposure not in (3, 4, 5, 6, 7):
         return

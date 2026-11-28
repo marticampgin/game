@@ -6,12 +6,16 @@ const gallery = [
   ['harbor-warden', 'Rook'], ['wolf-tracker', 'Fen'], ['star-cartographer', 'Lyra'], ['apiarist', 'Bram'],
   ['sunspire-paladin', 'Sol'], ['ash-dragon', 'Ash'], ['glass-oracle', 'Opal'], ['nightshade-apothecary', 'Morel'],
 ];
-function reviewTurn(count) {
-  const players = gallery.slice(0, count).map(([id, name], index) => {
+const newGallery = [
+  ['riverboat-duelist', 'Chance'], ['marsh-medium', 'Morrow'], ['carnival-fox', 'Lark'], ['railway-smith', 'Sable'],
+  ['gilded-jack', 'Jack'], ['ossuary-queen', 'Ida'], ['mirror-regent', 'Vesper'], ['stormglass-engineer', 'Gale'],
+];
+function reviewTurn(group) {
+  const players = group.map(([id, name], index) => {
     const skin = fighterLayout.skins.find(entry => entry.id === id);
     return { id: 'seat-' + index, classId: skin.classId, name, skinId: id, bot: false };
   });
-  let state = createMatch({ seed: 'costume-gallery-' + count, players });
+  let state = createMatch({ seed: 'costume-gallery-' + players.length, players });
   const actorId = state.activeId;
   state = sandboxEdit(state, { type: 'grant', playerId: actorId, rewardId: 'red-tonic' });
   state = applyCommand(state, actorId, { type: 'pick', rewardId: state.offers[0] });
@@ -22,10 +26,11 @@ function reviewTurn(count) {
   return { state, viewerId: actorId };
 }
 
-for (const count of [2, 8]) {
-  test('painted outfits keep their portraits, injuries and drink gesture across ' + count + ' desktop seats', async ({ page }, info) => {
+for (const [label, group] of [['duel', gallery.slice(0, 2)], ['full ring', gallery], ['expanded ring', newGallery]]) {
+  const count = group.length;
+  test('painted outfits keep their portraits, injuries and drink gesture in the desktop ' + label, async ({ page }, info) => {
     await page.setViewportSize(count === 2 ? { width: 1280, height: 720 } : { width: 1440, height: 900 });
-    const save = reviewTurn(count);
+    const save = reviewTurn(group);
     await page.addInitScript(data => sessionStorage.setItem('rift-solo', JSON.stringify(data)), save);
     await page.goto('/');
     const play = page.locator('[data-action="red-tonic"]');
