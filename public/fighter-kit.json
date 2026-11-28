@@ -54,5 +54,40 @@
       }
     }
   },
-  "skins": []
+  "skins": [
+    {
+      "classId": "guardian",
+      "id": "harbor-warden",
+      "name": "Harbor Warden",
+      "sheet": "/assets/skins/outfits/harbor-warden/standing.webp",
+      "motions": "/assets/skins/outfits/harbor-warden/motions.webp",
+      "footwork": "/assets/skins/outfits/harbor-warden/footwork.webp",
+      "ambient": "/assets/skins/outfits/harbor-warden/ambient.webp",
+      "consume": "/assets/skins/outfits/harbor-warden/consume.webp",
+      "portrait": "/assets/skins/outfits/harbor-warden/portrait.webp",
+      "model": "/assets/skins/outfits/harbor-warden/model.webp",
+      "anchors": {
+        "healthy": {"hand": [100, 78], "mouth": [108, 38], "ground": [146, 149], "belt": [102, 82]},
+        "wounded": {"hand": [103, 82], "mouth": [109, 43], "ground": [145, 149], "belt": [102, 85]},
+        "critical": {"hand": [103, 94], "mouth": [116, 58], "ground": [141, 149], "belt": [99, 100]}
+      }
+    },
+    {
+      "classId": "chronomancer",
+      "id": "star-cartographer",
+      "name": "Star Cartographer",
+      "sheet": "/assets/skins/outfits/star-cartographer/standing.webp",
+      "motions": "/assets/skins/outfits/star-cartographer/motions.webp",
+      "footwork": "/assets/skins/outfits/star-cartographer/footwork.webp",
+      "ambient": "/assets/skins/outfits/star-cartographer/ambient.webp",
+      "consume": "/assets/skins/outfits/star-cartographer/consume.webp",
+      "portrait": "/assets/skins/outfits/star-cartographer/portrait.webp",
+      "model": "/assets/skins/outfits/star-cartographer/model.webp",
+      "anchors": {
+        "healthy": {"hand": [100, 79], "mouth": [111, 42], "ground": [145, 149], "belt": [106, 70]},
+        "wounded": {"hand": [103, 87], "mouth": [113, 51], "ground": [150, 149], "belt": [107, 81]},
+        "critical": {"hand": [99, 93], "mouth": [115, 66], "ground": [145, 149], "belt": [109, 90]}
+      }
+    }
+  ]
 }
