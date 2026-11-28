@@ -93,7 +93,7 @@ python scripts/build-fighter-skins.py --review founder-health.png
 
 The alternate outfits use [twenty painted poses per health band](../scripts/art/costumes) and one separate portrait. Keep the costume’s distinguishing equipment visible in profile. Paint its damaged form into each wounded and critical pose so it stays damaged when the fighter attacks, kneels or drinks.
 
-The [outfit reference](qa/pc-combat/class-outfits.webp) shows each portrait beside its healthy, wounded and critical stance. Compare the silhouettes at playing size in the [eight-contender desktop arena](qa/career/arena.webp).
+The [24-look outfit reference](qa/pc-combat/class-outfits.webp) shows each portrait beside the healthy, wounded and critical stance from left to right. Compare their silhouettes at playing size in the [eight-class desktop arena](qa/pc-combat/eight-class-ring.webp). Generate an updated reference after registering a new look with `python scripts/check-fighter-skins.py --wardrobe-board wardrobe.webp`.
 
 Lay out the twenty right-facing poses on a transparent board. Leave a gap between adjacent silhouettes, including extended weapons. Each row reads from left to right.
 
