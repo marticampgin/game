@@ -54,6 +54,38 @@
         "wounded": { "hand": [124, 73], "mouth": [118, 48], "ground": [146, 149] },
         "critical": { "hand": [125, 85], "mouth": [117, 64], "ground": [144, 149] }
       }
+    },
+    "gambler": {
+      "weapon": "rapier", "emblem": "dice", "title": "Riverboat cardsharp", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "anchors": {
+        "healthy": {"hand": [132, 50], "mouth": [107, 45], "ground": [147, 149], "belt": [103, 82]},
+        "wounded": {"hand": [129, 59], "mouth": [108, 53], "ground": [146, 149], "belt": [103, 85]},
+        "critical": {"hand": [132, 68], "mouth": [109, 60], "ground": [150, 149], "belt": [102, 96]}
+      }
+    },
+    "necromancer": {
+      "weapon": "staff", "emblem": "skull", "title": "Keeper of the departed", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "anchors": {
+        "healthy": {"hand": [103, 76], "mouth": [111, 38], "ground": [151, 149], "belt": [107, 80]},
+        "wounded": {"hand": [103, 83], "mouth": [112, 45], "ground": [153, 149], "belt": [105, 83]},
+        "critical": {"hand": [101, 96], "mouth": [117, 57], "ground": [154, 149], "belt": [108, 97]}
+      }
+    },
+    "trickster": {
+      "weapon": "dagger", "emblem": "dagger", "title": "Mirror duelist", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "anchors": {
+        "healthy": {"hand": [121, 49], "mouth": [109, 42], "ground": [143, 149], "belt": [105, 83]},
+        "wounded": {"hand": [122, 59], "mouth": [110, 46], "ground": [150, 149], "belt": [106, 87]},
+        "critical": {"hand": [130, 69], "mouth": [113, 59], "ground": [145, 149], "belt": [108, 95]}
+      }
+    },
+    "artificer": {
+      "weapon": "hammer", "emblem": "hammer", "title": "Forge mechanic", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
+      "anchors": {
+        "healthy": {"hand": [124, 53], "mouth": [108, 45], "ground": [148, 149], "belt": [107, 83]},
+        "wounded": {"hand": [124, 62], "mouth": [110, 54], "ground": [148, 149], "belt": [108, 89]},
+        "critical": {"hand": [120, 72], "mouth": [113, 58], "ground": [146, 149], "belt": [105, 94]}
+      }
     }
   },
   "skins": [

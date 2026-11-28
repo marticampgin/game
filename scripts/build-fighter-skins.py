@@ -8,6 +8,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 import json
+import runpy
 
 import cv2
 import numpy as np
@@ -172,6 +173,10 @@ def fallen(frame):
 
 
 def build(role):
+    if (MASTERS.parent / 'costumes' / role / 'healthy.webp').is_file():
+        kit = runpy.run_path(str(Path(__file__).with_name('build-costume-skins.py')))
+        kit['build'](role, founder=True)
+        return
     master = Image.open(MASTERS / f'{role}-keys.webp').convert('RGBA')
     breakdowns = Image.open(MASTERS / f'{role}-breakdowns.webp').convert('RGBA')
     drink = Image.open(MASTERS / f'{role}-consume-keys.webp').convert('RGBA')
@@ -221,7 +226,7 @@ def build(role):
 
 
 def review(path):
-    out = Image.new('RGB', (750, 730), '#302b3d')
+    out = Image.new('RGB', (750, 30 + 175 * len(ROLES)), '#302b3d')
     draw = ImageDraw.Draw(out)
     for tier, label in enumerate(TIERS):
         draw.text((tier * 250 + 32, 8), label.upper(), fill='#f5dba6')

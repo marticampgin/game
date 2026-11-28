@@ -9,6 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 import importlib.util
+import re
 
 import cv2
 import numpy as np
@@ -46,6 +47,9 @@ def tile(board, col, row):
 
 
 def reference(class_id, band):
+    registered = PACKS / class_id / (BANDS[band] + '.webp')
+    if registered.exists():
+        return skin_cels(Image.open(registered).convert('RGBA'))
     master = Image.open(founders.MASTERS / (class_id + '-keys.webp')).convert('RGBA')
     consume = Image.open(founders.MASTERS / (class_id + '-consume-keys.webp')).convert('RGBA')
     steps = Image.open(ART / (class_id + '-footwork.webp')).convert('RGBA')
@@ -119,23 +123,29 @@ def palette_board(out):
     return limited
 
 
-def import_board(class_id, band_name, source, dest):
+def import_board(class_id, band_name, source, dest, founder=False):
     band = BANDS.index(band_name)
-    guides = reference(class_id, band)
     figures = separate(Image.open(source))
-    # Keep one scale across the board to avoid pumping in poses with high weapons.
-    height_ratios = [(guides[i].getbbox()[3] - guides[i].getbbox()[1]) / figures[i].height
-                     for i in (0, 1, 2, 8, 12, 14, 16, 17)]
-    scale = float(np.median(height_ratios))
+    # A founder establishes the class footprint. An outfit uses its founder's
+    # individual boot positions and matches its size across several landmarks.
+    if founder:
+        scale = (120, 113, 101)[band] / figures[0].height
+        foot_centers = [CELL[0] / 2] * len(figures)
+    else:
+        guides = reference(class_id, band)
+        ratios = [(guides[i].getbbox()[3] - guides[i].getbbox()[1]) / figures[i].height
+                  for i in (0, 1, 2, 8, 12, 14, 16, 17)]
+        scale = float(np.median(ratios))
+        foot_centers = [feet(guide) for guide in guides]
     limits = [min((CELL[0] - 4) / im.width, (BASELINE - 2) / im.height) for im in figures]
     scale = min(scale, min(limits))
     board = Image.new('RGBA', (5 * CELL[0], 4 * CELL[1]))
-    for i, (im, guide) in enumerate(zip(figures, guides)):
+    for i, (im, center) in enumerate(zip(figures, foot_centers)):
         cel = Image.new('RGBA', CELL)
         im = im.resize((max(1, round(im.width * scale)), max(1, round(im.height * scale))),
                        Image.Resampling.LANCZOS)
         im.putalpha(im.getchannel('A').point(lambda a: 255 if a >= 110 else 0))
-        x = max(1, min(CELL[0] - im.width - 1, round(feet(guide) - feet(im))))
+        x = max(1, min(CELL[0] - im.width - 1, round(center - feet(im))))
         cel.alpha_composite(im, (x, BASELINE - im.height))
         board.paste(cel, (i % 5 * CELL[0], i // 5 * CELL[1]))
     dest.parent.mkdir(exist_ok=True, parents=True)
@@ -159,19 +169,33 @@ def import_portrait(source, dest):
 
 
 def publish(image, destination):
-    with NamedTemporaryFile(dir=destination.parent, suffix='.webp', delete=False) as temp:
+    with NamedTemporaryFile(dir=destination.parent, suffix=destination.suffix, delete=False) as temp:
         staged = Path(temp.name)
     try:
-        image.save(staged, lossless=True, method=5)
+        if destination.suffix == '.png':
+            image.save(staged, optimize=True)
+        else:
+            image.save(staged, lossless=True, method=5)
         staged.replace(destination)
     finally:
         staged.unlink(missing_ok=True)
 
 
-def build(id):
+def asset_path(id, layer, founder):
+    if not founder:
+        return ART / 'outfits' / id / (layer + '.webp')
+    if layer == 'standing':
+        return ART / (id + '-founder.png')
+    if layer == 'model':
+        return ART.parent / (id + '.png')
+    if layer == 'portrait':
+        return ART.parent / ('portrait-' + id + '.webp')
+    return ART / (id + '-' + layer + '.webp')
+
+
+def build(id, founder=False):
     pack = PACKS / id
-    dest = ART / 'outfits' / id
-    dest.mkdir(parents=True, exist_ok=True)
+    asset_path(id, 'standing', founder).parent.mkdir(parents=True, exist_ok=True)
     layers = founders.KIT['layers']
     def sheet(cols, rows):
         return Image.new('RGBA', (cols * CELL[0], rows * CELL[1]))
@@ -216,32 +240,39 @@ def build(id):
     for name, image in sheets.items():
         packed = image.convert('RGB').quantize(palette=palette, dither=Image.Dither.NONE).convert('RGBA')
         packed.putalpha(image.getchannel('A'))
-        publish(packed, dest / (name + '.webp'))
+        publish(packed, asset_path(id, name, founder))
         if name == 'standing':
             rest = tile(packed, 0, 0)
-            publish(rest.crop(rest.getbbox()), dest / 'model.webp')
+            publish(rest.crop(rest.getbbox()), asset_path(id, 'model', founder))
     print(id + ': packed 372 cels', flush=True)
 
 
 if __name__ == '__main__':
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('--skin', help='costume ID; omit to rebuild every registered costume')
+    parser.add_argument('--founder', action='store_true', help='author the base art for --class-id')
     parser.add_argument('--import-board', type=Path, help='register a raw five-by-four painted board')
     parser.add_argument('--import-portrait', type=Path, help='pack a square head and shoulders painting')
-    parser.add_argument('--class-id', choices=founders.ROLES, help='class used for foot registration')
+    parser.add_argument('--class-id', help='class used for foot registration')
     parser.add_argument('--health', choices=BANDS)
     args = parser.parse_args()
+    for token in (args.class_id, args.skin):
+        if token is not None and not re.fullmatch(r'[a-z][a-z0-9]*(?:-[a-z0-9]+)*', token):
+            parser.error('expected a lowercase class or costume ID')
+    if args.founder and (not args.class_id or args.skin):
+        parser.error('use --founder with --class-id')
+    id = args.class_id if args.founder else args.skin
     cv2.setNumThreads(1)
     if args.import_portrait:
-        if not args.skin:
-            parser.error('portrait import requires --skin')
-        import_portrait(args.import_portrait, ART / 'outfits' / args.skin / 'portrait.webp')
+        if not id:
+            parser.error('portrait import requires a costume or founder')
+        import_portrait(args.import_portrait, asset_path(id, 'portrait', args.founder))
     elif args.import_board:
-        if not (args.skin and args.class_id and args.health):
-            parser.error('import requires --skin, --class-id and --health')
-        import_board(args.class_id, args.health, args.import_board, PACKS / args.skin / (args.health + '.webp'))
-    elif args.skin:
-        build(args.skin)
+        if not (id and args.class_id and args.health):
+            parser.error('board import requires a costume or founder, --class-id and --health')
+        import_board(args.class_id, args.health, args.import_board, PACKS / id / (args.health + '.webp'), args.founder)
+    elif id:
+        build(id, args.founder)
     else:
         for skin in founders.KIT['skins']:
             if (PACKS / skin['id']).is_dir():
