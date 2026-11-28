@@ -59,9 +59,22 @@ export function translate(value, locale = language) {
 let language = 'en';
 let observer;
 const originals = new WeakMap();
+const titleParts = new WeakMap();
+function localizedTitle(parts) {
+  return parts.map(part => typeof part === 'string' ? translate(part) : part.name).join('');
+}
+export function setLocalizedTitle(node, parts) {
+  titleParts.set(node, parts);
+  node.title = localizedTitle(parts);
+}
 const attributes = ['aria-label','aria-description','aria-valuetext','title','placeholder','alt'];
-const excluded = 'script,style,textarea,[translate="no"],[data-room-code],.rail-name,.rail-code,.fighter-title,.command-player-info>strong,#target-select option[value]:not([value=""]),.bench-seat strong,.inspect-top h2,.watch-fighter strong,.recap-route>span,.opening-turn .recap-handoff>strong';
+const excluded = 'script,style,textarea,[translate="no"],[data-room-code],.rail-name,.rail-code,.fighter-title,.command-player-info>strong,#target-select option[value]:not([value=""]),.bench-seat strong,.inspect-top h2,.watch-fighter strong,.opening-turn .recap-handoff>strong';
 function field(node, key, source, apply) {
+  if (key === 'title' && titleParts.has(node)) {
+    const result = localizedTitle(titleParts.get(node));
+    if (result !== source) apply(result);
+    return;
+  }
   let record = originals.get(node);
   const old = record?.get(key);
   const original = old && old.output === source ? old.source : source;

@@ -1,6 +1,7 @@
 import { STATUSES } from '../src/game/catalog.js';
 import { esc, glyph } from './art.js';
 import { statusCue, statusIcon } from './status-effects.js';
+import { setLocalizedTitle } from './i18n.js';
 
 export function statusBankHTML(stacks = {}) {
   const active = Object.keys(STATUSES).filter(id => stacks[id] > 0);
@@ -21,6 +22,15 @@ export function recapStatusHTML(action) {
 }
 
 const eventNames = {damage:'Hit', shield:'Shield', heal:'Heal', elimination:'Fallen', revival:'Revived', status:'Status'};
+
+function joinParts(parts, separator = ' · ') {
+  return parts.filter(Boolean).flatMap((part,index) => index ? [separator,part] : [part]).flat();
+}
+
+function lineHTML(parts) {
+  return parts.map(part => typeof part === 'string' ? '<span>' + esc(part) + '</span>'
+    : '<bdi translate="no">' + esc(part.name) + '</bdi>').join('');
+}
 
 // Condensed beats still carry each original packet. Group only the presentation,
 // retaining the first-seen seat order and keeping gains and losses separate.
@@ -77,6 +87,10 @@ function effectLabel(event) {
 
 export function mountEffectStrip(container, action, players) {
   const name = id => players.find(p => p.id === id)?.name || '';
+  const participant = id => {
+    const value = name(id);
+    return value ? {name:value} : null;
+  };
   const root = document.createElement('div');
   root.className = 'live-effects';
   root.setAttribute('aria-label', 'Resolving effects');
@@ -86,7 +100,7 @@ export function mountEffectStrip(container, action, players) {
   container.replaceChildren(root);
   const title = root.querySelector('strong'), phase = root.querySelector('small');
   title.textContent = action.actionName;
-  phase.textContent = action.actorName;
+  phase.innerHTML = lineHTML([{name:action.actorName}]);
   const trail = root.querySelector('ol');
   return (beat, index, total) => {
     const event = beat.event, sample = event || beat.events[0];
@@ -96,15 +110,15 @@ export function mountEffectStrip(container, action, players) {
       e.cause === sample.cause && e.amount === sample.amount && e.statusChange === sample.statusChange) &&
       grouped[0].cues[0];
     const caption = wave ? wave.title : event ? (cue?.title || eventNames[event.type] || 'Effect') :
-      grouped.length === 1 ? name(grouped[0].id) : grouped.length + ' contenders';
-    const detail = wave ? grouped.length + ' contenders' : event ? [name(event.targetId), effectLabel(event)].filter(Boolean).join(' · ') :
-      grouped.map(target => [grouped.length > 1 && name(target.id), ...target.cues.map(c => c.title),
-        ...target.values, target.fate].filter(Boolean).join(' · ')).join(' / ');
+      grouped.length === 1 ? participant(grouped[0].id) || '' : grouped.length + ' contenders';
+    const detail = wave ? [grouped.length + ' contenders'] : event ? joinParts([participant(event.targetId), effectLabel(event)]) :
+      joinParts(grouped.map(target => joinParts([grouped.length > 1 && participant(target.id), ...target.cues.map(c => c.title),
+        ...target.values, target.fate])), ' / ');
     const timing = sample.timing === 'turn' ? 'Turn start' : sample.timing === 'round' ? 'Round start' : action.actionName;
     title.textContent = timing;
     const owner = sample.timing === 'turn' ? name(sample.turnOwnerId || sample.targetId) :
       sample.timing === 'round' ? '' : action.actorName;
-    phase.textContent = [owner, (index + 1) + ' / ' + total].filter(Boolean).join(' · ');
+    phase.innerHTML = lineHTML(joinParts([owner && {name:owner}, (index + 1) + ' / ' + total]));
     const chip = document.createElement('li');
     chip.className = 'effect-receipt';
     if (cue) {
@@ -113,10 +127,10 @@ export function mountEffectStrip(container, action, players) {
     }
     const icons = grouped ? [...new Set(grouped.flatMap(t => t.cues.map(c => c.id)))].slice(0, 3).map(statusIcon).join('') :
       cue ? statusIcon(cue.id) : '';
-    chip.innerHTML = icons + '<strong>' + esc(caption) + '</strong><span>' + esc(detail) + '</span>';
-    if (grouped) chip.title = wave ? grouped.map(t => name(t.id)).join(' · ') : detail;
+    chip.innerHTML = icons + '<strong>' + lineHTML([caption]) + '</strong><span>' + lineHTML(detail) + '</span>';
+    if (grouped) setLocalizedTitle(chip, wave ? joinParts(grouped.map(t => participant(t.id))) : detail);
     trail.append(chip);
     if (trail.children.length > 3) trail.firstElementChild.remove();
-    root.querySelector('[role=status]').textContent = [timing, caption, detail].join('. ');
+    root.querySelector('[role=status]').innerHTML = lineHTML(joinParts([timing, caption, detail], '. '));
   };
 }

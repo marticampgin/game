@@ -447,20 +447,12 @@ function renderBattle(v) {
       ? 'Match complete.'
       : (v.activeId === match.viewerId ? 'Your turn' : actor.name + ' is up') + ' · ' + phase[v.phase];
   const resolved = v.lastAction;
-  const announcement = resolved
-    ? resolved.actorName +
-      ' used ' +
-      resolved.actionName +
-      '. ' +
-      (app.querySelector('.recap-outcome [data-quantity-line]')?.dataset.quantityLine || '') +
-      '. ' +
-      handoff
-    : handoff;
+  const outcomes = [...app.querySelectorAll('.recap-outcome [data-quantity-line]')].map(node => node.dataset.quantityLine);
+  const lines = resolved ? [resolved.actorName + ' used ' + resolved.actionName + '.', ...outcomes, handoff] : [handoff];
+  const announcement = lines.join(' ');
   const live = document.querySelector('#battle-announcement');
   if (live.dataset.message !== announcement) {
     live.dataset.message = announcement;
-    const lines = resolved ? [resolved.actorName + ' used ' + resolved.actionName + '.',
-      app.querySelector('.recap-outcome [data-quantity-line]')?.dataset.quantityLine, handoff] : [handoff];
     live.replaceChildren(...lines.filter(Boolean).map(line => {
       const part = document.createElement('span');
       part.textContent = line + ' ';

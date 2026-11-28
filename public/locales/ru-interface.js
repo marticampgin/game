@@ -252,7 +252,7 @@ Your turn|Ваш ход
 Your extra turn|Ваш дополнительный ход
 Your extra action|Ваше дополнительное действие
 Yourself|На себя
-self|на себя
+self|себя
 Target|Цель
 Select a reward to inspect it.|Выберите награду, чтобы узнать подробности.
 High card loaded for this turn. Choose a reward.|На этот ход приготовлена старшая карта. Выберите награду.

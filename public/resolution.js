@@ -8,15 +8,20 @@ const eventIcons = {
   event: 'bolt', action: 'rune', cooldown: 'clock', timing: 'clock',
 };
 
+function participant(name) {
+  return '<span translate="no">' + esc(name) + '</span>';
+}
+
 function route(action) {
-  const target = action.targetId === action.actorId ? 'self' : action.targetName;
-  return '<span class="recap-route"><span>' + esc(action.actorName) + '</span>' +
-    (target ? glyph('right') + '<span>' + esc(target) + '</span>' : '') + '</span>';
+  const target = action.targetId === action.actorId ? '<span>self</span>'
+    : action.targetName ? participant(action.targetName) : '';
+  return '<span class="recap-route">' + participant(action.actorName) +
+    (target ? glyph('right') + target : '') + '</span>';
 }
 
 function moveSentence(action) {
-  const target = action.actorId !== action.targetId ? ' on <span>' + esc(action.targetName) + '</span>' : '';
-  return '<span class="recap-route"><span>' + esc(action.actorName) + '</span> used <strong>' +
+  const target = action.actorId !== action.targetId ? ' on ' + participant(action.targetName) : '';
+  return '<span class="recap-route">' + participant(action.actorName) + ' used <strong>' +
     esc(action.actionName) + '</strong>' + target + '.</span>';
 }
 
@@ -38,7 +43,7 @@ function resultLine(action) {
     const revivedTarget = major.type === 'revival' && major.targetId === action.targetId;
     parts.push(revivedTarget ? 'Revived at ' + major.amount + ' HP' : major.text);
   }
-  return withNumbers(parts.join(' · '));
+  return parts.map(withNumbers).join(' · ');
 }
 
 function handoff(view, after, action, viewerId, historical = false) {
@@ -94,7 +99,7 @@ export function effectTextHTML(event, view, actingId) {
     if (source) details.push('Source ' + source.name);
   }
   return withNumbers(event.text) + (details.length ? '<small class="recap-split">' +
-    withNumbers(details.join(' · ')) + '</small>' : '');
+    details.map(withNumbers).join(' · ') + '</small>' : '');
 }
 
 function effectList(action, view) {
@@ -152,8 +157,8 @@ export function resolutionHTML(view, viewerId, { expanded = false, actionId, pin
     if (!active) return '';
     return '<section class="turn-recap opening-turn" aria-label="Opening turn"><div class="recap-strip">' +
       '<div class="recap-action-art">' + rewardIcon({icon:'sword'}) + '</div>' +
-      '<div class="recap-who"><span class="recap-label">First move</span> <span class="recap-route"><span>' +
-      esc(active.name) + '</span></span></div>' +
+      '<div class="recap-who"><span class="recap-label">First move</span> <span class="recap-route">' +
+      participant(active.name) + '</span></div>' +
       (next ? '<div class="recap-handoff">' + rewardIcon({icon:'clock'}) +
         '<span>On deck</span><strong>' + esc(next.name) + '</strong></div>' : '') + '</div></section>';
   }
