@@ -154,8 +154,8 @@ def clip(solver, role, tier, name):
         # Draw from the belt, bring the grip to the lips, swallow, and lower it.
         script = ((0, 0), (2, 21), (6, 22), (8, 22), (10, 21), (11, 0))
     elif name == 'utility' and role == 'guardian':
-        # The tower shield moves aside to free the forward hand for the cache.
-        script = ((0, 0), (2, 2), (7, 23), (8, 23), (11, 0))
+        # Turn the shield, bend both knees, then reach and rise with the find.
+        script = ((0, 0), (2, 24), (4, 25), (7, 23), (9, 26), (11, 0))
     else:
         script = TRACK_KEYS[name]
     for exposure in range(MOTIONS['columns']):
@@ -190,6 +190,7 @@ def build(role):
     breakdowns = Image.open(MASTERS / f'{role}-breakdowns.webp').convert('RGBA')
     drink = Image.open(MASTERS / f'{role}-consume-keys.webp').convert('RGBA')
     reach = Image.open(MASTERS / 'guardian-reach.webp').convert('RGBA') if role == 'guardian' else None
+    bends = Image.open(MASTERS / 'guardian-cache-bends.webp').convert('RGBA') if reach else None
     if drink.size != (CELL[0] * 2, CELL[1] * len(TIERS)):
         raise ValueError(f'{role}: expected a belt grip and a raised grip per health band')
     if breakdowns.size != (CELL[0] * 4, CELL[1] * 3):
@@ -212,6 +213,9 @@ def build(role):
             keys.append(drink.crop((x, y, x + CELL[0], y + CELL[1])))
         if reach:
             keys.append(reach.crop((0, y, CELL[0], y + CELL[1])))
+            for col in range(3):
+                x = col * CELL[0]
+                keys.append(bends.crop((x, y, x + CELL[0], y + CELL[1])))
         solver = Inbetweens(keys)
         stills = [keys[0], keys[1], keys[2], solver.between(0, 1, .55),
                   keys[5], keys[6], keys[12], keys[13], keys[14], keys[15], fallen(keys[15]), keys[9]]
