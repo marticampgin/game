@@ -72,6 +72,33 @@ python scripts/build-fighter-skins.py --review founder-health.png
 
 ## Registration and roster
 
+### Painting an outfit
+
+The alternate outfits use [twenty painted poses per health band](../scripts/art/costumes) and one separate portrait. Keep the costume’s distinguishing equipment visible in profile. Paint its damaged form into each wounded and critical pose so it stays damaged when the fighter attacks, kneels or drinks.
+
+Lay out the twenty right-facing poses on a transparent board. Leave a gap between adjacent silhouettes, including extended weapons. Each row reads from left to right.
+
+| Row | 1 | 2 | 3 | 4 | 5 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Rest | Breathe | Equipment check | Reach to cache | Basic anticipation |
+| 2 | Basic wind-up | Basic contact | Basic recovery | Signature anticipation | Signature wind-up |
+| 3 | Signature contact | Signature recovery | Cast wind-up | Cast release | Brace |
+| 4 | Hit reaction | Empty grip at belt | Empty grip at lips | Load front foot | Step back |
+
+Use the [costume builder](../scripts/build-costume-skins.py) to register each painting against the class stance. It keeps a common scale for a board, locates both boots, and retains detached hair tips, glass and spell particles. The registered masters live at `scripts/art/costumes/<id>/<health>.webp`. The rebuild makes 372 playable cels and the inspection model from those three masters. The profile portrait is packed separately.
+
+```sh
+python scripts/build-costume-skins.py --skin harbor-warden --class-id guardian --health healthy --import-board healthy.png
+python scripts/build-costume-skins.py --skin harbor-warden --class-id guardian --health wounded --import-board wounded.png
+python scripts/build-costume-skins.py --skin harbor-warden --class-id guardian --health critical --import-board critical.png
+python scripts/build-costume-skins.py --skin harbor-warden --import-portrait portrait.png
+python scripts/build-costume-skins.py --skin harbor-warden
+```
+
+Measure the occupied waist in the rest pose, the hand and mouth in the two empty-grip poses, and the cache beside the reaching hand. Register those four points for each health band. A painted weapon remains with its outfit through every take. Acquired trinkets and held consumables use the shared renderer at the measured sockets.
+
+### Registering the art
+
 The runtime and atlas builder read the frame layout, artistic defaults and skin registrations in [fighter-kit.json](../public/fighter-kit.json). Place alternate artwork under `public/assets/skins/` and append a descriptor to the manifest’s `skins` array. IDs start with a lowercase letter and support lowercase letters and digits separated by single hyphens, up to 40 characters total.
 
 ```json

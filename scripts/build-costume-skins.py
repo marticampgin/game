@@ -7,6 +7,7 @@ Requires Pillow, NumPy, and OpenCV at authoring time.
 from argparse import ArgumentParser
 from functools import lru_cache
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 import importlib.util
 
 import cv2
@@ -157,6 +158,16 @@ def import_portrait(source, dest):
     palette_board(portrait).save(dest, lossless=True, method=6)
 
 
+def publish(image, destination):
+    with NamedTemporaryFile(dir=destination.parent, suffix='.webp', delete=False) as temp:
+        staged = Path(temp.name)
+    try:
+        image.save(staged, lossless=True, method=5)
+        staged.replace(destination)
+    finally:
+        staged.unlink(missing_ok=True)
+
+
 def build(id):
     pack = PACKS / id
     dest = ART / 'outfits' / id
@@ -174,8 +185,6 @@ def build(id):
 
     for band, name in enumerate(BANDS):
         keys = skin_cels(Image.open(pack / (name + '.webp')).convert('RGBA'))
-        if band == 0:
-            keys[0].crop(keys[0].getbbox()).save(dest / 'model.webp', lossless=True, method=6)
         solver = founders.Inbetweens(keys)
         between = lru_cache(maxsize=None)(solver.between)
         stills = [keys[0], keys[1], keys[2], between(0, 1, .5), keys[5], keys[6], keys[12], keys[13],
@@ -196,9 +205,21 @@ def build(id):
         for frame, cel in enumerate((keys[18], between(18, 19, .5), keys[19], between(19, 0, .5))):
             place(steps, cel, frame, band)
         between.cache_clear()
-    for name, image in [('standing', standing), ('motions', motion), ('ambient', ambient), ('consume', consume),
-                        ('footwork', steps)]:
-        image.save(dest / (name + '.webp'), lossless=True, method=5)
+    # One costume palette keeps painted holds and in-betweens consistent. It
+    # also lets WebP encode the largest atlas as indexed art for faster loads.
+    sheets = {'standing': standing, 'motions': motion, 'ambient': ambient, 'consume': consume, 'footwork': steps}
+    samples = []
+    for image in sheets.values():
+        pixels = np.asarray(image)
+        samples.append(pixels[pixels[:, :, 3] > 0, :3][::4])
+    palette = Image.fromarray(np.concatenate(samples).reshape((-1, 1, 3))).quantize(colors=250)
+    for name, image in sheets.items():
+        packed = image.convert('RGB').quantize(palette=palette, dither=Image.Dither.NONE).convert('RGBA')
+        packed.putalpha(image.getchannel('A'))
+        publish(packed, dest / (name + '.webp'))
+        if name == 'standing':
+            rest = tile(packed, 0, 0)
+            publish(rest.crop(rest.getbbox()), dest / 'model.webp')
     print(id + ': packed 372 cels', flush=True)
 
 

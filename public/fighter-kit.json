@@ -90,6 +90,40 @@
       }
     },
     {
+      "classId": "berserker",
+      "id": "wolf-tracker",
+      "name": "Wolf Tracker",
+      "sheet": "/assets/skins/outfits/wolf-tracker/standing.webp",
+      "motions": "/assets/skins/outfits/wolf-tracker/motions.webp",
+      "footwork": "/assets/skins/outfits/wolf-tracker/footwork.webp",
+      "ambient": "/assets/skins/outfits/wolf-tracker/ambient.webp",
+      "consume": "/assets/skins/outfits/wolf-tracker/consume.webp",
+      "portrait": "/assets/skins/outfits/wolf-tracker/portrait.webp",
+      "model": "/assets/skins/outfits/wolf-tracker/model.webp",
+      "anchors": {
+        "healthy": {"hand": [120, 79], "mouth": [111, 40], "ground": [151, 149], "belt": [107, 77]},
+        "wounded": {"hand": [113, 89], "mouth": [112, 50], "ground": [151, 149], "belt": [105, 82]},
+        "critical": {"hand": [111, 94], "mouth": [114, 66], "ground": [150, 149], "belt": [105, 96]}
+      }
+    },
+    {
+      "classId": "berserker",
+      "id": "ash-dragon",
+      "name": "Ash Dragon",
+      "sheet": "/assets/skins/outfits/ash-dragon/standing.webp",
+      "motions": "/assets/skins/outfits/ash-dragon/motions.webp",
+      "footwork": "/assets/skins/outfits/ash-dragon/footwork.webp",
+      "ambient": "/assets/skins/outfits/ash-dragon/ambient.webp",
+      "consume": "/assets/skins/outfits/ash-dragon/consume.webp",
+      "portrait": "/assets/skins/outfits/ash-dragon/portrait.webp",
+      "model": "/assets/skins/outfits/ash-dragon/model.webp",
+      "anchors": {
+        "healthy": {"hand": [117, 76], "mouth": [106, 47], "ground": [148, 149], "belt": [106, 83]},
+        "wounded": {"hand": [116, 79], "mouth": [106, 50], "ground": [148, 149], "belt": [106, 85]},
+        "critical": {"hand": [122, 96], "mouth": [119, 65], "ground": [146, 149], "belt": [110, 98]}
+      }
+    },
+    {
       "classId": "chronomancer",
       "id": "star-cartographer",
       "name": "Star Cartographer",
@@ -121,6 +155,40 @@
         "healthy": {"hand": [102, 77], "mouth": [110, 47], "ground": [148, 149], "belt": [105, 74]},
         "wounded": {"hand": [99, 85], "mouth": [112, 56], "ground": [155, 149], "belt": [104, 80]},
         "critical": {"hand": [100, 96], "mouth": [116, 70], "ground": [148, 149], "belt": [109, 92]}
+      }
+    },
+    {
+      "classId": "alchemist",
+      "id": "apiarist",
+      "name": "Apiarist",
+      "sheet": "/assets/skins/outfits/apiarist/standing.webp",
+      "motions": "/assets/skins/outfits/apiarist/motions.webp",
+      "footwork": "/assets/skins/outfits/apiarist/footwork.webp",
+      "ambient": "/assets/skins/outfits/apiarist/ambient.webp",
+      "consume": "/assets/skins/outfits/apiarist/consume.webp",
+      "portrait": "/assets/skins/outfits/apiarist/portrait.webp",
+      "model": "/assets/skins/outfits/apiarist/model.webp",
+      "anchors": {
+        "healthy": {"hand": [126, 73], "mouth": [112, 44], "ground": [135, 149], "belt": [103, 79]},
+        "wounded": {"hand": [118, 84], "mouth": [111, 52], "ground": [137, 149], "belt": [104, 88]},
+        "critical": {"hand": [117, 97], "mouth": [114, 69], "ground": [140, 149], "belt": [105, 100]}
+      }
+    },
+    {
+      "classId": "alchemist",
+      "id": "nightshade-apothecary",
+      "name": "Nightshade Apothecary",
+      "sheet": "/assets/skins/outfits/nightshade-apothecary/standing.webp",
+      "motions": "/assets/skins/outfits/nightshade-apothecary/motions.webp",
+      "footwork": "/assets/skins/outfits/nightshade-apothecary/footwork.webp",
+      "ambient": "/assets/skins/outfits/nightshade-apothecary/ambient.webp",
+      "consume": "/assets/skins/outfits/nightshade-apothecary/consume.webp",
+      "portrait": "/assets/skins/outfits/nightshade-apothecary/portrait.webp",
+      "model": "/assets/skins/outfits/nightshade-apothecary/model.webp",
+      "anchors": {
+        "healthy": {"hand": [119, 78], "mouth": [110, 48], "ground": [140, 149], "belt": [104, 83]},
+        "wounded": {"hand": [118, 81], "mouth": [112, 54], "ground": [140, 149], "belt": [103, 83]},
+        "critical": {"hand": [119, 98], "mouth": [118, 73], "ground": [140, 149], "belt": [110, 98]}
       }
     }
   ]
