@@ -767,3 +767,11 @@ body.reduce-motion *:after {
 @media (min-width: 900px) {
   .setting-line input { width: 19px; height: 19px; border-color: #c39b76; }
 }
+
+@media (min-width: 850px) {
+  .menu-nav { width:min(96%,510px); grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .menu-nav .main-choice { grid-column:1/-1; }
+  .menu-nav .menu-link:not(.main-choice) { height:clamp(48px,6.3vh,63px); font-size:clamp(17px,1.45vw,23px); }
+  .menu-nav .menu-link:not(.main-choice) .menu-label { gap:10px; padding-inline:clamp(10px,1.3vw,20px); }
+  .menu-nav .menu-link:not(.main-choice) img { width:26px; height:26px; }
+}

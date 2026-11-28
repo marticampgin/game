@@ -104,3 +104,5 @@
   .rb-trial-actions{margin-left:auto}.rb-tool .rb-combatant{min-height:108px;padding:6px 9px}.rb-combatant>img{height:52px;width:48px}.rb-combatant-info small{font-size:10px}
   .rb-trial-top{gap:8px}.rb-feedback:empty{min-height:0}.rb-contenders{gap:7px}.rb-trial-actions button{font-size:14px;padding:6px 9px}.rb-sandbox .rb-tool-head h1{font-size:24px}
 }
+
+.rb-license { color:#f1d197; border-inline-start:2px solid #a67a49; padding-inline-start:.65em; font-weight:600; }

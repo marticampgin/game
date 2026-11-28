@@ -864,3 +864,6 @@ body[data-screen='battle'] > .topbar {
   .turn-rail button[aria-current="step"] { border-color: #a8eadb; box-shadow: 0 0 0 1px #4b847c; }
   .turn-rail li:has([aria-current="step"])::after { border-top-color: #b0f3df; }
 }
+
+.result .result-purse { display:flex; align-items:center; gap:.35rem; margin-top:.2rem; color:#f3d99c; }
+.result .result-purse img { width:18px; height:18px; object-fit:contain; image-rendering:pixelated; }

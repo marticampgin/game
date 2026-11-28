@@ -1,12 +1,17 @@
-import { CLASSES, REWARDS, createMatch } from '/src/game/index.js';
+import { CLASSES, REWARDS } from '/src/game/index.js';
 import { fighterKit, fighterPortrait, fighterSkins } from './fighter-kit.js';
 import { classArt, esc, glyph, rewardIcon } from './art.js';
 
+import { SHOP, owns } from '/src/game/progression.js';
+import { initCareer, profileHeaders, loadProfile, acceptProfile, readProfile, startCareerSolo } from './career-client.js';
+
+const preferredSkin = classId => readProfile()?.equipped?.[classId];
 const classes = Object.values(CLASSES);
 const botNames = ['Morrow', 'Sable', 'Brasswick', 'Vesper', 'Belladonna', 'Orin', 'Holloway'];
 
 async function jsonRequest(path, token, body) {
-  const headers = {};
+  await initCareer();
+  const headers = { ...profileHeaders() };
   if (token) headers.Authorization = 'Bearer ' + token;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   const response = await fetch(path, { method: body === undefined ? 'GET' : 'POST', headers,
@@ -17,6 +22,7 @@ async function jsonRequest(path, token, body) {
     error.status = response.status;
     throw error;
   }
+  if (data.profile) acceptProfile(data.profile);
   return data;
 }
 
@@ -54,7 +60,10 @@ function options(values, selected) {
 }
 
 function skinPicker(classId, selected, busy) {
-  const choices = fighterSkins(classId);
+  const choices = fighterSkins(classId).filter(skin => {
+    const offer = SHOP.find(item => item.kind === 'skin' && item.classId === classId && item.skinId === skin.id);
+    return !offer || owns(readProfile(), offer);
+  });
   if (choices.length < 2) return '';
   return '<label class="lobby-skin">Skin<select name="skinId"' + (busy ? ' disabled' : '') + '>' +
     options(choices.map(skin => [skin.id, skin.name]), selected || 'founder') + '</select></label>';
@@ -87,11 +96,12 @@ function roster(view) {
 }
 
 function lobbyController(host, callbacks, initialSession, initialView) {
-  const model = { tab: callbacks.initialCode ? 'join' : 'solo', name:'Wanderer', selected:classes[0].id, skinId:undefined, capacity:4,
+  const model = { tab: callbacks.initialCode ? 'join' : 'solo', name:'Wanderer', selected:classes[0].id, skinId:preferredSkin(classes[0].id), capacity:4,
     mode:'free', fillBots:true, seed:'', code:String(callbacks.initialCode || '').toUpperCase(), showSettings:false };
   let session = initialSession, view = initialView;
   let disposed = false, busy = false, polling = false, timer;
   let connectionError = '', formError = '';
+  let choseSkin = false;
 
   function cleanup() {
     if (disposed) return;
@@ -167,6 +177,7 @@ function lobbyController(host, callbacks, initialSession, initialView) {
     const { name, type, value, checked } = event.target;
     if (name === 'skinId') {
       if (event.type !== 'change' || busy) return;
+      choseSkin = true;
       const previous = model.skinId;
       model.skinId = value === 'founder' ? undefined : value;
       if (session) await perform(async () => {
@@ -223,7 +234,8 @@ function lobbyController(host, callbacks, initialSession, initialView) {
         const players = [{ id:'p1', name:model.name.trim(), ...fighter, bot:false }];
         for (let i = 0; i < model.capacity - 1; i++) players.push({ id:'p' + (i+2), name:botNames[i], classId:rivals[i % rivals.length].id, bot:true });
         const seed = model.seed.trim() || crypto.getRandomValues(new Uint32Array(1))[0];
-        const state = createMatch({seed,players});
+        const state = await startCareerSolo({seed,players});
+        if (disposed) return;
         cleanup();
         return callbacks.onMatch({state,viewerId:players[0].id});
       }
@@ -251,8 +263,8 @@ function lobbyController(host, callbacks, initialSession, initialView) {
       host.querySelector('[data-lobby-tab="' + lobbyTab + '"]')?.focus({preventScroll:true});
     } else if (lobbyClass) {
       if (model.selected === lobbyClass) return;
-      if (session) await perform(async () => update(await roomRequest(session, 'class', {classId:lobbyClass})));
-      else { model.selected = lobbyClass; model.skinId = undefined; render(); }
+      if (session) await perform(async () => update(await roomRequest(session, 'class', {classId:lobbyClass,skinId:preferredSkin(lobbyClass)})));
+      else { choseSkin = false; model.selected = lobbyClass; model.skinId = preferredSkin(lobbyClass); render(); }
       host.querySelector('[data-lobby-class="' + lobbyClass + '"]')?.focus({preventScroll:true});
     } else if (lobby === 'setup') {
       model.showSettings = !model.showSettings;
@@ -285,6 +297,11 @@ function lobbyController(host, callbacks, initialSession, initialView) {
   host.addEventListener('input', input);
   host.addEventListener('change', input);
   host.addEventListener('submit', submit);
+  void loadProfile().then(() => {
+    if (disposed || session || busy || choseSkin) return;
+    const preferred = preferredSkin(model.selected);
+    if (model.skinId !== preferred) { model.skinId = preferred; render(); }
+  });
   if (view) {
     update(view);
     if (!disposed) timer = setInterval(poll, 750);

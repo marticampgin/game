@@ -12,6 +12,9 @@ import { glyph, esc } from './art.js';
 import { playContactSound } from './combat-sound.js';
 import { mountLobby, resumeLobby, roomRequest as request } from './lobby.js';
 
+import { loadProfile, readProfile, subscribeProfile, syncCareerSolo } from './career-client.js';
+import { objectiveRows } from './progression-objectives.js';
+
 const app = document.querySelector('#app');
 const modal = document.querySelector('#dialog');
 const contents = document.querySelector('#dialog-content');
@@ -127,6 +130,8 @@ function menu() {
   <div class="menu-sub"><span class="title-rule" aria-hidden="true"><i></i></span>A roguelike battle arena</div>
   <nav class="menu-nav" aria-label="Game menu">${[
     ['lobby', 'Enter the arena', 'sword'],
+    ['quests', 'Quest journal', 'grimoire'],
+    ['outfitter', 'Outfitter', 'sash'],
     ['atlas', 'Reward Atlas', 'atlas'],
     ['sandbox', 'Sandbox', 'dice'],
   ]
@@ -170,6 +175,7 @@ function startBattle(payload) {
   draftHidden = false;
   planCache = null;
   preloadArenaSkins(current().players);
+  if (match.state?.careerUnavailable) notice('Playing offline. Career progress is unavailable for this match.');
   busy = false;
   shownView = null;
   pollFailed = false;
@@ -194,9 +200,17 @@ function refreshBattle() {
   if (screen !== 'battle' || !match) return;
   const v = current();
   if (!v) return;
+  if (match.state?.career) void syncCareerSolo(match.state);
   if (match.state)
     sessionStorage.setItem('rift-solo', JSON.stringify({ state: match.state, viewerId: match.viewerId }));
-  if (modal.open) refreshHistory(contents, v);
+  if (modal.open) {
+    refreshHistory(contents, v);
+    const ledger = contents.querySelector('.live-objectives');
+    if (ledger && v.career) {
+      const rows = objectiveRows(v.career.objectives);
+      if (ledger.dataset.progress !== rows) { ledger.innerHTML = rows; ledger.dataset.progress = rows; }
+    }
+  }
   if (playback) return;
   const arena = app.querySelector('.arena-world');
   const continuation = bonusDraftContinuation(shownView, v);
@@ -320,6 +334,10 @@ function refreshBattle() {
 function renderBattle(v) {
   const freshOffers = v.offers.length && (shownView?.globalTurn !== v.globalTurn ||
     shownView?.offers.join('|') !== v.offers.join('|'));
+  if (v.career && shownView?.career?.runId === v.career.runId) {
+    const completed = v.career.objectives.filter(q => q.complete && shownView.career.objectives.some(old => old.id === q.id && !old.complete));
+    if (completed.length) notice(completed.map(q => q.name + ' complete · +' + q.coins + ' coins').join('   ◆   '));
+  }
   shownView = v;
   const key = v.globalTurn + '/' + v.activeId;
   if (key !== turnKey) {
@@ -354,6 +372,7 @@ function renderBattle(v) {
   renderArena(
     app,
     battleHTML(v, match.viewerId, {
+      settlement: v.career && readProfile().lastSettlement?.runId === v.career.runId ? readProfile().lastSettlement : null,
       action: choice,
       actionPage,
       target,
@@ -532,6 +551,22 @@ function settings() {
   <p>Armor reduces incoming damage before shields absorb it. Abilities recover at the start of your personal turn. Inspect a contender to see their build and status effects. Carried consumables stay secret until used.</p>
   <p>Every round gives each living contender a turn. Watch for announced arena events and increasing pressure in the Age of Chaos.</p>`);
 }
+async function openProgression(tab) {
+  const origin = screen;
+  const career = origin === 'battle' ? current()?.career : undefined;
+  const opener = tab === 'skins' ? 'outfitter' : 'quests';
+  const back = () => {
+    if (origin === 'battle' && match) { setScreen('battle'); refreshBattle(); schedule(); }
+    else menu();
+    app.querySelector('[data-ui="' + opener + '"]')?.focus({preventScroll:true});
+  };
+  setScreen('progression');
+  const start = epoch;
+  try {
+    const {mountProgression} = await import('./progression-ui.js');
+    if (epoch === start) dispose = mountProgression(app,{initialTab:tab,career,onBack:back});
+  } catch (error) { if (epoch === start) { back(); notice(error.message); } }
+}
 async function openTool(tool) {
   toolOrigin = screen === 'battle' ? 'battle' : 'menu';
   setScreen(tool);
@@ -549,6 +584,7 @@ async function openTool(tool) {
     };
     dispose = (tool === 'atlas' ? mod.mountAtlas : mod.mountSandbox)(app, {
       onClose: close,
+      readProfile, subscribeProfile,
       onPlay: (state, viewerId) => startBattle({ state, viewerId }),
     });
   } catch (e) {
@@ -597,6 +633,10 @@ function mainMenu() {
   if (screen === 'battle') return leaveConfirmation();
   if (screen === 'atlas' && toolOrigin === 'battle') {
     app.querySelector('[data-back]')?.click();
+    return;
+  }
+  if (screen === 'progression') {
+    app.querySelector('[data-pg="back"]')?.click();
     return;
   }
   if (screen === 'lobby') {
@@ -698,6 +738,16 @@ document.addEventListener('click', (event) => {
         chime('select');
         showLobby();
         break;
+      case 'objectives': {
+        const career = current()?.career;
+        if (career) dialog('<h2>Match objectives</h2><p>Personal to you. Completed objectives earn coins for the Outfitter.</p><div class="live-objectives">' + objectiveRows(career.objectives) + '</div>');
+        break;
+      }
+      case 'quests':
+      case 'outfitter':
+        chime('select');
+        openProgression(d.ui === 'quests' ? 'quests' : 'skins');
+        break;
       case 'atlas':
       case 'sandbox':
         chime('select');
@@ -782,4 +832,8 @@ async function restore() {
   menu();
 }
 preferences();
+subscribeProfile(() => {
+  if (screen === 'battle' && !playback && current()?.phase === 'finished') refreshBattle();
+});
+void loadProfile();
 restore();

@@ -1,4 +1,5 @@
 import { CLASSES, RARITIES, REWARDS } from '../src/game/catalog.js';
+import { SHOP, owns } from '../src/game/progression.js';
 import { rewardIcon } from './art.js';
 import { buildAtlas, MAP_HEIGHT, MAP_WIDTH, matchingRewards, REGIONS } from './atlas-model.js';
 import { escapeHTML, icon, option, titleCase, toolPage } from './atlas-ui.js';
@@ -21,7 +22,9 @@ function relationList(edges, incoming) {
   }).join('') + '</ul>';
 }
 
-function detail(reward) {
+function detail(reward, profile) {
+  const license = SHOP.find(item => item.rewardId === reward.id);
+  const availability = !license ? '' : '<p class="rb-license">' + (owns(profile,license) ? 'Unlocked for your drafts' : 'Outfitter unlock · ' + license.price + ' coins') + '</p>';
   const incoming = graph.edges.filter(edge => edge.to === reward.id);
   const outgoing = graph.edges.filter(edge => edge.from === reward.id);
   return `<div class="rb-art-halo"><div>${rewardIcon(reward)}</div></div>
@@ -29,7 +32,7 @@ function detail(reward) {
       <span class="rb-rarity" data-tier="${reward.rarity}">${titleCase(reward.rarity)}</span>
       <span>${titleCase(reward.category)}</span>${reward.exclusive ? `<span>${CLASSES[reward.exclusive].name}</span>` : ''}
     </div>
-    <p class="rb-description">${escapeHTML(reward.description)}</p>
+    <p class="rb-description">${escapeHTML(reward.description)}</p>${availability}
     <h3>Incoming <small>${incoming.length}</small></h3>${relationList(incoming, true)}
     <h3>Outgoing <small>${outgoing.length}</small></h3>${relationList(outgoing, false)}
     <div class="rb-tags">${reward.tags.map(tag => `<button type="button" data-tag="${tag}">${titleCase(tag)}</button>`).join('')}</div>`;
@@ -46,7 +49,7 @@ function edgePath(edge, selected) {
   return `<path class="${isSelected ? 'rb-hot-edge' : 'rb-edge'}" d="M${a.x + dx * inset} ${a.y + dy * inset} L${b.x - dx * inset} ${b.y - dy * inset}"${isSelected ? ' marker-end="url(#rb-arrow)"' : ''}/>`;
 }
 
-export function mountAtlas(host, { onClose } = {}) {
+export function mountAtlas(host, { onClose, readProfile, subscribeProfile } = {}) {
   const { root, destroy, signal } = toolPage(host, 'Reward Atlas', onClose);
   root.insertAdjacentHTML('beforeend', `<form class="rb-filters" role="search" aria-label="Filter rewards">
     <label class="rb-search">${icon('search')}<input type="search" name="search" aria-label="Search rewards or mechanics" placeholder="Search rewards or mechanics" autocomplete="off"/></label>
@@ -170,7 +173,7 @@ export function mountAtlas(host, { onClose } = {}) {
     get('.rb-map-empty').hidden = visible.length !== 0;
     world.hidden = !visible.length;
     hover.hidden = true;
-    inspector.innerHTML = selected ? detail(REWARDS[selected]) : '<p class="rb-detail-empty">Choose a reward to inspect its interactions.</p>';
+    inspector.innerHTML = selected ? detail(REWARDS[selected], readProfile?.()) : '<p class="rb-detail-empty">Choose a reward to inspect its interactions.</p>';
     inspector.scrollTop = 0;
     browse.innerHTML = [...visible].sort(byName).map(reward => option(reward.id, reward.name)).join('');
     browse.disabled = !visible.length;
@@ -263,6 +266,10 @@ export function mountAtlas(host, { onClose } = {}) {
     else return;
     event.preventDefault();
   }, { signal });
+  const unsubscribe = subscribeProfile?.(() => {
+    if (selected) inspector.innerHTML = detail(REWARDS[selected], readProfile?.());
+  });
+  if (unsubscribe) signal.addEventListener('abort', unsubscribe, {once:true});
   const observer = new ResizeObserver(frameVisible);
   observer.observe(map);
   signal.addEventListener('abort', () => observer.disconnect(), { once: true });

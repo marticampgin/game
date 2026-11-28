@@ -1,4 +1,5 @@
 import { CLASSES, REWARDS, STATUSES, currentAttack, getActions } from '/src/game/index.js';
+import { SHOP } from '/src/game/progression.js';
 import { fighterModel, fighterPortrait } from './fighter-kit.js';
 import { rewardIcon, seatCrest, glyph, esc } from './art.js';
 import { actionDock } from './command.js';
@@ -116,10 +117,11 @@ function waiting(view, player, active, intent) {
     <div><small>${player.alive ? 'Rival turn' : 'Spectating'}</small><h2>${esc(active.name)}</h2></div><p>${preparing}</p></div>`;
 }
 
-function result(view, viewerId) {
+function result(view, viewerId, settlement) {
+  const mastery = settlement?.masterySkinId && SHOP.find(item => item.skinId === settlement.masterySkinId);
   const winner = view.players.find((p) => p.id === view.winnerId);
-  return `<div class="result"><img src="/assets/i-crown.png" alt=""><div><small>Match complete · Round ${view.round}</small><h2>${winner ? (winner.id === viewerId ? 'Victory is yours' : esc(winner.name) + ' wins') : 'The arena claims everyone'}</h2></div>
-    ${tool('history', 'Battle log', 'scroll')}<button class="primary" data-ui="replay">Play again ${glyph('right')}</button></div>`;
+  return `<div class="result"><img src="/assets/i-crown.png" alt=""><div><small>Match complete · Round ${view.round}</small><h2>${winner ? (winner.id === viewerId ? 'Victory is yours' : esc(winner.name) + ' wins') : 'The arena claims everyone'}</h2>${view.career ? `<small class="result-purse"><img alt="" src="/assets/i-coin.png">${view.career.earnedCoins} objective coins${settlement?.lifetimeCoins ? ' · +' + settlement.lifetimeCoins + ' lifetime quest coins' : ''}${mastery ? ' · ' + esc(mastery.name) + ' unlocked' : ''}</small>` : ''}</div>
+    ${view.career ? tool('outfitter','Outfitter','book') : ''}${tool('history', 'Battle log', 'scroll')}<button class="primary" data-ui="replay">Play again ${glyph('right')}</button></div>`;
 }
 
 export function battleHTML(view, viewerId, ui) {
@@ -132,7 +134,7 @@ export function battleHTML(view, viewerId, ui) {
     mine && view.phase === 'action' ? actionSelection(view, player, ui.action, ui.target) : null;
   const intent = ui.botIntent;
   const dock = end
-    ? result(view, viewerId)
+    ? result(view, viewerId, ui.settlement)
     : !mine
       ? waiting(view, player, active, intent)
       : selection
@@ -156,7 +158,7 @@ export function battleHTML(view, viewerId, ui) {
     ${dock ? '<section class="turn-controls metal-edge" aria-label="Turn controls">' + dock + '</section>' : ''}
     <div class="turn-resolution">${resolutionHTML(view, viewerId, ui.recap)}</div>
     <footer class="battle-bottom"><div>${nextEventButton(view)}</div>
-      <nav aria-label="Arena tools">${tool('atlas', 'Atlas', 'book')}${tool('battle-sound', ui.sound ? 'Mute sound' : 'Enable sound', ui.sound ? 'sound' : 'mute')}${tool('battle-settings', 'Settings and rules', 'settings')}${tool('leave', end ? 'Main menu' : 'Leave match', 'back')}</nav></footer>
+      <nav aria-label="Arena tools">${view.career ? tool('objectives', 'Objectives ' + view.career.objectives.filter(q => q.complete).length + '/' + view.career.objectives.length, 'scroll') : ''}${tool('atlas', 'Atlas', 'book')}${tool('battle-sound', ui.sound ? 'Mute sound' : 'Enable sound', ui.sound ? 'sound' : 'mute')}${tool('battle-settings', 'Settings and rules', 'settings')}${tool('leave', end ? 'Main menu' : 'Leave match', 'back')}</nav></footer>
   </div>`;
 }
 
