@@ -9,6 +9,7 @@ from pathlib import Path
 import importlib.util
 import math
 import json
+import sys
 
 import cv2
 import numpy as np
@@ -20,6 +21,7 @@ MASTERS = HERE / 'art' / 'idles'
 KIT = json.loads((PUBLIC / 'fighter-kit.json').read_text())
 spec = importlib.util.spec_from_file_location('founder_art', HERE / 'build-fighter-skins.py')
 founder_art = importlib.util.module_from_spec(spec)
+sys.dont_write_bytecode = True
 spec.loader.exec_module(founder_art)
 CELL = founder_art.CELL
 BANDS = founder_art.TIERS
@@ -90,7 +92,7 @@ def feet(image):
     return float((np.percentile(soles, 5) + np.percentile(soles, 95)) / 2), int(floor)
 
 
-def register(board, role):
+def register(board, role, breakdown=False):
     wardrobe = skins(role)
     w, h = board.size
     for col, skin in enumerate(wardrobe):
@@ -111,7 +113,8 @@ def register(board, role):
             origin = max(CROP[0], min(CROP[2]-art.width, round(foot-new_foot)))
             masters.alpha_composite(art, (origin, band*CELL[1] + floor-new_floor))
         MASTERS.mkdir(parents=True,exist_ok=True)
-        masters.save(MASTERS / (role+'-'+skin['id']+'.webp'), lossless=True,method=6)
+        suffix = '-mid.webp' if breakdown else '.webp'
+        masters.save(MASTERS / (role+'-'+skin['id']+suffix), lossless=True,method=6)
 
 
 def ripple(image, role, band, phase, strength):
@@ -144,12 +147,47 @@ def exposure(frame, timing):
     v = min(1,frame/arrive) if frame <= leave else (end-frame)/(end-leave)
     return v*v*(3-2*v)
 
+# The alternate attack collects its weight in a class-specific guard. The
+# signature chambers through a different hand/shoulder action on the same rig.
+# Both rejoin the canonical contact drawing before the weapon lands.
+CHAMBERS = {
+    'guardian':     (('brace',5), ('attack',3)),
+    'berserker':    (('signature',3), ('brace',6)),
+    'chronomancer': (('brace',4), ('cast',3)),
+    'alchemist':    (('brace',4), ('utility',3)),
+    'gambler':      (('signature',2), ('brace',4)),
+    'necromancer':  (('brace',4), ('utility',3)),
+    'trickster':    (('signature',3), ('brace',5)),
+    'artificer':    (('brace',5), ('utility',3)),
+}
+
+
+def publish_variations(skin):
+    motions = image_asset(skin['motions'])
+    role = skin['classId']
+    tracks = KIT['layers']['motions']['rows']
+    atlas = Image.new('RGBA',(5*CELL[0],6*CELL[1]))
+    for band in range(3):
+        for row, track in enumerate(('attack','signature')):
+            prep, index = CHAMBERS[role][row]
+            first = crop_cell(motions, 0, band*len(tracks)+tracks.index(track))
+            chamber = crop_cell(motions, index, band*len(tracks)+tracks.index(prep))
+            release = crop_cell(motions, 6, band*len(tracks)+tracks.index(track))
+            body = founder_art.Inbetweens([first, chamber, release])
+            for col,(a,b,v) in enumerate(((0,1,.4),(0,1,.88),(0,1,1),(1,2,.28),(1,2,.69))):
+                atlas.paste(body.between(a,b,v),(col*CELL[0],(band*2+row)*CELL[1]))
+    output = PUBLIC / skin['variations'].lstrip('/')
+    atlas.save(output,lossless=True,method=5)
+    print(f'{role}/{skin["id"]} windups: {output.stat().st_size:,} bytes',flush=True)
+
 
 def publish(skin):
     role, name = skin['classId'], skin['id']
     rest_sheet, motions = image_asset(skin['sheet']), image_asset(skin['motions'])
     path = MASTERS / (role+'-'+name+'.webp')
     key_sheet = Image.open(path).convert('RGBA') if path.exists() else None
+    mid_path = MASTERS / (role+'-'+name+'-mid.webp')
+    mid_sheet = Image.open(mid_path).convert('RGBA') if mid_path.exists() else None
     width, height = CROP[2]-CROP[0], CROP[3]-CROP[1]
     atlas = Image.new('RGBA',(COLUMNS*width,len(BANDS)*3*height))
     tracks = KIT['layers']['motions']['rows']
@@ -161,11 +199,20 @@ def publish(skin):
         # supplying its own second key painting.
         alternate = crop_cell(key_sheet,0,band) if key_sheet else crop_cell(motions,3,band*len(tracks)+tracks.index('attack'))
         focus = planted(base,alternate)
-        interp = founder_art.Inbetweens([base,check,focus])
+        keys = [base, check, focus]
+        if mid_sheet:
+            keys.append(planted(base, crop_cell(mid_sheet,0,band)))
+        interp = founder_art.Inbetweens(keys)
         for take in range(3):
             for col in range(COLUMNS):
                 phase = col / (COLUMNS if take==0 else COLUMNS-1)
-                image = base if take==0 else interp.between(0,take,exposure(col,SCORES[role][take-1]))
+                image = base
+                if take:
+                    amount = exposure(col,SCORES[role][take-1])
+                    if take == 2 and mid_sheet:
+                        image = interp.between(0,3,amount*2) if amount < .5 else interp.between(3,2,amount*2-1)
+                    else:
+                        image = interp.between(0,take,amount)
                 image = ripple(image,role,band,phase,1 if take==0 else .5)
                 bbox = image.getbbox()
                 if bbox[0]<CROP[0] or bbox[1]<CROP[1] or bbox[2]>CROP[2] or bbox[3]>CROP[3]:
@@ -186,12 +233,18 @@ if __name__ == '__main__':
     parser.add_argument('--role',choices=tuple(RIGS))
     parser.add_argument('--skin')
     parser.add_argument('--import-board',type=Path)
+    parser.add_argument('--breakdown',action='store_true',help='register the middle of a gesture')
+    parser.add_argument('--variations-only',action='store_true')
     args=parser.parse_args()
     cv2.setNumThreads(1)
     if args.import_board:
         if not args.role: parser.error('--import-board requires --role')
-        register(Image.open(args.import_board).convert('RGBA'),args.role)
+        register(Image.open(args.import_board).convert('RGBA'),args.role,args.breakdown)
     for role in (args.role,) if args.role else KIT['founders']:
         for skin in skins(role):
-            if skin.get('idles') and (not args.skin or skin['id']==args.skin):
+            if args.skin and skin['id'] != args.skin:
+                continue
+            if skin.get('idles') and not args.variations_only:
                 publish(skin)
+            if skin.get('variations'):
+                publish_variations(skin)

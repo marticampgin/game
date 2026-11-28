@@ -11,6 +11,7 @@
       "poses": ["idle", "breathe", "survey", "settle", "windup", "strike", "channel", "release", "guard", "hurt", "fallen", "victory"]
     },
     "motions": { "columns": 12, "rows": ["idle", "attack", "signature", "cast", "utility", "brace", "hurt"], "contactFrame": 7 },
+    "variations": { "columns": 5, "rows": ["attack", "signature"] },
     "footwork": { "columns": 4 },
     "ambient": { "columns": 12 },
     "idles": { "columns": 16, "rows": ["rest", "check", "focus"], "crop": [14, 0, 194, 150] },
@@ -23,7 +24,7 @@
   },
   "founders": {
     "guardian": {
-      "weapon": "hammer", "emblem": "shield", "title": "Frontline bulwark", "layers": ["motions", "footwork", "ambient", "consume", "idles"],
+      "weapon": "hammer", "emblem": "shield", "title": "Frontline bulwark", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": { "hand": [95, 75], "mouth": [104, 39], "ground": [166, 149] },
         "wounded": { "hand": [96, 78], "mouth": [102, 44], "ground": [164, 149] },
@@ -31,7 +32,7 @@
       }
     },
     "berserker": {
-      "weapon": "saber", "emblem": "axe", "title": "Bloodied vanguard", "layers": ["motions", "footwork", "ambient", "consume", "idles"],
+      "weapon": "saber", "emblem": "axe", "title": "Bloodied vanguard", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": { "hand": [128, 69], "mouth": [111, 40], "ground": [161, 149] },
         "wounded": { "hand": [129, 74], "mouth": [111, 46], "ground": [160, 149] },
@@ -39,7 +40,7 @@
       }
     },
     "chronomancer": {
-      "weapon": "focus", "emblem": "clock", "title": "Keeper of time", "layers": ["motions", "footwork", "ambient", "consume", "idles"],
+      "weapon": "focus", "emblem": "clock", "title": "Keeper of time", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": { "hand": [108, 70], "mouth": [110, 39], "ground": [159, 149] },
         "wounded": { "hand": [107, 72], "mouth": [111, 40], "ground": [157, 149] },
@@ -47,7 +48,7 @@
       }
     },
     "alchemist": {
-      "weapon": "sickle", "emblem": "flask", "title": "Brewer of wonders", "layers": ["motions", "footwork", "ambient", "consume", "idles"],
+      "weapon": "sickle", "emblem": "flask", "title": "Brewer of wonders", "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations"],
       "anchors": {
         "healthy": { "hand": [124, 70], "mouth": [118, 44], "ground": [147, 149] },
         "wounded": { "hand": [124, 73], "mouth": [118, 48], "ground": [146, 149] },
@@ -65,6 +66,7 @@
       "footwork": "/assets/skins/outfits/harbor-warden/footwork.webp",
       "ambient": "/assets/skins/outfits/harbor-warden/ambient.webp",
       "idles": "/assets/skins/outfits/harbor-warden/idles.webp",
+      "variations": "/assets/skins/outfits/harbor-warden/variations.webp",
       "consume": "/assets/skins/outfits/harbor-warden/consume.webp",
       "portrait": "/assets/skins/outfits/harbor-warden/portrait.webp",
       "model": "/assets/skins/outfits/harbor-warden/model.webp",
@@ -83,6 +85,7 @@
       "footwork": "/assets/skins/outfits/sunspire-paladin/footwork.webp",
       "ambient": "/assets/skins/outfits/sunspire-paladin/ambient.webp",
       "idles": "/assets/skins/outfits/sunspire-paladin/idles.webp",
+      "variations": "/assets/skins/outfits/sunspire-paladin/variations.webp",
       "consume": "/assets/skins/outfits/sunspire-paladin/consume.webp",
       "portrait": "/assets/skins/outfits/sunspire-paladin/portrait.webp",
       "model": "/assets/skins/outfits/sunspire-paladin/model.webp",
@@ -101,6 +104,7 @@
       "footwork": "/assets/skins/outfits/wolf-tracker/footwork.webp",
       "ambient": "/assets/skins/outfits/wolf-tracker/ambient.webp",
       "idles": "/assets/skins/outfits/wolf-tracker/idles.webp",
+      "variations": "/assets/skins/outfits/wolf-tracker/variations.webp",
       "consume": "/assets/skins/outfits/wolf-tracker/consume.webp",
       "portrait": "/assets/skins/outfits/wolf-tracker/portrait.webp",
       "model": "/assets/skins/outfits/wolf-tracker/model.webp",
@@ -119,6 +123,7 @@
       "footwork": "/assets/skins/outfits/ash-dragon/footwork.webp",
       "ambient": "/assets/skins/outfits/ash-dragon/ambient.webp",
       "idles": "/assets/skins/outfits/ash-dragon/idles.webp",
+      "variations": "/assets/skins/outfits/ash-dragon/variations.webp",
       "consume": "/assets/skins/outfits/ash-dragon/consume.webp",
       "portrait": "/assets/skins/outfits/ash-dragon/portrait.webp",
       "model": "/assets/skins/outfits/ash-dragon/model.webp",
@@ -137,6 +142,7 @@
       "footwork": "/assets/skins/outfits/star-cartographer/footwork.webp",
       "ambient": "/assets/skins/outfits/star-cartographer/ambient.webp",
       "idles": "/assets/skins/outfits/star-cartographer/idles.webp",
+      "variations": "/assets/skins/outfits/star-cartographer/variations.webp",
       "consume": "/assets/skins/outfits/star-cartographer/consume.webp",
       "portrait": "/assets/skins/outfits/star-cartographer/portrait.webp",
       "model": "/assets/skins/outfits/star-cartographer/model.webp",
@@ -155,6 +161,7 @@
       "footwork": "/assets/skins/outfits/glass-oracle/footwork.webp",
       "ambient": "/assets/skins/outfits/glass-oracle/ambient.webp",
       "idles": "/assets/skins/outfits/glass-oracle/idles.webp",
+      "variations": "/assets/skins/outfits/glass-oracle/variations.webp",
       "consume": "/assets/skins/outfits/glass-oracle/consume.webp",
       "portrait": "/assets/skins/outfits/glass-oracle/portrait.webp",
       "model": "/assets/skins/outfits/glass-oracle/model.webp",
@@ -173,6 +180,7 @@
       "footwork": "/assets/skins/outfits/apiarist/footwork.webp",
       "ambient": "/assets/skins/outfits/apiarist/ambient.webp",
       "idles": "/assets/skins/outfits/apiarist/idles.webp",
+      "variations": "/assets/skins/outfits/apiarist/variations.webp",
       "consume": "/assets/skins/outfits/apiarist/consume.webp",
       "portrait": "/assets/skins/outfits/apiarist/portrait.webp",
       "model": "/assets/skins/outfits/apiarist/model.webp",
@@ -191,6 +199,7 @@
       "footwork": "/assets/skins/outfits/nightshade-apothecary/footwork.webp",
       "ambient": "/assets/skins/outfits/nightshade-apothecary/ambient.webp",
       "idles": "/assets/skins/outfits/nightshade-apothecary/idles.webp",
+      "variations": "/assets/skins/outfits/nightshade-apothecary/variations.webp",
       "consume": "/assets/skins/outfits/nightshade-apothecary/consume.webp",
       "portrait": "/assets/skins/outfits/nightshade-apothecary/portrait.webp",
       "model": "/assets/skins/outfits/nightshade-apothecary/model.webp",

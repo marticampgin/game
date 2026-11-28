@@ -55,6 +55,24 @@ const tracks = {
     [655, 0.025, 0, 0, 0],
     [705, 0, 0, 0, 0],
   ],
+  'card-flick': [
+    [0,0,0,0,0], [116,0,-.012,.016,-3], [228,0,-.05,.035,-7],
+    [308,0,.07,.026,8], [386,0,.053,.01,5], [510,0,-.01,.008,-1], [790,0,0,0,0],
+  ],
+  'soul-thread': [
+    [0,0,0,0,0], [218,0,.025,.018,3], [420,0,.062,.035,6],
+    [498,0,.045,.042,3], [610,0,-.08,.012,-7], [762,0,-.035,0,-4], [990,0,0,0,0],
+  ],
+  'mirror-feint': [
+    [0,0,0,0,0], [123,.07,-.025,.029,-4], [218,.39,0,.06,2],
+    [285,.23,0,-.018,-7], [400,.79,0,.042,3], [455,1,0,0,9],
+    [518,.91,0,.022,2], [641,.52,0,.07,-4], [748,.17,0,.014,-2], [850,0,0,0,0],
+  ],
+  'rivet-drive': [
+    [0,0,0,0,0], [153,0,-.044,-.018,-4], [282,.05,-.086,-.047,-9],
+    [345,.22,0,-.04,1], [445,.82,0,.018,6], [489,1,0,.044,10],
+    [554,.99,0,.006,8], [688,.92,0,-.018,-2], [795,.6,0,.065,-5], [940,.22,0,.036,-2], [1030,0,0,0,0],
+  ],
   dial: [
     [0, 0, 0, 0, 0],
     [220, 0, -0.018, 0.022, -3],
@@ -134,6 +152,10 @@ const score = (family, gesture, effect, track, clip, contact, release = contact)
   Object.freeze({ family, gesture, effect, track, clip, contact, release, path: tracks[track] });
 
 const moves = {
+  'card-flick':   score('cast', 'throw', 'arcane', 'card-flick', 'cast', 608, 308),
+  'soul-thread':  score('cast', 'cast', 'doom', 'soul-thread', 'cast', 610, 420),
+  'mirror-feint': score('melee', 'attack', 'slash', 'mirror-feint', 'attack', 455),
+  'rivet-drive':  score('melee', 'attack', 'bastion', 'rivet-drive', 'attack', 489),
   swing:     score('melee', 'attack', 'slash', 'swing', 'attack', 425),
   bash:      score('melee', 'attack', 'bastion', 'bash', 'attack', 495),
   cleave:    score('melee', 'attack', 'cleave', 'cleave', 'attack', 530),

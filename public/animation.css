@@ -395,3 +395,13 @@ body.reduce-motion .arena-sprite[data-pose='idle'] {
   96.99% { background-position:100% var(--focus-y); animation-timing-function:step-end; }
   97%,100% { background-position:0% var(--rest-y); }
 }
+
+/* Retakes share the strike's release, impact and recovery. Only the five
+   pickup drawings need packing. Both layers are ready before the swap. */
+.arena-variation-cel {
+  display:block; position:absolute; inset:0; opacity:0; pointer-events:none;
+  image-rendering:pixelated; background:var(--variation-skin) 0 0 / 500% 600% no-repeat;
+}
+[data-facing='left'] .arena-variation-cel { transform:scaleX(-1); }
+.arena-sprite[data-pickup]:not([data-footwork]) > .arena-cel { opacity:0; }
+.arena-sprite[data-pickup]:not([data-footwork]) > .arena-variation-cel { opacity:1; }

@@ -12,8 +12,9 @@ function readySeat(role) {
   return applyCommand(match, role, { type: 'pick', rewardId: match.offers[0] });
 }
 
-async function perform(page, role, action) {
+async function perform(page, role, action, take = 1) {
   const state = readySeat(role);
+  state.players.find((p) => p.id === role).personalTurn = take;
   if (action === 'venom-flask') state.players.find((p) => p.id === 'berserker').shield = 500;
   await page.evaluate((save) => sessionStorage.setItem('rift-solo', JSON.stringify(save)), {
     state,
@@ -34,6 +35,8 @@ async function perform(page, role, action) {
       seen: false,
       finished: false,
       cells: [],
+      pickup: [],
+      impactTake: null,
       clip: null,
       score: null,
       impact: null,
@@ -62,6 +65,14 @@ async function perform(page, role, action) {
       const number = Math.round(
         (parseFloat(getComputedStyle(actor.querySelector('.arena-cel')).backgroundPositionX) * 11) / 100,
       );
+      if (actor.hasAttribute('data-pickup')) {
+        const take = actor.querySelector('.arena-variation-cel');
+        if (Number(getComputedStyle(take).opacity) === 1 &&
+            Number(getComputedStyle(actor.querySelector('.arena-cel')).opacity) === 0) {
+          const column = Math.round(parseFloat(getComputedStyle(take).backgroundPositionX) / 25);
+          if (!trace.pickup.includes(column)) trace.pickup.push(column);
+        }
+      }
       if (actor.hasAttribute('data-footwork')) {
         const stepStyle = getComputedStyle(actor.querySelector('.arena-step-cel'));
         const baseOpacity = parseFloat(getComputedStyle(actor.querySelector('.arena-cel')).opacity);
@@ -70,7 +81,10 @@ async function perform(page, role, action) {
         trace.maxOverlap = Math.max(trace.maxOverlap, Math.min(baseOpacity, stepOpacity));
         trace.steps.add(Math.round((parseFloat(stepStyle.backgroundPositionX) * 3) / 100));
       } else if (!trace.cells.includes(number)) trace.cells.push(number);
-      if (scene.dataset.stage === 'impact' && trace.impact === null) trace.impact = number;
+      if (scene.dataset.stage === 'impact' && trace.impact === null) {
+        trace.impact = number;
+        trace.impactTake = Number(getComputedStyle(actor.querySelector('.arena-cel')).opacity);
+      }
       if (world.querySelector('[data-travelling]')) trace.floorLeft = true;
       for (const el of scene.querySelectorAll('[data-effect]'))
         if (!trace.fx.includes(el.dataset.effect)) trace.fx.push(el.dataset.effect);
@@ -121,6 +135,18 @@ test('desktop weapon swing, shield drive and bottle throw use different illustra
     await expect(page.locator('[data-travelling],.arena-fx,[data-playing="hidden"]')).toHaveCount(0);
   }
   expect(errors).toEqual([]);
+});
+
+test('alternate weapon and signature preparations land on their original contact drawing', async ({ page }) => {
+  await page.goto('/');
+  for (const [role, action] of [['guardian','attack'], ['guardian','bastion-bash'], ['alchemist','venom-flask']]) {
+    const first = await perform(page, role, action, 1);
+    const second = await perform(page, role, action, 2);
+    expect(first.pickup).toEqual([]);
+    expect(second.pickup).toEqual(expect.arrayContaining([1,3]));
+    expect(second.impact).toBe(first.impact);
+    expect(second.impactTake).toBe(1);
+  }
 });
 
 test('a slow paint loop preserves the anticipation and recovery of a normal-speed shield drive', async ({ page }) => {

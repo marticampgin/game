@@ -14,6 +14,7 @@ const standingRows = standing.poses.length / standing.columns * fighterLayout.he
 function pose(element, name) {
   trackBelt(element);
   delete element.dataset.track;
+  delete element.dataset.pickup;
   element.style.removeProperty('--clip-row');
   element.querySelector('.arena-cel').style.removeProperty('background-position-x');
   const index = standing.poses.indexOf(name);
@@ -49,6 +50,8 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     ? ' data-consume-src="' + skin.consume + '"' + (readySheets.has(skin.consume) ? ' data-consume-ready' : '')
     : '';
   const steps = skin.footwork ? ' data-footwork-src="' + skin.footwork + '"' : '';
+  const variations = skin.variations ? ' data-variations-src="' + skin.variations + '"' +
+    (readySheets.has(skin.variations) ? ' data-variations-ready' : '') : '';
   const motion = skin.motions
     ? ' data-motion-src="' + skin.motions + '"' + (readySheets.has(skin.motions) ? ' data-motion-ready' : '')
     : '';
@@ -57,6 +60,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     skin.sheet +
     ');' +
     (skin.motions ? '--motion-skin:url(' + skin.motions + ');' : '') +
+    (skin.variations ? '--variation-skin:url(' + skin.variations + ');' : '') +
     (skin.consume ? '--consume-skin:url(' + skin.consume + ');' : '') +
     (skin.footwork ? '--footwork-skin:url(' + skin.footwork + ');' : '') +
     (skin.idles || skin.ambient
@@ -89,7 +93,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     motion +
     consume +
     steps +
-    ambient + idleSet +
+    ambient + idleSet + variations +
     ' style="' +
     style +
     '"><span class="arena-cel"></span>' +
@@ -155,7 +159,7 @@ export function preloadArenaSkins(players = []) {
                 return;
               }
               readySheets.add(url);
-              for (const layer of ['motion', 'ambient', 'idles', 'consume']) {
+              for (const layer of ['motion', 'ambient', 'idles', 'consume', 'variations']) {
                 document.querySelectorAll('[data-' + layer + '-src="' + url + '"]')
                   .forEach(el => el.setAttribute('data-' + layer + '-ready', ''));
               }
@@ -238,6 +242,10 @@ const centerX = (r) => r.x + r.w * 0.5;
 const centerY = (r) => r.y + r.h * 0.5;
 const translated = (x, y, scale = 1, lean = 0) =>
   'translate(' + x + 'px,' + y + 'px) scale(' + scale + ') rotate(' + lean + 'deg)';
+
+// Rehearsal has no combat turn counter. Repeating a gesture in the fitting
+// room alternates takes without mutating any match data or consuming game RNG.
+const rehearsalTakes = new Map();
 
 export function playArenaAction(arena, recap, options = {}) {
   running.get(arena)?.cancel();
@@ -400,6 +408,20 @@ export function playArenaAction(arena, recap, options = {}) {
     return imprint(kind, centerX(box), centerY(box), size, still ? 245 : full ? 370 : 305);
   }
   const clip = actorClip(score, action, role);
+  let alternate = false;
+  if (!still && !options.effectsOnly && art.hasAttribute('data-variations-ready') &&
+      (clip === 'attack' || clip === 'signature')) {
+    const key = role + '/' + clip;
+    const turn = rehearsal ? (rehearsalTakes.get(key) ?? 0) + 1 : (recap.actorTurn ?? 1);
+    alternate = turn % 2 === 0;
+    if (rehearsal) rehearsalTakes.set(key, turn % 2);
+  }
+  const variation = alternate ? part(art, 'arena-variation-cel') : null;
+  if (variation) {
+    const row = fighterLayout.health.findIndex(band => band.id === art.dataset.tier) * 2 + Number(clip === 'signature');
+    variation.style.backgroundPositionY = row * 20 + '%';
+    art.dataset.take = 'alternate';
+  }
   const duration = score.path.at(-1)[0];
   const lead = score.family === 'cast' ? score.release : score.contact;
   const actorFrames = [0, 0.2, 0.37, 0.53, 0.67, 0.8, 0.91, 1].map((fraction) => fraction * lead);
@@ -410,6 +432,7 @@ export function playArenaAction(arena, recap, options = {}) {
     if (track === 'consume' && !element.hasAttribute('data-consume-ready')) track = 'brace';
     const single = track === 'consume';
     if (!single && (!element.hasAttribute('data-motion-ready') || !motionSheet.rows.includes(track))) return false;
+    delete element.dataset.pickup;
     element.dataset.track = track;
     element.dataset.pose = 'perform';
     const totalRows = motionSheet.rows.length * fighterLayout.health.length;
@@ -425,6 +448,10 @@ export function playArenaAction(arena, recap, options = {}) {
       at(time, () => {
         if (activeClips.get(element) !== token) return;
         const column = exposures?.[i + 1] ?? i + 1;
+        if (variation && element === art && track === clip) {
+          element.toggleAttribute('data-pickup', column >= 1 && column <= 5);
+          if (element.hasAttribute('data-pickup')) variation.style.backgroundPositionX = (column - 1) * 25 + '%';
+        }
         trackBelt(element, track, column);
         atlas.style.backgroundPositionX = column / (motionSheet.columns - 1) * 100 + '%';
       });
