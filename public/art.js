@@ -3,7 +3,7 @@ import { REWARDS } from '../src/game/catalog.js';
 
 const genericIcons = new Set([
   'shield', 'axe', 'clock', 'flask', 'crystal', 'fire', 'sword', 'heart', 'ring', 'chest',
-  'frost', 'bolt', 'leaf', 'dagger', 'skull', 'feather', 'crown', 'lantern', 'rune', 'coin',
+  'frost', 'bolt', 'hammer', 'dice', 'leaf', 'dagger', 'skull', 'feather', 'crown', 'lantern', 'rune', 'coin',
 ]);
 export const classArt = player => fighterModel(typeof player === 'string' ? { classId: player } : player);
 export function rewardIcon(reward) {
