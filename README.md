@@ -79,7 +79,9 @@ Add a reward to the catalog with its effects or trigger rules and its mechanical
 
 For a deterministic replay, retain the initial `{seed, players, config}` and the ordered decision history accepted by the engine. The exported `replayMatch` function recreates the result. `viewMatch(state, viewerId)` produces the projection used in the browser. The server keeps the full state and random generator private.
 
-The starting health range of 470–520 gives builds time to develop across the four ages. Class stats and global tuning parameters live in the catalog. Fighters keep their place around the ring between actions. Their poses, damaged equipment and reactions share a class skin sheet. The same public outcome drives the animation, health readout and turn recap.
+The starting health range of 480–500 gives builds time to develop across the four ages. Class stats and global tuning parameters live in the catalog. Fighters keep their place around the ring between actions. Their poses, damaged equipment and reactions share a class skin sheet. The same public outcome drives the animation, health readout and turn recap.
+
+The [eight-class balance playtest](docs/qa/roster-balance.md) covers every two- and four-class lineup, the full eight-seat table, and a Guardian deliberately stacking armor and shield synergies.
 
 The [PC combat review](docs/qa/pc-combat/README.md) includes recordings with in-game audio, a three-stage injury comparison and desktop playtest findings. The [fighter skin guide](docs/fighter-skins.md) covers sheet layout, registration and save compatibility.
 
