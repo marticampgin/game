@@ -262,12 +262,12 @@ body[data-screen='battle'] > .topbar {
   white-space: nowrap;
 }
 .rail-code { display: none; }
-.turn-rail li:first-child :is(.rail-name,.rail-code) { color: #ffe3a7; }
-.turn-rail li:first-child button {
+.turn-rail [aria-current='step'] :is(.rail-name,.rail-code) { color: #ffe3a7; }
+.turn-rail button[aria-current='step'] {
   border-color: #ffcb72;
   box-shadow: 0 0 0 1px #cf9a60;
 }
-.turn-rail li:first-child::after {
+.turn-rail li:has([aria-current='step'])::after {
   content: '';
   position: absolute;
   top: 100%;
@@ -867,5 +867,44 @@ body[data-screen='battle'] > .topbar {
   .turn-rail li:has([aria-current="step"])::after { border-top-color: #b0f3df; }
 }
 
-.result .result-purse { display:flex; align-items:center; gap:.35rem; margin-top:.2rem; color:#f3d99c; }
-.result .result-purse img { width:18px; height:18px; object-fit:contain; image-rendering:pixelated; }
+.result .result-purse { display:flex; align-items:center; gap:5px; margin:0; color:#f3d99c; font:600 15px/1.25 var(--battle-font); }
+.result .result-purse img { width:18px; height:18px; border:0; object-fit:contain; image-rendering:pixelated; }
+
+.turn-rail [data-outcome='eliminated'] img { filter:saturate(.3) brightness(.8); }
+.turn-rail button[data-outcome='champion'] { border-color:#e9bd76; box-shadow:0 0 0 1px #957044; }
+.turn-rail [data-outcome='champion'] :is(.rail-name,.rail-code) { color:#ffe2a2; background:#382a24; }
+.turn-rail [data-outcome='champion']::after, .champion .fighter-panel::before, .result-portrait:not(.draw)::after {
+  content:''; position:absolute; width:15px; height:11px;
+  background: url('/assets/interface/champion.png') center / contain no-repeat;
+  image-rendering:pixelated; pointer-events:none;
+}
+.turn-rail [data-outcome='champion']::after { top:2px; right:2px; }
+.champion .fighter-panel { border-top:1px solid #c69b5e; color:#ffdfa0; }
+.champion .fighter-panel::before { left:calc(50% - 8px); top:-12px; }
+.champion .foot-ring { border:2px solid #e4b86e; box-shadow:0 0 0 1px #4d352e, inset 0 0 8px #d5ae6659; }
+.combatant:has(.arena-sprite[data-pose='fallen']) .seat-conditions { visibility:hidden; }
+.result-portrait { position:relative; flex:none; padding:0; background:#271d29; }
+.result .result-portrait img { display:block; width:100%; height:100%; border:0; border-radius:0; image-rendering:pixelated; }
+.result-portrait:not(.draw)::after { right:-3px; top:-8px; width:30px; height:22px; }
+.result-portrait .seat-crest { position:absolute; bottom:3px; left:3px; background:#1c141f; }
+.result-identity { min-width:0; }
+.result-identity p { margin:1px 0 0; color:#e6d1b8; font:600 clamp(14px,1.04vw,18px)/1.2 var(--battle-font); }
+.result-identity h2 { color:#ffe1ac; overflow-wrap:anywhere; }
+.result-health { display:grid; gap:3px; border-left:1px solid #785b46; padding-left:clamp(16px,1.7vw,30px); }
+.result-health > span:first-child, .result-identity > small { color:#e1bd92; font:500 clamp(14px,1vw,17px)/1.15 var(--control-font); }
+.result-health strong { color:#f8dfb8; font:600 clamp(22px,1.8vw,31px)/1 var(--battle-font); white-space:nowrap; }
+.result-health strong small { color:#d9c6b6; font:600 clamp(13px,1.04vw,18px)/1 var(--battle-font); }
+.result-followup { display:grid; justify-items:end; gap:8px; margin-left:auto; }
+.result-actions { display:flex; align-items:center; gap:8px; }
+.result-actions .primary { margin:0; }
+@media (min-width:960px) {
+  .turn-controls:has(.result) { display:grid; align-items:center; min-height:var(--desktop-controls); }
+  .result { width:100%; gap:clamp(14px,1.7vw,30px); }
+  .result-portrait { width:clamp(70px,6.15vw,102px); height:clamp(80px,7vw,114px); border:3px solid #a3815c; border-image:var(--plate-lit) 8 / 6px / 0 stretch; }
+  .result-portrait.draw { border-image-source:var(--plate-iron); }
+  .result-portrait.draw img { object-fit:contain; }
+  .result-portrait .seat-crest { --crest-size:18px; }
+  .result-identity h2 { margin:2px 0 3px; font-size:clamp(25px,2.2vw,41px); }
+  .result-actions .tool-btn,.result-actions .primary { min-height:40px; }
+  .result .result-purse { max-width:min(39vw,580px); text-align:right; }
+}

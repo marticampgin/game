@@ -1,16 +1,13 @@
 import { CLASSES, REWARDS, STATUSES, currentAttack, getActions } from '/src/game/index.js';
-import { SHOP } from '/src/game/progression.js';
 import { wornGear } from './worn-gear.js';
 import { fighterModel, fighterPortrait, resolveFighterSkin } from './fighter-kit.js';
-import { actionIcon, rewardIcon, seatCrest, glyph, esc } from './art.js';
+import { actionIcon, rewardIcon, seatCrest, glyph, esc, toolButton as tool } from './art.js';
 import { actionDock } from './command.js';
 import { fighterSpriteHTML } from './animation.js';
 import { statusBankHTML } from './effect-strip.js';
 import { draftHTML } from './draft.js';
 import { resolutionHTML } from './resolution.js';
-
-const tool = (id, label, icon) =>
-  `<button class="tool-btn" data-ui="${id}" title="${label}" aria-label="${label}">${glyph(icon)}<span>${label}</span></button>`;
+import { matchResult } from './match-result.js';
 
 export const roundCaption = view => 'Round ' + esc(view.round) + '<i>◆</i>' + esc(view.age);
 export const nextEventButton = view => view.nextEvent && view.phase !== 'finished'
@@ -42,27 +39,29 @@ const ringSeats = {
 function combatant(p, index, view, viewerId, selection, intent) {
   const [x, y] = ringSeats[view.players.length][index];
   const active = p.id === view.activeId && view.phase !== 'finished';
+  const champion = view.phase === 'finished' && p.id === view.winnerId;
+  const liveEffects = p.alive && view.phase !== 'finished';
   const mine = p.id === viewerId;
   const targetable = !mine && p.alive && selection?.action?.target === 'enemy';
   const marked = selection?.target?.id === p.id;
   const incoming = intent?.targetId === p.id && intent.actorId !== p.id;
   const hp = Math.max(0, Math.min(100, (100 * p.hp) / p.maxHp));
-  const statuses = Object.entries(p.statuses)
+  const statuses = liveEffects && Object.entries(p.statuses)
     .filter(([, count]) => count > 0)
     .map(([id, count]) => (STATUSES[id]?.name || id) + ' ×' + count)
     .join(', ');
-  const details = [CLASSES[p.classId].name, mine && 'You', active && 'Acting', marked && 'Target', statuses]
+  const details = [CLASSES[p.classId].name, mine && 'You', active && 'Acting', champion && 'Champion', marked && 'Target', statuses]
     .filter(Boolean)
     .join(' · ');
-  return `<article class="combatant ${active ? 'acting' : ''} ${marked ? 'marked' : ''} ${incoming ? 'incoming' : ''} ${p.alive ? '' : 'fallen'}"
+  return `<article class="combatant ${active ? 'acting' : ''} ${marked ? 'marked' : ''} ${incoming ? 'incoming' : ''} ${champion ? 'champion' : ''} ${p.alive ? '' : 'fallen'}"
     data-seat="${esc(p.id)}" data-facing="${x > 50 ? 'left' : 'right'}" style="--x:${x.toFixed(2)}%;--y:${y.toFixed(2)}%;--depth:${Math.round(y)};--scale:${(0.76 + (y - 35) * 0.0073).toFixed(3)}">
     <button type="button" class="fighter-main" data-${targetable ? 'aim' : 'inspect'}="${esc(p.id)}" aria-label="${targetable ? 'Target' : 'View'} ${esc(p.name)}" aria-describedby="vitals-${esc(p.id)}" ${targetable ? 'aria-pressed="' + !!marked + '"' : ''}>
-      <span class="foot-ring" aria-hidden="true"></span><span class="fighter-art">${fighterSpriteHTML(p)}</span>
+      <span class="foot-ring" aria-hidden="true"></span><span class="fighter-art">${fighterSpriteHTML(p, {victory:champion})}</span>
       <span class="fighter-panel" id="vitals-${esc(p.id)}"><strong class="fighter-title">${seatCrest(index)}${esc(p.name)}</strong>
         <span class="vital-bar" aria-hidden="true"><i style="width:${hp}%"></i></span>
         <span class="fighter-hp">${p.alive ? p.hp + ' / ' + p.maxHp : 'Out'}</span>
-        <span class="seat-conditions" aria-hidden="true">${statusBankHTML(p.statuses)}</span>
-        <span class="sr-turn">${esc(details)}${p.shield ? ' · ' + p.shield + ' shield' : ''}</span>
+        <span class="seat-conditions" aria-hidden="true">${liveEffects ? statusBankHTML(p.statuses) : ''}</span>
+        <span class="sr-turn">${esc(details)}${liveEffects && p.shield ? ' · ' + p.shield + ' shield' : ''}</span>
       </span>
     </button><button type="button" class="fighter-info" data-inspect="${esc(p.id)}" aria-label="Inspect ${esc(p.name)}" title="${esc(p.name + ' · ' + details)}"><span aria-hidden="true">i</span></button>
   </article>`;
@@ -70,7 +69,7 @@ function combatant(p, index, view, viewerId, selection, intent) {
 
 export function turnRail(view, viewerId) {
   const end = view.phase === 'finished';
-  const order = end ? view.order : view.upcoming.slice(0, view.players.filter((p) => p.alive).length);
+  const order = end ? view.players.map(p => p.id) : view.upcoming.slice(0, view.players.filter((p) => p.alive).length);
   // Use the original seats to keep a contender's nameplate stable as turn order changes.
   const plates = view.players.map(({ name }) => {
     const words = name.normalize('NFC').match(/[\p{L}\p{N}]+/gu) || [];
@@ -96,9 +95,10 @@ export function turnRail(view, viewerId) {
         const code = uniqueLabel(seat, 'codes') || '#' + (seat + 1);
         const shortName = uniqueLabel(seat, 'names') || code;
         const seatHint = code.startsWith('#') ? ' · Seat ' + (seat + 1) : '';
+        const outcome = end ? (id === view.winnerId ? 'Champion' : 'Eliminated') : '';
         const label =
-          (end ? '' : i === 0 ? 'Acting · ' : i === 1 ? 'Up next · ' : 'Turn ' + (i + 1) + ' · ') + p.name + seatHint;
-        return `<li><button data-inspect="${esc(id)}" aria-label="${esc(label)}" title="${esc(label + (id === viewerId ? ' · You' : ''))}" ${!end && i === 0 ? 'aria-current="step"' : ''}>
+          (end ? outcome + ' · ' : i === 0 ? 'Acting · ' : i === 1 ? 'Up next · ' : 'Turn ' + (i + 1) + ' · ') + p.name + seatHint;
+        return `<li><button data-inspect="${esc(id)}" aria-label="${esc(label)}" title="${esc(label + (id === viewerId ? ' · You' : ''))}" ${end ? 'data-outcome="' + outcome.toLowerCase() + '"' : i === 0 ? 'aria-current="step"' : ''}>
           <img src="${fighterPortrait(p)}" alt="">${seatCrest(seat)}<span class="rail-name" aria-hidden="true">${esc(shortName)}</span><span class="rail-code" aria-hidden="true">${esc(code)}</span>
         </button></li>`;
       })
@@ -131,13 +131,6 @@ function waiting(view, player, active, intent) {
     <div class="watch-seat"><img src="${fighterPortrait(player)}" alt=""><span><small>${player.alive ? 'Your seat' : 'Spectating'}</small><strong>${esc(waitLabel)}</strong></span></div></div>`;
 }
 
-function result(view, viewerId, settlement) {
-  const mastery = settlement?.masterySkinId && SHOP.find(item => item.skinId === settlement.masterySkinId);
-  const winner = view.players.find((p) => p.id === view.winnerId);
-  return `<div class="result"><img src="/assets/i-crown.png" alt=""><div><small>Match complete · Round ${view.round}</small><h2>${winner ? (winner.id === viewerId ? 'Victory is yours' : esc(winner.name) + ' wins') : 'The arena claims everyone'}</h2>${view.career ? `<small class="result-purse"><img alt="" src="/assets/i-coin.png">${view.career.earnedCoins} objective coins${settlement?.lifetimeCoins ? ' · +' + settlement.lifetimeCoins + ' lifetime quest coins' : ''}${mastery ? ' · ' + esc(mastery.name) + ' unlocked' : ''}</small>` : ''}</div>
-    ${view.career ? tool('outfitter','Outfitter','book') : ''}${tool('history', 'Battle log', 'scroll')}<button class="primary" data-ui="replay">Play again ${glyph('right')}</button></div>`;
-}
-
 export function battleHTML(view, viewerId, ui) {
   const player = view.players.find((p) => p.id === viewerId);
   const active = view.players.find((p) => p.id === view.activeId);
@@ -148,7 +141,7 @@ export function battleHTML(view, viewerId, ui) {
     mine && view.phase === 'action' ? actionSelection(view, player, ui.action, ui.target) : null;
   const intent = ui.botIntent;
   const dock = end
-    ? result(view, viewerId, ui.settlement)
+    ? matchResult(view, viewerId, ui.settlement)
     : !mine
       ? waiting(view, player, active, intent)
       : selection

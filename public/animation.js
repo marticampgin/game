@@ -11,16 +11,23 @@ const readySheets = new Set();
 const standing = fighterLayout.layers.sheet;
 const motionSheet = fighterLayout.layers.motions;
 const standingRows = standing.poses.length / standing.columns * fighterLayout.health.length;
+function standingFrame(name) {
+  const index = standing.poses.indexOf(name);
+  return {
+    x: (index % standing.columns) * 100 / (standing.columns - 1) + '%',
+    y: Math.floor(index / standing.columns) * 100 / (standingRows - 1) + '%',
+  };
+}
 function pose(element, name) {
   trackBelt(element);
   delete element.dataset.track;
   delete element.dataset.pickup;
   element.style.removeProperty('--clip-row');
   element.querySelector('.arena-cel').style.removeProperty('background-position-x');
-  const index = standing.poses.indexOf(name);
+  const frame = standingFrame(name);
   element.dataset.pose = name;
-  element.style.setProperty('--pose-x', (index % standing.columns) * 100 / (standing.columns - 1) + '%');
-  element.style.setProperty('--pose-y', Math.floor(index / standing.columns) * 100 / (standingRows - 1) + '%');
+  element.style.setProperty('--pose-x', frame.x);
+  element.style.setProperty('--pose-y', frame.y);
 }
 // Preview the same rest rows and standing paintings used by the arena. A
 // reduced-motion audition holds the representative drawing for inspection.
@@ -60,10 +67,12 @@ export function playFittingPose(sprite, take) {
 function idlePeriod(role, band) {
   return (fighterKit(role).idlePeriodMs ?? 11500) + (band === 'critical' ? 1900 : band === 'wounded' ? 750 : 0);
 }
-export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotion = false } = {}) {
+export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotion = false, victory = false } = {}) {
   const skin = resolveFighterSkin(player.classId, skinId);
   const band = healthBand(player);
   const fallen = player.alive === false || player.hp === 0;
+  const initialPose = fallen ? 'fallen' : victory ? 'victory' : 'idle';
+  const frame = standingFrame(initialPose);
   const seed = Array.from(String(player.id ?? skin.classId)).reduce(
     (n, c) => (31 * n + c.charCodeAt(0)) >>> 0,
     0,
@@ -107,9 +116,9 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     (checkSeed % 5300) +
     'ms;' +
     '--pose-x:' +
-    (fallen ? '66.666667%' : '0%') +
+    frame.x +
     ';--pose-y:' +
-    (fallen ? '25%' : '0%');
+    frame.y;
   return (
     '<span aria-hidden="true" class="arena-sprite" data-class="' +
     skin.classId +
@@ -118,7 +127,7 @@ export function fighterSpriteHTML(player, { skinId = player.skinId, reducedMotio
     '" data-tier="' +
     band +
     '" data-pose="' +
-    (fallen ? 'fallen' : 'idle') +
+    initialPose +
     '"' +
     (reducedMotion ? ' data-still' : '') +
     motion +

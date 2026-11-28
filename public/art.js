@@ -45,3 +45,7 @@ export function glyph(name) {
   return '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">'+(paths[name]||'')+'</svg>';
 }
 export const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+export function toolButton(id, label, icon) {
+  return `<button type="button" class="tool-btn" data-ui="${esc(id)}" title="${esc(label)}" aria-label="${esc(label)}">${glyph(icon)}<span>${esc(label)}</span></button>`;
+}
