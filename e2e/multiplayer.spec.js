@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { CLASSES } from '../src/game/catalog.js';
 
 async function enterLobby(page) {
   await page.goto('/');
@@ -64,7 +65,8 @@ test('laptop lobby exposes all illustrated classes, editable settings and the so
   await page.getByRole('combobox', {name:'Contenders',exact:true}).selectOption('8');
   await page.getByLabel('Your name').fill('Nightshade');
   const images = page.locator('.class-portrait');
-  await expect(images).toHaveCount(4);
+  await expect(images).toHaveCount(Object.keys(CLASSES).length);
+  await expect(page.getByRole('button', {name:'Start match'})).toBeInViewport();
   await expect.poll(() => images.evaluateAll(nodes => nodes.every(img => img.complete && img.naturalWidth > 0))).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1280);
   await page.getByRole('button', {name:'Start match'}).click();

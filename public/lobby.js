@@ -2,6 +2,7 @@ import { CLASSES, REWARDS } from '/src/game/index.js';
 import { fighterKit, fighterPortrait, fighterSkins } from './fighter-kit.js';
 import { classArt, esc, glyph, rewardIcon } from './art.js';
 
+import { seedNumber, shuffled } from '/src/game/draft.js';
 import { SHOP, owns } from '/src/game/progression.js';
 import { initCareer, profileHeaders, loadProfile, acceptProfile, readProfile, startCareerSolo } from './career-client.js';
 
@@ -34,7 +35,7 @@ function classGallery(picked, allowed, locked, skinId) {
   return '<div class="lobby-classes" aria-label="Character classes">' + classes.filter(c => allowed.includes(c.id)).map(c =>
     '<button type="button" class="lobby-class" data-lobby-class="' + c.id + '" aria-pressed="' + (c.id === picked) +
     '" aria-label="' + c.name + '"' + (locked ? ' disabled' : '') + '><img class="class-portrait" src="' + fighterPortrait({classId:c.id,skinId:c.id === picked ? skinId : preferredSkin(c.id)}) +
-    '" alt=""><span class="class-plaque">' + rewardIcon({ icon: fighterKit(c.id).emblem }) + c.name + '</span></button>'
+    '" alt=""><span class="class-plaque">' + c.name + '</span></button>'
   ).join('') + '</div>';
 }
 
@@ -230,10 +231,10 @@ function lobbyController(host, callbacks, initialSession, initialView) {
       const fighter = { classId:model.selected };
       if (model.skinId && (model.tab !== 'host' || model.mode === 'free')) fighter.skinId = model.skinId;
       if (model.tab === 'solo') {
-        const rivals = classes.filter(c => c.id !== model.selected).concat(CLASSES[model.selected]);
+        const seed = model.seed.trim() || crypto.getRandomValues(new Uint32Array(1))[0];
+        const rivals = shuffled({rng:seedNumber(String(seed) + '/rivals')}, classes.filter(c => c.id !== model.selected));
         const players = [{ id:'p1', name:model.name.trim(), ...fighter, bot:false }];
         for (let i = 0; i < model.capacity - 1; i++) players.push({ id:'p' + (i+2), name:botNames[i], classId:rivals[i % rivals.length].id, bot:true });
-        const seed = model.seed.trim() || crypto.getRandomValues(new Uint32Array(1))[0];
         const state = await startCareerSolo({seed,players});
         if (disposed) return;
         cleanup();

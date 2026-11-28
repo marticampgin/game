@@ -2,7 +2,7 @@ import { CLASSES, REWARDS, STATUSES, currentAttack, getActions } from '/src/game
 import { SHOP } from '/src/game/progression.js';
 import { wornGear } from './worn-gear.js';
 import { fighterModel, fighterPortrait, resolveFighterSkin } from './fighter-kit.js';
-import { rewardIcon, seatCrest, glyph, esc } from './art.js';
+import { actionIcon, rewardIcon, seatCrest, glyph, esc } from './art.js';
 import { actionDock } from './command.js';
 import { fighterSpriteHTML } from './animation.js';
 import { statusBankHTML } from './effect-strip.js';
@@ -107,15 +107,28 @@ export function turnRail(view, viewerId) {
 
 function waiting(view, player, active, intent) {
   const target = view.players.find((p) => p.id === intent?.targetId);
+  const drafting = view.phase === 'acquire';
+  const waitingTurns = view.upcoming.indexOf(player.id);
+  const survivors = view.players.filter(contender => contender.alive).length;
+  const cue = intent?.actionId ? actionIcon(intent.actionId) : rewardIcon({icon:drafting ? 'atlas' : 'sword'});
   const preparing = intent?.actionName
     ? 'Preparing ' +
       esc(intent.actionName) +
       (target && target !== active ? ' against ' + esc(target.name) : '')
-    : view.phase === 'acquire'
-      ? 'Choosing a reward'
+    : drafting
+      ? view.bonusDraft ? 'Choosing bonus loot' : 'Choosing a reward'
       : 'Choosing an action';
-  return `<div class="watch"><img src="${fighterPortrait(active)}" alt="">
-    <div><small>${player.alive ? 'Rival turn' : 'Spectating'}</small><h2>${esc(active.name)}</h2></div><p>${preparing}</p></div>`;
+  const waitLabel = !player.alive ? survivors + ' contenders remain'
+    : waitingTurns === 1 ? 'You act next' : waitingTurns > 1 ? 'Your turn in ' + waitingTurns + ' turns' : 'Awaiting turn order';
+  const seat = view.players.findIndex(p => p.id === active.id);
+  return `<div class="watch"><button type="button" class="watch-fighter" data-inspect="${esc(active.id)}" aria-label="Inspect acting contender ${esc(active.name)}">
+    <span class="command-portrait"><img src="${fighterPortrait(active)}" alt="">${seatCrest(seat)}</span>
+    <span><small>${player.alive ? 'Rival turn' : 'Spectating'} · ${esc(CLASSES[active.classId].name)}</small><strong>${esc(active.name)}</strong>
+    <span class="watch-hp">${active.hp} / ${active.maxHp} HP</span></span></button>
+    <div class="watch-choice"><span class="watch-cue" aria-hidden="true">${cue}</span><div>
+    <ol aria-label="Turn steps"><li ${drafting ? 'aria-current="step"' : ''}>Draft</li><li ${!drafting ? 'aria-current="step"' : ''}>Act</li></ol>
+    <p>${preparing}</p></div></div>
+    <div class="watch-seat"><img src="${fighterPortrait(player)}" alt=""><span><small>${player.alive ? 'Your seat' : 'Spectating'}</small><strong>${esc(waitLabel)}</strong></span></div></div>`;
 }
 
 function result(view, viewerId, settlement) {
