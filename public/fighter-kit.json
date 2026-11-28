@@ -250,6 +250,8 @@
       "footwork": "/assets/skins/outfits/riverboat-duelist/footwork.webp",
       "ambient": "/assets/skins/outfits/riverboat-duelist/ambient.webp",
       "consume": "/assets/skins/outfits/riverboat-duelist/consume.webp",
+      "idles": "/assets/skins/outfits/riverboat-duelist/idles.webp",
+      "variations": "/assets/skins/outfits/riverboat-duelist/variations.webp",
       "portrait": "/assets/skins/outfits/riverboat-duelist/portrait.webp",
       "model": "/assets/skins/outfits/riverboat-duelist/model.webp",
       "anchors": {
@@ -267,6 +269,8 @@
       "footwork": "/assets/skins/outfits/gilded-jack/footwork.webp",
       "ambient": "/assets/skins/outfits/gilded-jack/ambient.webp",
       "consume": "/assets/skins/outfits/gilded-jack/consume.webp",
+      "idles": "/assets/skins/outfits/gilded-jack/idles.webp",
+      "variations": "/assets/skins/outfits/gilded-jack/variations.webp",
       "portrait": "/assets/skins/outfits/gilded-jack/portrait.webp",
       "model": "/assets/skins/outfits/gilded-jack/model.webp",
       "anchors": {
@@ -284,6 +288,8 @@
       "footwork": "/assets/skins/outfits/marsh-medium/footwork.webp",
       "ambient": "/assets/skins/outfits/marsh-medium/ambient.webp",
       "consume": "/assets/skins/outfits/marsh-medium/consume.webp",
+      "idles": "/assets/skins/outfits/marsh-medium/idles.webp",
+      "variations": "/assets/skins/outfits/marsh-medium/variations.webp",
       "portrait": "/assets/skins/outfits/marsh-medium/portrait.webp",
       "model": "/assets/skins/outfits/marsh-medium/model.webp",
       "anchors": {
@@ -301,6 +307,8 @@
       "footwork": "/assets/skins/outfits/ossuary-queen/footwork.webp",
       "ambient": "/assets/skins/outfits/ossuary-queen/ambient.webp",
       "consume": "/assets/skins/outfits/ossuary-queen/consume.webp",
+      "idles": "/assets/skins/outfits/ossuary-queen/idles.webp",
+      "variations": "/assets/skins/outfits/ossuary-queen/variations.webp",
       "portrait": "/assets/skins/outfits/ossuary-queen/portrait.webp",
       "model": "/assets/skins/outfits/ossuary-queen/model.webp",
       "anchors": {
@@ -318,6 +326,8 @@
       "footwork": "/assets/skins/outfits/carnival-fox/footwork.webp",
       "ambient": "/assets/skins/outfits/carnival-fox/ambient.webp",
       "consume": "/assets/skins/outfits/carnival-fox/consume.webp",
+      "idles": "/assets/skins/outfits/carnival-fox/idles.webp",
+      "variations": "/assets/skins/outfits/carnival-fox/variations.webp",
       "portrait": "/assets/skins/outfits/carnival-fox/portrait.webp",
       "model": "/assets/skins/outfits/carnival-fox/model.webp",
       "anchors": {
@@ -335,6 +345,8 @@
       "footwork": "/assets/skins/outfits/mirror-regent/footwork.webp",
       "ambient": "/assets/skins/outfits/mirror-regent/ambient.webp",
       "consume": "/assets/skins/outfits/mirror-regent/consume.webp",
+      "idles": "/assets/skins/outfits/mirror-regent/idles.webp",
+      "variations": "/assets/skins/outfits/mirror-regent/variations.webp",
       "portrait": "/assets/skins/outfits/mirror-regent/portrait.webp",
       "model": "/assets/skins/outfits/mirror-regent/model.webp",
       "anchors": {
@@ -352,6 +364,8 @@
       "footwork": "/assets/skins/outfits/railway-smith/footwork.webp",
       "ambient": "/assets/skins/outfits/railway-smith/ambient.webp",
       "consume": "/assets/skins/outfits/railway-smith/consume.webp",
+      "idles": "/assets/skins/outfits/railway-smith/idles.webp",
+      "variations": "/assets/skins/outfits/railway-smith/variations.webp",
       "portrait": "/assets/skins/outfits/railway-smith/portrait.webp",
       "model": "/assets/skins/outfits/railway-smith/model.webp",
       "anchors": {
@@ -369,6 +383,8 @@
       "footwork": "/assets/skins/outfits/stormglass-engineer/footwork.webp",
       "ambient": "/assets/skins/outfits/stormglass-engineer/ambient.webp",
       "consume": "/assets/skins/outfits/stormglass-engineer/consume.webp",
+      "idles": "/assets/skins/outfits/stormglass-engineer/idles.webp",
+      "variations": "/assets/skins/outfits/stormglass-engineer/variations.webp",
       "portrait": "/assets/skins/outfits/stormglass-engineer/portrait.webp",
       "model": "/assets/skins/outfits/stormglass-engineer/model.webp",
       "anchors": {
