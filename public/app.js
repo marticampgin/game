@@ -758,7 +758,8 @@ document.addEventListener('click', (event) => {
   } else if (d.actionPage !== undefined && screen === 'battle') {
     actionPage = Number(d.actionPage);
     refreshBattle();
-    app.querySelector('.action-grid button:not(:disabled)')?.focus({ preventScroll: true });
+    const destination = app.querySelector('.action-grid button:enabled') || app.querySelector('[data-action-page]:enabled');
+    destination?.focus({ preventScroll: true });
   } else if (d.action && screen === 'battle') {
     choice = d.action;
     refreshBattle();

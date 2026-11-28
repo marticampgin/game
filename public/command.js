@@ -25,13 +25,15 @@ function actionButton(option, chosenId) {
     ${option.disabled ? `<small>${esc(reason)}</small>` : ''}</span></button>`;
 }
 
-function pageNav(page, total) {
+function pageNav(page, actions) {
+  const total = actions.length;
   if (total <= PAGE_SIZE) return '';
   const first = page * PAGE_SIZE + 1;
   const last = Math.min(first + PAGE_SIZE - 1, total);
+  const preview = start => esc(actions.slice(start,start + PAGE_SIZE).map(action => action.name).join(', '));
   return `<nav class="action-pages" aria-label="Action pages"><span>Actions ${first}–${last} of ${total}</span>
-    <button type="button" aria-label="Previous actions" data-action-page="${page - 1}" ${page === 0 ? 'disabled' : ''}>${glyph('back')}</button>
-    <button type="button" aria-label="More actions" data-action-page="${page + 1}" ${last === total ? 'disabled' : ''}>${glyph('right')}</button></nav>`;
+    <button type="button" aria-label="Previous actions" data-action-page="${page - 1}" ${page === 0 ? 'disabled' : 'title="' + preview((page - 1) * PAGE_SIZE) + '"'}>${glyph('back')}</button>
+    <button type="button" aria-label="More actions" data-action-page="${page + 1}" ${last === total ? 'disabled' : 'title="' + preview(last) + '"'}>${glyph('right')}</button></nav>`;
 }
 
 export function actionDock(view, player, selection, { actionPage = 0, acquiredReward } = {}) {
@@ -51,7 +53,7 @@ export function actionDock(view, player, selection, { actionPage = 0, acquiredRe
   const note = [acquiredReward ? 'Took ' + acquiredReward : '', view.remainingActions > 1 ? view.remainingActions + ' actions left' : ''].filter(Boolean).join(' · ');
   return `<section class="command-deck" aria-label="Action command deck">
     ${playerStation(player, view)}<div class="command-hand"><header class="dock-heading command-heading"><div>
-      <h2>Choose an action</h2>${note ? `<small>${esc(note)}</small>` : ''}</div>${pageNav(page, actions.length)}</header>
+      <h2>Choose an action</h2>${note ? `<small>${esc(note)}</small>` : ''}</div>${pageNav(page, ordered)}</header>
       <div class="action-grid" role="group" aria-label="Available actions" style="--command-count:${visible.length};--phone-columns:${visible.length > 4 ? 3 : visible.length}">
         ${visible.map(option => actionButton(option, action.id)).join('')}</div>
     </div><div class="target-panel"><div class="aim-line">${action.target === 'enemy'

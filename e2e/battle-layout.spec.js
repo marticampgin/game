@@ -37,6 +37,26 @@ async function bounds(page) {
   });
 }
 
+test('a full pack previews its last page and keeps keyboard focus among automatic reactions', async ({page}) => {
+  const save = crowdedBuild(8);
+  for (const rewardId of ['hollow-needle','second-breath','emergency-ward'])
+    save.state = sandboxEdit(save.state,{type:'grant',playerId:save.viewerId,rewardId});
+  save.state = applyCommand(save.state,save.viewerId,{type:'pick',rewardId:'iron-shard'});
+  await page.addInitScript(data => sessionStorage.setItem('rift-solo',JSON.stringify(data)),save);
+  await page.goto('/');
+  const more = page.getByRole('button',{name:'More actions'});
+  await more.click();
+  await expect(more).toHaveAttribute('title','Second Breath, Emergency Ward');
+  await more.press('Enter');
+  await expect(page.locator('.action-pages')).toContainText('13–14 of 14');
+  await expect(page.locator('[data-action="emergency-ward"]')).toBeDisabled();
+  const previous = page.getByRole('button',{name:'Previous actions'});
+  await expect(previous).toBeFocused();
+  await previous.press('Enter');
+  await page.locator('[data-action="red-tonic"]').click();
+  await expect(page.locator('[data-execute="red-tonic"]')).toBeEnabled();
+});
+
 for (const [width,height] of [[1024,768],[1280,720]]) {
   test('the eight-seat target selector keeps health and the native choice readable at ' + width + 'px', async ({ page }) => {
     await page.setViewportSize({width,height});
