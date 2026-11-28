@@ -233,11 +233,10 @@ test('idle equipment checks are staggered by seat and respect reduced motion', a
     }
   }
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  expect(
-    await page
+  await expect.poll(() => page
       .locator('[data-seat] .arena-check-cel')
       .evaluateAll((nodes) =>
-        nodes.every((el) => el.getAnimations().length === 0 && Number(getComputedStyle(el).opacity) === 0),
-      ),
+        nodes.length === 4 && nodes.every((el) => Number(getComputedStyle(el).opacity) === 0 && el.getAnimations().length === 0),
+      )
   ).toBe(true);
 });

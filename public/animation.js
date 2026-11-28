@@ -766,6 +766,7 @@ export function playArenaAction(arena, recap, options = {}) {
     timing.contact,
     ...timing.beats.map(({ time }) => time),
     ...keyDrawings,
+    ...(!effectsOnly && !still && score.gesture === 'scavenge' ? [3,7,10].map(i => timing.windup + actorFrames[i]) : []),
     ...(score.family === 'cast' && !still ? [timing.windup + score.release] : []),
   ])].sort((a, b) => a - b);
   function startMove() {
@@ -848,7 +849,20 @@ export function playArenaAction(arena, recap, options = {}) {
       // Return the feet under the body before the victor's weapon returns home.
       // A subsequent impact or knockout owns the pose and supersedes this recovery.
       const body = subject === actor ? art : subject.sprite;
-      if (reaction === 'fallen') playFighterEnding(body, 'collapse', still, speed);
+      if (reaction === 'fallen') {
+        const fall = playFighterEnding(body, 'collapse', still, speed);
+        if (fall) {
+          // Keep the buckle, landing and prone hold on the scene clock. A slow
+          // paint must not let the compositor finish the fall between two cues.
+          fall.animation.startTime = timelineStart + cueTime / speed;
+          animations.set(fall.animation, cueTime);
+          for (const offset of fall.landmarks) {
+            const point = cueTime + offset;
+            if (!paintPoints.includes(point)) paintPoints.push(point);
+          }
+          paintPoints.sort((a,b) => a-b);
+        }
+      }
       const reactionClip = reaction === 'guard' ? 'brace' : reaction === 'hurt' ? 'hurt' : null;
       const illustrated = reactionClip && flipbook(body, reactionClip, [0, 15, 32, 46, 61, 78, 95, 135, 176, 227, 315, 402]);
       if (illustrated) {

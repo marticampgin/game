@@ -35,4 +35,5 @@ export function playFighterEnding(sprite, layer, still, speed = 1) {
   cue.onfinish = () => requestAnimationFrame(() => {
     if (playing.get(sprite) === cue) stopEnding(sprite);
   });
+  return { animation:cue, landmarks:[first, accent, times[6], finish] };
 }

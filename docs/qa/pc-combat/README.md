@@ -55,6 +55,6 @@ Four normal-speed finishes show the loser falling, the champion settling into th
 | Mirror Regent | Mirror Feint | A court bow follows the strike against Gilded Jack. |
 | Railway Smith | Rivet Drive | The wounded Artificer shoulders the wrench after defeating Glass Oracle. |
 
-In the Outfitter, **Poses** can replay Knockout or Victory at each health band. At the end of a live match the winner performs the gesture once. Reopening a finished match, or playing with reduced motion, shows its held drawing.
+In the Outfitter, **Poses** can replay Fallen or Victory at each health band. At the end of a live match the winner performs the gesture once. Reopening a finished match, or playing with reduced motion, shows its held drawing.
 
 For a cold eight-outfit arena at 8 Mbps with 50 ms of latency, prioritizing the opening fighter’s motion reduced the wait for its illustrated attack strip from 13.47 s to 3.35 s in the measured pair. A full-speed two-seat browser game ended in round 45 and an eight-seat solo game ended in round 61. A separate online room with eight player sessions agreed on the winner after 35 rounds and a host reconnect. [Read the seeded roster and armor results](../roster-balance.md)
