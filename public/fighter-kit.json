@@ -240,6 +240,142 @@
         "wounded": {"hand": [118, 81], "mouth": [112, 54], "ground": [140, 149], "belt": [103, 83]},
         "critical": {"hand": [119, 98], "mouth": [118, 73], "ground": [140, 149], "belt": [110, 98]}
       }
+    },
+    {
+      "classId": "gambler",
+      "id": "riverboat-duelist",
+      "name": "Riverboat Duelist",
+      "sheet": "/assets/skins/outfits/riverboat-duelist/standing.webp",
+      "motions": "/assets/skins/outfits/riverboat-duelist/motions.webp",
+      "footwork": "/assets/skins/outfits/riverboat-duelist/footwork.webp",
+      "ambient": "/assets/skins/outfits/riverboat-duelist/ambient.webp",
+      "consume": "/assets/skins/outfits/riverboat-duelist/consume.webp",
+      "portrait": "/assets/skins/outfits/riverboat-duelist/portrait.webp",
+      "model": "/assets/skins/outfits/riverboat-duelist/model.webp",
+      "anchors": {
+        "healthy": {"hand": [132, 55], "mouth": [106, 49], "ground": [141, 149], "belt": [104, 82]},
+        "wounded": {"hand": [129, 62], "mouth": [106, 56], "ground": [141, 149], "belt": [103, 87]},
+        "critical": {"hand": [131, 69], "mouth": [108, 62], "ground": [141, 149], "belt": [103, 97]}
+      }
+    },
+    {
+      "classId": "gambler",
+      "id": "gilded-jack",
+      "name": "Gilded Jack",
+      "sheet": "/assets/skins/outfits/gilded-jack/standing.webp",
+      "motions": "/assets/skins/outfits/gilded-jack/motions.webp",
+      "footwork": "/assets/skins/outfits/gilded-jack/footwork.webp",
+      "ambient": "/assets/skins/outfits/gilded-jack/ambient.webp",
+      "consume": "/assets/skins/outfits/gilded-jack/consume.webp",
+      "portrait": "/assets/skins/outfits/gilded-jack/portrait.webp",
+      "model": "/assets/skins/outfits/gilded-jack/model.webp",
+      "anchors": {
+        "healthy": {"hand": [133, 59], "mouth": [107, 53], "ground": [150, 149], "belt": [108, 84]},
+        "wounded": {"hand": [129, 62], "mouth": [108, 60], "ground": [146, 149], "belt": [104, 85]},
+        "critical": {"hand": [133, 71], "mouth": [109, 64], "ground": [146, 149], "belt": [104, 95]}
+      }
+    },
+    {
+      "classId": "necromancer",
+      "id": "marsh-medium",
+      "name": "Marsh Medium",
+      "sheet": "/assets/skins/outfits/marsh-medium/standing.webp",
+      "motions": "/assets/skins/outfits/marsh-medium/motions.webp",
+      "footwork": "/assets/skins/outfits/marsh-medium/footwork.webp",
+      "ambient": "/assets/skins/outfits/marsh-medium/ambient.webp",
+      "consume": "/assets/skins/outfits/marsh-medium/consume.webp",
+      "portrait": "/assets/skins/outfits/marsh-medium/portrait.webp",
+      "model": "/assets/skins/outfits/marsh-medium/model.webp",
+      "anchors": {
+        "healthy": {"hand": [96, 83], "mouth": [109, 41], "ground": [150, 149], "belt": [107, 80]},
+        "wounded": {"hand": [96, 86], "mouth": [111, 49], "ground": [150, 149], "belt": [103, 85]},
+        "critical": {"hand": [95, 99], "mouth": [117, 62], "ground": [151, 149], "belt": [109, 94]}
+      }
+    },
+    {
+      "classId": "necromancer",
+      "id": "ossuary-queen",
+      "name": "Ossuary Queen",
+      "sheet": "/assets/skins/outfits/ossuary-queen/standing.webp",
+      "motions": "/assets/skins/outfits/ossuary-queen/motions.webp",
+      "footwork": "/assets/skins/outfits/ossuary-queen/footwork.webp",
+      "ambient": "/assets/skins/outfits/ossuary-queen/ambient.webp",
+      "consume": "/assets/skins/outfits/ossuary-queen/consume.webp",
+      "portrait": "/assets/skins/outfits/ossuary-queen/portrait.webp",
+      "model": "/assets/skins/outfits/ossuary-queen/model.webp",
+      "anchors": {
+        "healthy": {"hand": [96, 92], "mouth": [112, 54], "ground": [151, 149], "belt": [107, 85]},
+        "wounded": {"hand": [96, 91], "mouth": [112, 58], "ground": [149, 149], "belt": [105, 94]},
+        "critical": {"hand": [96, 105], "mouth": [117, 74], "ground": [151, 149], "belt": [108, 103]}
+      }
+    },
+    {
+      "classId": "trickster",
+      "id": "carnival-fox",
+      "name": "Carnival Fox",
+      "sheet": "/assets/skins/outfits/carnival-fox/standing.webp",
+      "motions": "/assets/skins/outfits/carnival-fox/motions.webp",
+      "footwork": "/assets/skins/outfits/carnival-fox/footwork.webp",
+      "ambient": "/assets/skins/outfits/carnival-fox/ambient.webp",
+      "consume": "/assets/skins/outfits/carnival-fox/consume.webp",
+      "portrait": "/assets/skins/outfits/carnival-fox/portrait.webp",
+      "model": "/assets/skins/outfits/carnival-fox/model.webp",
+      "anchors": {
+        "healthy": {"hand": [122, 55], "mouth": [110, 44], "ground": [153, 149], "belt": [107, 82]},
+        "wounded": {"hand": [120, 62], "mouth": [110, 50], "ground": [140, 149], "belt": [109, 87]},
+        "critical": {"hand": [127, 71], "mouth": [115, 63], "ground": [141, 149], "belt": [109, 96]}
+      }
+    },
+    {
+      "classId": "trickster",
+      "id": "mirror-regent",
+      "name": "Mirror Regent",
+      "sheet": "/assets/skins/outfits/mirror-regent/standing.webp",
+      "motions": "/assets/skins/outfits/mirror-regent/motions.webp",
+      "footwork": "/assets/skins/outfits/mirror-regent/footwork.webp",
+      "ambient": "/assets/skins/outfits/mirror-regent/ambient.webp",
+      "consume": "/assets/skins/outfits/mirror-regent/consume.webp",
+      "portrait": "/assets/skins/outfits/mirror-regent/portrait.webp",
+      "model": "/assets/skins/outfits/mirror-regent/model.webp",
+      "anchors": {
+        "healthy": {"hand": [123, 54], "mouth": [110, 43], "ground": [145, 149], "belt": [106, 81]},
+        "wounded": {"hand": [121, 61], "mouth": [110, 48], "ground": [145, 149], "belt": [107, 87]},
+        "critical": {"hand": [129, 69], "mouth": [115, 60], "ground": [145, 149], "belt": [108, 96]}
+      }
+    },
+    {
+      "classId": "artificer",
+      "id": "railway-smith",
+      "name": "Railway Smith",
+      "sheet": "/assets/skins/outfits/railway-smith/standing.webp",
+      "motions": "/assets/skins/outfits/railway-smith/motions.webp",
+      "footwork": "/assets/skins/outfits/railway-smith/footwork.webp",
+      "ambient": "/assets/skins/outfits/railway-smith/ambient.webp",
+      "consume": "/assets/skins/outfits/railway-smith/consume.webp",
+      "portrait": "/assets/skins/outfits/railway-smith/portrait.webp",
+      "model": "/assets/skins/outfits/railway-smith/model.webp",
+      "anchors": {
+        "healthy": {"hand": [117, 53], "mouth": [109, 46], "ground": [145, 149], "belt": [104, 81]},
+        "wounded": {"hand": [119, 63], "mouth": [110, 52], "ground": [147, 149], "belt": [106, 87]},
+        "critical": {"hand": [119, 71], "mouth": [115, 60], "ground": [148, 149], "belt": [107, 96]}
+      }
+    },
+    {
+      "classId": "artificer",
+      "id": "stormglass-engineer",
+      "name": "Stormglass Engineer",
+      "sheet": "/assets/skins/outfits/stormglass-engineer/standing.webp",
+      "motions": "/assets/skins/outfits/stormglass-engineer/motions.webp",
+      "footwork": "/assets/skins/outfits/stormglass-engineer/footwork.webp",
+      "ambient": "/assets/skins/outfits/stormglass-engineer/ambient.webp",
+      "consume": "/assets/skins/outfits/stormglass-engineer/consume.webp",
+      "portrait": "/assets/skins/outfits/stormglass-engineer/portrait.webp",
+      "model": "/assets/skins/outfits/stormglass-engineer/model.webp",
+      "anchors": {
+        "healthy": {"hand": [121, 53], "mouth": [108, 44], "ground": [145, 149], "belt": [105, 83]},
+        "wounded": {"hand": [122, 63], "mouth": [110, 53], "ground": [145, 149], "belt": [106, 87]},
+        "critical": {"hand": [121, 70], "mouth": [112, 60], "ground": [145, 149], "belt": [107, 96]}
+      }
     }
   ]
 }
