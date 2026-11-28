@@ -18,6 +18,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Check every fighter outfit and animation frame
+        run: |
+          python3 -m pip install --disable-pip-version-check --target "$RUNNER_TEMP/fighter-check" "Pillow==12.2.0"
+          PYTHONPATH="$RUNNER_TEMP/fighter-check" python3 scripts/check-fighter-skins.py
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
       - run: npm run test:turn:webkit -- --workers=1
