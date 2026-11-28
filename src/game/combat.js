@@ -1,6 +1,6 @@
 import { countCareer } from './progression.js';
 import { REWARDS, STATUSES } from './catalog.js';
-import { eligible, modifiedSlot, sample } from './draft.js';
+import { eligible, modifiedSlot, random, sample } from './draft.js';
 import { captureOutcome, settleStatusTick } from './recap.js';
 
 export const findPlayer = (state,id) => state.players.find(p => p.id === id);
@@ -32,9 +32,27 @@ export function currentAttack(player) {
 }
 export const scaled = (p, base, scale, factor=1) => Math.round((base || 0) + (scale ? (scale === 'attack' ? currentAttack(p) : p[scale]) * factor : 0));
 const modifierFactor = (slot) => (slot?.modifiers.includes('amplify') ? 1.4 : 1) * (slot?.modifiers.includes('accelerate') ? 0.85 : 1);
-export function rawHit(player,target,effect,slot) {
-  const value = effect.kind === 'consumeHit' ? effect.base + effect.factor * (target.statuses[effect.key] || 0)
+export const highCardReady = p => p.stackedDeckTurn !== undefined && p.stackedDeckTurn === p.personalTurn;
+export const fittingCount = p => p.artifacts.length + p.abilities.reduce((count,slot) =>
+  count + slot.modifiers.length + Number(REWARDS[slot.id].category === 'item'),0);
+
+// Mirroring reads printed enemy techniques in public slot order. Generated
+// effects (including another mirror) have no printed status to recurse into.
+export function imitatedStatus(target,effect) {
+  for (const slot of target.abilities) {
+    const ability = REWARDS[slot.id];
+    const printed = ability.target === 'enemy' && ability.effects.find(e => e.kind === 'status' && e.target === 'enemy');
+    if (printed) return {key:printed.key,amount:Math.min(printed.amount,effect.limit)};
+  }
+  return null;
+}
+
+export function rawHit(player,target,effect,slot,highCard=highCardReady(player)) {
+  let value = effect.kind === 'consumeHit' ? effect.base + effect.factor * (target.statuses[effect.key] || 0)
     : scaled(player,effect.base,effect.scale,effect.factor);
+  if (effect.cardBonus && highCard) value += effect.cardBonus;
+  if (effect.cursedBonus && target.statuses.curse) value += effect.cursedBonus;
+  if (effect.fittingBonus) value += effect.fittingBonus * Math.min(effect.maxFittings,fittingCount(player));
   return Math.max(0,Math.round(value * modifierFactor(slot)));
 }
 export function assessHit(state,target,raw,{trueDamage=false,direct=false,bypassShield=false}={}) {
@@ -107,6 +125,10 @@ function addStatus(state,p,target,key,amount,label) {
     setStatus(target,'freeze',1);
     record(state,'status',target.name + ' is frozen.',{actorId:p?.id,targetId:target.id,cause:'freeze',statusChange:'frozen',statusRemaining:1,chillRemaining:target.statuses.chill || 0});
   }
+  if (key === 'curse' && p !== target && p?.classId === 'necromancer' && p.lastRitesTurn !== p.personalTurn) {
+    p.lastRitesTurn = p.personalTurn;
+    restore(state,p,5,'Last Rites');
+  }
   trigger(state,p,'applyStatus',{key,target});
 }
 export function addStat(state,p,key,amount,label) {
@@ -158,6 +180,9 @@ export function deal(state,source,target,raw,label,flags={}) {
     if (!react(state,target,'lethal')) {
       target.alive = false;
       record(state,'elimination',target.name + ' fell to ' + label + '.',{actorId:source?.id,targetId:target.id});
+      for (const witness of state.players) {
+        if (witness.alive && witness.classId === 'necromancer') addStat(state,witness,'spellPower',1,'Last Rites');
+      }
       if (source?.alive && source !== target) restore(state,source,Math.ceil(source.maxHp * state.config.killHeal),'elimination');
     }
   }
@@ -166,6 +191,10 @@ export function deal(state,source,target,raw,label,flags={}) {
   if (target.alive && healthDamage && target.hp <= target.maxHp * 0.35) react(state,target,'wounded');
   if (flags.direct && source && source !== target) {
     trigger(state,source,'hit',{key:flags.flavor,target});
+    if (shieldDamage && target.alive && target.classId === 'trickster' && target.falseGuardTurn !== target.personalTurn) {
+      target.falseGuardTurn = target.personalTurn;
+      executeEffects(state,target,target,[{kind:'shield',amount:5}],{label:'False Guard'});
+    }
     trigger(state,target,'struck',{target:source});
   }
   return hit;
@@ -199,6 +228,10 @@ export function grantReward(state,p,id,replaceIndex) {
     slot.modifiers.push(reward.modifier);
     record(state,'synergy',p.name + ' etched ' + reward.name + ' onto ' + REWARDS[slot.id].name + '.',{actorId:p.id});
   } else executeEffects(state,p,p,reward.effects,{label:reward.name});
+  if (['item','artifact','modifier'].includes(category)) {
+    if (p.classId === 'artificer') executeEffects(state,p,p,[{kind:'shield',amount:6}],{label:'Workshop'});
+    trigger(state,p,'fitted');
+  }
   record(state,'reward',p.name + ' acquired ' + (category === 'consumable' ? 'a concealed consumable' : reward.name) + '.',{actorId:p.id});
 }
 
@@ -209,9 +242,11 @@ export function executeEffects(state,p,target,effects,context={}) {
     switch (e.kind) {
       case 'hit':
       case 'consumeHit': {
-        const raw = rawHit(p,target,e,slot);
+        const highCard = e.cardBonus && (highCardReady(p) || random(state) < 0.5);
+        const raw = rawHit(p,target,e,slot,highCard);
         if (e.kind === 'consumeHit') removeStatus(state,p,target,e.key);
-        deal(state,p,target,raw,label,{trueDamage:e.trueDamage,direct:true,flavor:e.flavor});
+        const hitLabel = e.cardBonus ? label + (highCard ? ' (high card)' : ' (low card)') : label;
+        deal(state,p,target,raw,hitLabel,{trueDamage:e.trueDamage,direct:true,flavor:e.flavor});
         if (slot?.modifiers.includes('echo') && target.alive) state.delayed.push({source:p.id,target:target.id,raw:echoDamage(raw),due:state.globalTurn + 1,label:label + ' echo',trueDamage:Boolean(e.trueDamage)});
         break;
       }
@@ -221,6 +256,15 @@ export function executeEffects(state,p,target,effects,context={}) {
         record(state,'shield',p.name + ' gained ' + e.amount + ' shield from ' + label + '.',{targetId:p.id,amount:e.amount});
         break;
       case 'status': addStatus(state,p,e.target === 'self' ? p : target,e.key,e.amount,label); break;
+      case 'imitate': {
+        if (!target.alive) break;
+        const copied = imitatedStatus(target,e);
+        if (copied) {
+          addStatus(state,p,target,copied.key,copied.amount,label);
+          trigger(state,p,'imitation',{key:copied.key,target});
+        } else executeEffects(state,p,p,[{kind:'shield',amount:e.shield}],{label});
+        break;
+      }
       case 'stat': addStat(state,p,e.key,e.amount,label); break;
       case 'retaliate': deal(state,p,target,e.amount,label,{trueDamage:true,cause:'retaliation'}); break;
       case 'shards':

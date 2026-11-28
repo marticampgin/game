@@ -238,6 +238,7 @@ test('bot-filled rooms advance on the server while the human is away', async () 
   const host = await create({ capacity: 8, fillBots: true });
   let view = await interact(host, 'start', {});
   assert.equal(view.room.seats.filter(s => s.bot).length, 7);
+  assert.deepEqual(view.game.players.map(p=>p.classId).sort(),Object.keys(CLASSES).sort());
   const deadline = Date.now() + 6000;
   async function waitForHuman() {
     while (view.game.activeId !== host.playerId && view.game.phase !== 'finished' && Date.now() < deadline) {

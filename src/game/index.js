@@ -1,6 +1,6 @@
 import { CLASSES, DEFAULT_CONFIG, EVENTS, REWARDS, STATUSES } from './catalog.js';
 import { drawOffers, eligible, sample, seedNumber, shuffled } from './draft.js';
-import { assessHit, capacity, castCooldown, deal, executeEffects, findPlayer, grantReward, previewSelfSupport, rawHit, record, resolveDefend, restore, setStatus, spendConsumable, tickStatus } from './combat.js';
+import { addStat, assessHit, capacity, castCooldown, deal, executeEffects, findPlayer, fittingCount, grantReward, highCardReady, imitatedStatus, previewSelfSupport, rawHit, receivedHealing, record, resolveDefend, restore, setStatus, spendConsumable, tickStatus, trigger } from './combat.js';
 import { beginRecap, finishRecap, markBoundary, publicEvent, publicRecap, resumeRecap } from './recap.js';
 import { careerSeat, careerView, countCareer } from './progression.js';
 import { isSkinId } from './skin-id.js';
@@ -54,7 +54,7 @@ export function createMatch({seed,players,config,career}={}) {
   requireValue(Array.isArray(players) && players.length >= 2 && players.length <= 8,'A match needs 2–8 contenders.');
   requireValue(new Set(players.map(p => p.id)).size === players.length,'Each contender needs a unique ID.');
   seed ??= globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
-  const state = {version:1,seed:String(seed),rng:seedNumber(seed),config:configuration(config),players:players.map(makePlayer),
+  const state = {version:1,seed:String(seed),rng:seedNumber(seed),rewardPool:Object.keys(REWARDS),config:configuration(config),players:players.map(makePlayer),
     round:1,age:ageNames[0],globalTurn:0,globalAction:0,phase:'acquire',activeId:null,winnerId:null,offers:[],
     remainingActions:1,extraTurnId:null,bonusDraft:false,order:[],queue:[],delayed:[],log:[],logSequence:0,nextEvent:null,recentActions:[]};
   if (career) {
@@ -134,6 +134,7 @@ function startNextTurn(state) {
     if (conclude(state)) return;
     if (!p.alive) continue;
     restore(state,p,p.regen,'regeneration');
+    if (p.classId === 'gambler' && p.personalTurn % 4 === 0) addStat(state,p,'rerolls',1,'Stacked Deck');
     state.offers = drawOffers(state,p);
     return;
   }
@@ -186,11 +187,29 @@ export function previewAction(state,playerId,actionId,targetId) {
   const effect = def.effects?.find(e => ['hit','consumeHit'].includes(e.kind));
   if (effect) {
     const slot = p.abilities.find(a => a.id === actionId);
-    const hit = assessHit(state,target,rawHit(p,target,effect,slot),{trueDamage:effect.trueDamage,direct:true});
-    const status = def.effects.find(e => e.kind === 'status');
+    const flags = {trueDamage:effect.trueDamage,direct:true};
+    const hit = assessHit(state,target,rawHit(p,target,effect,slot),flags);
     let text = hit.healthDamage + ' health damage' + (hit.shieldDamage ? ' · ' + hit.shieldDamage + ' absorbed' : '');
+    if (effect.cardBonus) {
+      if (!highCardReady(p)) {
+        const high = assessHit(state,target,rawHit(p,target,effect,slot,true),flags);
+        const range = key => hit[key] === high[key] ? hit[key] : hit[key] + '–' + high[key];
+        text = range('healthDamage') + ' health damage' + (high.shieldDamage ? ' · ' + range('shieldDamage') + ' absorbed' : '') + ' · even odds';
+        return {...hit,high,expectedDamage:(hit.damage + high.damage) / 2,text};
+      }
+      text += ' · guaranteed high card';
+    }
+    if (effect.fittingBonus) text += ' · ' + Math.min(effect.maxFittings,fittingCount(p)) + '/' + effect.maxFittings + ' fittings';
+    if (effect.cursedBonus && target.statuses.curse) text += ' · cursed rival';
+    const imitate = def.effects.find(e => e.kind === 'imitate');
+    const status = imitate ? imitatedStatus(target,imitate) : def.effects.find(e => e.kind === 'status');
     if (status) text += ' · ' + status.amount * (status.key === 'burn' && p.artifacts.includes('phoenix-feather') ? 2 : 1) + ' ' + STATUSES[status.key].name;
-    return {...hit,text};
+    else if (imitate) text += ' · gain ' + imitate.shield + ' shield';
+    if (status?.key === 'curse' && p.classId === 'necromancer' && p.lastRitesTurn !== p.personalTurn) {
+      const healed = Math.min(p.maxHp - p.hp,receivedHealing(p,5));
+      if (healed) text += ' · heal ' + healed;
+    }
+    return {...hit,...(status ? {status:status.key} : {}),text};
   }
   return previewSelfSupport(p,def) || {text:def.description};
 }
@@ -257,8 +276,10 @@ export function applyCommand(previous,playerId,command) {
     if (command.type === 'reroll') {
       requireValue(p.rerolls > 0,'No rerolls remain.');
       p.rerolls--;
+      if (p.classId === 'gambler') p.stackedDeckTurn = p.personalTurn;
       state.offers = drawOffers(state,p);
       record(state,'reward',p.name + ' rerolled the draft.',{actorId:p.id});
+      trigger(state,p,'reroll');
     } else {
       requireValue(command.type === 'pick' && state.offers.includes(command.rewardId),'Choose one of the offered rewards.');
       if (state.bonusDraft && state.recentActions?.at(-1)?.actionId === 'scavenge') resumeRecap(state);
@@ -284,6 +305,8 @@ export function viewMatch(state,viewerId=null) {
     attack:p.attack,armor:p.armor,spellPower:p.spellPower,shield:p.shield,regen:p.regen,rerolls:p.rerolls,
     statuses:p.statuses,abilities:p.abilities.map(({id,cooldown,modifiers}) => ({id,cooldown,modifiers})),
     artifacts:p.artifacts,personalTurn:p.personalTurn,
+    ...(p.stackedDeckTurn === p.personalTurn ? {stackedDeckTurn:p.stackedDeckTurn} : {}),
+    ...(p.lastRitesTurn === p.personalTurn ? {lastRitesTurn:p.lastRitesTurn} : {}),
     ...(p.doomClock ? {doomClock:p.doomClock} : {}),
     consumableCount:p.consumables.length,abilityCapacity:capacity(state,p,'abilities'),consumableCapacity:capacity(state,p,'consumables'),
     ...(p.id === viewerId ? {consumables:p.consumables,extraTurnRound:p.extraTurnRound} : {})
@@ -380,7 +403,15 @@ export function botCommand(state) {
       return preference(id) * 5 + Number(favored) + rare * 0.55 + Number(id === 'red-tonic' && p.hp < p.maxHp / 2) * 2;
     };
     const rewardId = [...view.offers].sort((a,b) => score(b) - score(a))[0];
-    return {type:'pick',rewardId,replaceIndex:0};
+    const signature = CLASSES[p.classId].ability;
+    if (p.classId === 'gambler' && !view.bonusDraft && !highCardReady(p) && p.rerolls > 0 &&
+        p.abilities.some(a => a.id === signature && !a.cooldown) && score(rewardId) < 5)
+      return {type:'reroll'};
+    const equipped = p.abilities;
+    const replaceIndex = state.rewardPool && ['item','ability'].includes(REWARDS[rewardId].category) &&
+      equipped.length === p.abilityCapacity && equipped.length > 1 && equipped[0].id === signature
+      ? 1 + Math.floor(preference('replace') * (equipped.length - 1)) : 0;
+    return {type:'pick',rewardId,replaceIndex};
   }
   const ready = getActions(view,p.id).filter(a => !a.disabled);
   const enemies = view.players.filter(other => other.alive && other.id !== p.id);
@@ -391,7 +422,7 @@ export function botCommand(state) {
       const r = REWARDS[action.id];
       let score = 0;
       if (action.target === 'enemy') {
-        score = (preview.damage || 0) + (r?.effects.some(e => e.kind === 'status') ? 6 : 0);
+        score = (preview.expectedDamage ?? preview.damage ?? 0) + (preview.status || r?.effects.some(e => e.kind === 'status') ? 6 : 0);
         if (preview.healthDamage >= target.hp) score += 12;
         // Consider an armored leader's threat alongside immediate damage. Otherwise
         // a whole table tends to ignore the best-defended rival until the final duel.

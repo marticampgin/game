@@ -38,14 +38,14 @@ function chooseSkin(classId, value, profile) {
   return value;
 }
 
-function sampleClasses(count) {
-  const pool = [...CLASS_IDS];
+function sampleClasses(count, available=CLASS_IDS) {
+  const pool = [...available];
   return Array.from({ length: Math.min(count, pool.length) }, () => pool.splice(randomInt(pool.length), 1)[0]);
 }
 
 function addSeat(room, name, { classId: requestedClass, skinId: requestedSkin }, bot = false, key = null) {
-  const draft = room.mode === 'draft' ? sampleClasses(3) : [];
-  const classId = room.mode === 'free'
+  const draft = !bot && room.mode === 'draft' ? sampleClasses(3) : [];
+  const classId = bot || room.mode === 'free'
     ? chooseClass(requestedClass ?? CLASS_IDS[0])
     : draft[0] ?? sampleClasses(1)[0];
   // An explicit outfit is tied to the class it was selected for. A room
@@ -222,7 +222,8 @@ export function createRooms({ botDelay, idleTimeout = 24 * 60 * 60 * 1000, profi
         room.fastBots = input.fastBots ?? false;
         let botIndex = 0;
         while (room.fillBots && room.seats.length < room.capacity) {
-          addSeat(room, BOT_NAMES[botIndex++], { classId: sampleClasses(1)[0] }, true);
+          const unrepresented = CLASS_IDS.filter(id => !room.seats.some(seat => seat.classId === id));
+          addSeat(room, BOT_NAMES[botIndex++], { classId: sampleClasses(1,unrepresented.length ? unrepresented : CLASS_IDS)[0] }, true);
         }
         const seats=Object.fromEntries([...room.sessions.values()].filter(s=>s.key).map(s=>[s.id,profiles.view(s.key).unlocks]));
         room.game = createMatch({ seed: randomInt(0x100000000), players: room.seats, career:{runId:randomUUID(),seats} });

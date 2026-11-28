@@ -13,7 +13,7 @@ Lifetime milestones include the first completed match, 1,000 damage, ten wins an
 | Chronomancer | Founder | Star Cartographer | Glass Oracle |
 | Alchemist | Founder | Apiarist | Nightshade Apothecary |
 
-Six of the 46 reward entries require a license. Buying one adds it to eligible draws in subsequent matches. Rarity, class weighting, duplicates, prerequisites and slot limits still apply. Players can inspect the entire catalog in the Atlas and experiment in the Sandbox.
+Six of the 54 reward entries require a license. Buying one adds it to eligible draws in subsequent matches. Rarity, class weighting, duplicates, prerequisites and slot limits still apply. Players can inspect the entire catalog in the Atlas and experiment in the Sandbox.
 
 ### Damage pacing
 

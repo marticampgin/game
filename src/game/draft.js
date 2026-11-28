@@ -73,11 +73,23 @@ export function resonance(player, reward) {
 }
 export const armorPromotionChance = armor => Math.min(0.35,Math.floor(armor / 20) * 0.05);
 
+// Pre-roster-expansion saves did not snapshot their catalog. Freeze its exact
+// order: changing even an otherwise eligible card reinterprets a seeded draw.
+const originalPool = [
+  'iron-shard','fang-shard','astral-shard','heartwood','spring-seed','bastion-bash','blood-cleave','time-bolt',
+  'venom-flask','cinder-orb','whiteout','combustion','hollow-needle','grave-bell','reverse-polarity','molten-mail',
+  'phoenix-heart','phoenix-feather','shockglass','blood-compass','stillwater-ring','glass-orchard','quicksilver-lung',
+  'borrowed-time','golden-shell','vial-sash','briar-crown','fortress-oath','red-wake','clockmaker','herbalists-legacy',
+  'red-tonic','spark-bottle','antidote','widows-brew','second-breath','emergency-ward','pocket-eclipse','ward-lantern',
+  'menders-bell','pilgrim-cache','starfall-cache','amplify','accelerate','echo-rune','fortune-chip'
+];
+
 export function drawOffers(state, player) {
   const result = [];
   const { config } = state;
   const unlocks = state.career?.seats[player.id]?.unlocks ?? [];
-  const candidates = Object.values(REWARDS).filter(r => eligible(player,r) && (!state.career || isDraftUnlocked(r.id, unlocks)));
+  const candidates = (state.rewardPool ?? originalPool).map(id => REWARDS[id])
+    .filter(r => eligible(player,r) && (!state.career || isDraftUnlocked(r.id, unlocks)));
   for (let i = 0; i < 3; i++) {
     const left = candidates.filter(r => !result.includes(r.id));
     let tier = weighted(state, RARITIES, rarityWeights(config,state.round));

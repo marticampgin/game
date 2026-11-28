@@ -10,6 +10,7 @@ const tags = (words) => words ? words.split(' ') : [];
 
 function entry(id, name, category, rarity, icon, description, produces, consumes, details = {}) {
   produces = tags(produces);
+  if (['artifact','item','modifier'].includes(category) && !produces.includes('equipment')) produces.push('equipment');
   consumes = tags(consumes);
   return { id, name, category, rarity, icon, description, produces, consumes,
     tags: [...new Set([...produces, ...consumes])], ...details };
@@ -38,6 +39,10 @@ export const REWARDS = byId([
   ability('blood-cleave', 'Blood Cleave', 'uncommon', 'axe', 'Strike for attack + 3 and inflict 3 Bleed. Cooldown 2.', 'physical bleed', 'attack', 2, [hit(3, 'attack'), status('bleed', 3)], {presentation:{move:'cleave'}}),
   ability('time-bolt', 'Time Bolt', 'uncommon', 'clock', 'Strike for 5 + spell power and apply 1 Shock. Cooldown 2.', 'arcane shock', 'spell', 2, [hit(5, 'spellPower'), status('shock', 1)], {presentation:{effect:'arcane'}}),
   ability('venom-flask', 'Venom Flask', 'uncommon', 'flask', 'Strike for half spell power + 3 and apply 2 persistent Poison. Cooldown 3.', 'poison arcane', 'spell', 3, [hit(3,'spellPower',0.5), status('poison',2)]),
+  ability('cut-the-deck','Cut the Deck','uncommon','coin','Throw a card for attack + 3 or attack + 11, with equal odds. Rerolling guarantees the high card this personal turn. Cooldown 2.','physical','fortune attack',2,[hit(3,'attack',1,{cardBonus:8})],{exclusive:'gambler',presentation:{move:'card-flick'}}),
+  ability('soul-tithe','Soul Tithe','uncommon','skull','Strike for spell power + 4, dealing 4 more if the rival already carries Curse. Apply 3 Curse. Cooldown 2.','curse arcane','spell curse',2,[hit(4,'spellPower',1,{cursedBonus:4}),status('curse',3)],{exclusive:'necromancer',presentation:{move:'soul-thread'}}),
+  ability('mirror-feint','Mirror Feint','uncommon','dagger','Strike for attack + 3. Copy up to 2 stacks of the first hostile status printed on the rival’s equipped abilities, reading slots in order. Gain 6 shield if there is none. Cooldown 2.','physical shield imitation','attack',2,[hit(3,'attack'),{kind:'imitate',limit:2,shield:6}],{exclusive:'trickster',presentation:{move:'mirror-feint'}}),
+  ability('rivet-drive','Rivet Drive','uncommon','rune','Strike for attack + 4, plus 3 per equipped item, artifact or etched rune. Counts up to 4 fittings. Cooldown 2.','physical','attack equipment',2,[hit(4,'attack',1,{fittingBonus:3,maxFittings:4})],{exclusive:'artificer',presentation:{move:'rivet-drive'}}),
   ability('cinder-orb','Cinder Orb','uncommon','fire','Strike for 5 + spell power and apply 3 Burn. Cooldown 2.','burn arcane','spell',2,[hit(5,'spellPower'),status('burn',3)]),
   ability('whiteout','Whiteout','rare','frost','Strike for 3 + spell power and apply 2 Chill. Three Chill become Freeze. Cooldown 3.','chill freeze','spell',3,[hit(3,'spellPower'),status('chill',2)],{presentation:{move:'wave'}}),
   ability('combustion','Combustion','rare','fire','Remove all Burn from a rival. Deal 6 + 4 per stack consumed. Cooldown 2.','status-consumed arcane','burn',2,[{kind:'consumeHit',key:'burn',base:6,factor:4}]),
@@ -60,6 +65,10 @@ export const REWARDS = byId([
   artifact('red-wake','Red Wake','epic','axe','Berserker exclusive. Direct hits while below half health apply 3 Bleed.','bleed','missing-health physical',[rule('hit',[status('bleed',3)],'wounded')],{exclusive:'berserker'}),
   artifact('clockmaker','Clockmaker’s Key','epic','clock','Chronomancer exclusive. Defending advances all your cooldowns by 2.','cooldown','defend',[rule('defend',[{kind:'cooldown',amount:2}])],{exclusive:'chronomancer'}),
   artifact('herbalists-legacy','Herbalist’s Legacy','epic','leaf','Alchemist exclusive. Using a consumable permanently gives you 1 spell power.','spell','consumable',[rule('usedConsumable',[stat('spellPower',1)])],{exclusive:'alchemist'}),
+  artifact('marked-deck','Marked Deck','epic','coin','Gambler exclusive. Gain 5 shield each time you reroll a draft.','shield','fortune',[rule('reroll',[shield(5)])],{exclusive:'gambler'}),
+  artifact('wake-candle','Wake Candle','epic','lantern','Necromancer exclusive. Applying Curse grants you 4 shield.','shield','curse',[rule('applyStatus',[shield(4)],'curse')],{exclusive:'necromancer'}),
+  artifact('silver-backing','Silver Backing','epic','ring','Trickster exclusive. Gain 4 shield each time Mirror Feint copies a status.','shield','imitation',[rule('imitation',[shield(4)])],{exclusive:'trickster'}),
+  artifact('ratchet-spring','Ratchet Spring','epic','rune','Artificer exclusive. Fitting an item, artifact or rune permanently grants 1 armor, including this spring.','armor equipment','equipment',[rule('fitted',[stat('armor',1)])],{exclusive:'artificer'}),
   potion('red-tonic','Red Tonic','common','heart','Drink to heal 22.','healing consumable','',[heal(22)],{presentation:{prop:'tonic'}}),
   potion('spark-bottle','Spark Bottle','common','bolt','Throw to inflict 2 Shock.','shock consumable','',[status('shock',2)],{target:'enemy'}),
   potion('antidote','Moon Antidote','uncommon','flask','Cleanse Poison, Burn, Bleed, and Curse. Heal 8.','healing status-consumed consumable','poison burn bleed curse',[{kind:'cleanse',keys:['poison','burn','bleed','curse']},heal(8)],{presentation:{prop:'antidote'}}),
@@ -81,7 +90,11 @@ export const CLASSES = byId([
   {id:'guardian',name:'Guardian',description:'An armored sentinel who turns protection into pressure.',innate:'Ironbound: armor gains are increased by 1.', ability:'bastion-bash',color:'#82bfc5',stats:{maxHp:520,attack:7,armor:10,spellPower:4},favored:tags('armor shield armor-strike defend')},
   {id:'berserker',name:'Berserker',description:'A relentless raider whose wounds sharpen every strike.',innate:'Bloodrush: gain 1 effective attack per 10% of health missing.', ability:'blood-cleave',color:'#eb8c71',stats:{maxHp:500,attack:9,armor:4,spellPower:3},favored:tags('attack bleed missing-health physical')},
   {id:'chronomancer',name:'Chronomancer',description:'A star-reader who bends the rhythm of battle.',innate:'Second Hand: gain an additional action every fifth personal turn.', ability:'time-bolt',color:'#ae96ee',stats:{maxHp:470,attack:7,armor:5,spellPower:7},favored:tags('cooldown shock extra-action delayed spell')},
-  {id:'alchemist',name:'Alchemist',description:'A field apothecary who harvests power from volatile brews.',innate:'Distillation: every consumed item grants a random stat shard.', ability:'venom-flask',color:'#9ac47d',stats:{maxHp:485,attack:7,armor:5,spellPower:6},favored:tags('poison consumable regeneration spell')}
+  {id:'alchemist',name:'Alchemist',description:'A field apothecary who harvests power from volatile brews.',innate:'Distillation: every consumed item grants a random stat shard.', ability:'venom-flask',color:'#9ac47d',stats:{maxHp:485,attack:7,armor:5,spellPower:6},favored:tags('poison consumable regeneration spell')},
+  {id:'gambler',name:'Gambler',description:'A riverboat cardsharp who knows when to cut a losing hand.',innate:'Stacked Deck: gain a reroll every fourth personal turn. Rerolling guarantees a high card this turn.',ability:'cut-the-deck',color:'#edb679',stats:{maxHp:485,attack:9,armor:5,spellPower:4},favored:tags('fortune attack physical')},
+  {id:'necromancer',name:'Necromancer',description:'A keeper of funeral rites who binds the living with soul-thread.',innate:'Last Rites: your first Curse on a rival each personal turn heals you for 5. Gain 1 spell power whenever another contender falls.',ability:'soul-tithe',color:'#94cfb2',stats:{maxHp:475,attack:6,armor:5,spellPower:7},favored:tags('curse doom spell healing')},
+  {id:'trickster',name:'Trickster',description:'A masked duelist who turns an opponent’s own technique against them.',innate:'False Guard: when a rival’s direct hit strikes your shield, regain 5 shield after the hit, once between your turns.',ability:'mirror-feint',color:'#cf9fda',stats:{maxHp:480,attack:8,armor:6,spellPower:5},favored:tags('shield physical attack imitation')},
+  {id:'artificer',name:'Artificer',description:'A traveling smith who charges a piston gauntlet with fitted gear.',innate:'Workshop: gain 6 shield when you fit an item, artifact or rune.',ability:'rivet-drive',color:'#dcac72',stats:{maxHp:485,attack:8,armor:6,spellPower:4},favored:tags('equipment shield armor ability')}
 ]);
 
 export const STATUSES = byId([

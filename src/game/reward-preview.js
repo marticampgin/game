@@ -1,11 +1,12 @@
 import { REWARDS, STATUSES } from './catalog.js';
 import { armorPromotionChance, eligible, modifiedSlot } from './draft.js';
-import { capacity, castCooldown, currentAttack, defendShield, echoDamage, findPlayer, rawHit, receivedHealing, scaled, statGain } from './combat.js';
+import { capacity, castCooldown, currentAttack, defendShield, echoDamage, findPlayer, fittingCount, highCardReady, rawHit, receivedHealing, scaled, statGain } from './combat.js';
 
 const statNames = {armor:'Armor',attack:'Attack',spellPower:'Spell power',maxHp:'Maximum health',regen:'Regeneration',rerolls:'Rerolls'};
 const noStatuses = {statuses:{}};
 const change = (name,from,to) => name + ' ' + from + ' → ' + to;
 const hitEffect = reward => reward.effects?.find(e => e.kind === 'hit' || e.kind === 'consumeHit');
+const baseDamageLabel = (player,hit) => hit.cardBonus && !highCardReady(player) ? ' low card base damage' : ' base damage';
 
 function statPreview(player,reward) {
   const after = {...player};
@@ -26,7 +27,7 @@ function statPreview(player,reward) {
     if (hit) {
       const beforeHit = rawHit(player,noStatuses,hit,slot);
       const afterHit = rawHit(after,noStatuses,hit,slot);
-      if (beforeHit !== afterHit) lines.push(change(ability.name,beforeHit,afterHit) + ' base damage');
+      if (beforeHit !== afterHit) lines.push(change(ability.name,beforeHit,afterHit) + baseDamageLabel(player,hit));
     }
     const heal = ability.effects.find(e => e.kind === 'heal' && e.scale);
     if (heal) {
@@ -47,8 +48,9 @@ function modifierPreview(p,r) {
   const next = {...slot,modifiers:[...slot.modifiers,r.modifier]};
   const e = hitEffect(ability);
   const before = rawHit(p,noStatuses,e,slot);
-  const after = rawHit(p,noStatuses,e,next);
-  const suffix = e.kind === 'consumeHit' ? ' base damage at 0 stacks' : ' base damage';
+  const fitted = {...p,abilities:p.abilities.map(a => a === slot ? next : a)};
+  const after = rawHit(fitted,noStatuses,e,next);
+  const suffix = e.kind === 'consumeHit' ? ' base damage at 0 stacks' : baseDamageLabel(fitted,e);
   const lines = ['Applies to ' + ability.name];
   if (castCooldown(ability,slot) !== castCooldown(ability,next)) {
     const cooldown = castCooldown(ability,next);
@@ -75,7 +77,7 @@ function inventoryPreview(state,p,r,replaceIndex) {
     lines.push(r.reaction ? 'Hidden until its automatic reaction triggers' : 'Hidden until you use it');
   } else {
     const hit = hitEffect(r);
-    const value = hit ? rawHit(p,noStatuses,hit) + ' base damage' + (hit.kind === 'consumeHit' ? ' at 0 stacks' : '') + ' · ' : '';
+    const value = hit ? rawHit(p,noStatuses,hit) + baseDamageLabel(p,hit) + (hit.kind === 'consumeHit' ? ' at 0 stacks' : '') + ' · ' : '';
     const cooldown = castCooldown(r);
     lines.push(value + 'ready immediately · cooldown ' + cooldown + (cooldown === 1 ? ' personal turn' : ' personal turns'));
   }
@@ -134,6 +136,24 @@ export function previewReward(view,viewerId,rewardId,replaceIndex) {
       break;
     }
     default: lines=inventoryPreview(view,p,r,replaceIndex);
+  }
+  if (p.classId === 'artificer' && ['artifact','modifier','item'].includes(r.category)) {
+    lines.push('Workshop grants 6 shield');
+    if (r.id === 'ratchet-spring' || p.artifacts.includes('ratchet-spring')) lines.push('Ratchet Spring grants 1 permanent armor');
+  }
+  const drive = p.abilities.find(a => a.id === 'rivet-drive');
+  if (drive && ['ability','item','artifact','modifier'].includes(r.category)) {
+    let difference = Number(['item','artifact','modifier'].includes(r.category));
+    const full = p.abilities.length === capacity(view,p,'abilities');
+    const replacing = full && ['ability','item'].includes(r.category);
+    const old = replacing && p.abilities[replaceIndex];
+    if (old) difference -= old.modifiers.length + Number(REWARDS[old.id].category === 'item');
+    if ((!replacing || old) && old !== drive && difference) {
+      const hit = hitEffect(REWARDS[drive.id]);
+      const before = Math.min(hit.maxFittings,fittingCount(p));
+      const after = Math.min(hit.maxFittings,fittingCount(p) + difference);
+      if (after !== before) lines.push(change('Rivet Drive fittings',before,after) + ' of ' + hit.maxFittings);
+    }
   }
   return {lines,text:lines.join(' · ')};
 }

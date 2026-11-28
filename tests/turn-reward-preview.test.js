@@ -89,6 +89,9 @@ test('every eligible reward previews without reading hidden rival data, drawing 
   const checked=new Set();
   for(const classId of Object.keys(CLASSES)) {
     const s=draft(classId),p=hero(s);
+    // Replacing a class-bound starting technique makes it eligible to be
+    // offered back to its owner. Keep a damaging slot for rune forecasts.
+    if (REWARDS[CLASSES[classId].ability].exclusive) p.abilities=[{id:'time-bolt',cooldown:0,modifiers:[]}];
     for(const reward of Object.values(REWARDS)) {
       if(!eligible(p,reward))continue;
       s.offers=[reward.id];

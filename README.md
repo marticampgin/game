@@ -29,7 +29,9 @@ Rooms support free class selection, random assignment, and a personal three-clas
 - **Review** the last action and see who acts next beneath the battlefield. Open **Effects** for damage, absorption, reactions and turn-start effects in the order they happened. The arrows step through the last eight actions. Bots pause while drafting and preparing a move. A known move and its target appear before the animation begins. The fast-bot setting shortens these pauses in solo and hosted rooms.
 - **Survive** the four ages. Arena events arrive every four rounds. Starting in round 31, escalating arena damage passes through armor and shields. A simultaneous final elimination can end in a draw.
 
-The first roster includes Guardian, Berserker, Chronomancer and Alchemist. The 46 rewards span stat shards, reusable abilities, passive artifacts, active items, consumables, chests and modifiers. As one example, Bastion Bash scales with armor, Molten Mail adds Burn to an armor-scaling hit, and Phoenix Heart heals the owner when their Burn ticks on a living rival.
+The eight classes are Guardian, Berserker, Chronomancer, Alchemist, Gambler, Necromancer, Trickster and Artificer. The 54 reward entries span stat shards, reusable abilities, passive artifacts, active items, consumables, chests and modifiers. Bastion Bash scales with armor, Molten Mail adds Burn to an armor-scaling hit, and Phoenix Heart heals the owner when their Burn ticks on a living rival.
+
+Gambler can spend a reroll to guarantee a high card. Necromancer attacks cursed rivals and gains spell power as contenders fall. Trickster copies a status from the chosen rival’s public equipment. Artificer fits gear and runes to a piston gauntlet. Each has a signature action and a class-exclusive artifact. The target preview shows the possible card rolls, imitated status or fitting count before you commit.
 
 Cooldowns advance at the start of the owner’s personal turn. A cooldown of two makes an ability ready on the second following personal turn. Extra actions keep the current turn’s draft and cooldown state. An extra full turn starts a new draft and advances personal-turn effects.
 
@@ -37,7 +39,7 @@ Cooldowns advance at the start of the owner’s personal turn. A cooldown of two
 
 Two private objectives accompany each tracked match. Open **Objectives** along the arena footer to see your assignment and progress. Completing an objective pays coins automatically. The **Quest journal** shows lifetime challenges, your coin balance and how many matches each class has completed.
 
-The **Outfitter** sells permanent outfits and six unlocks for future reward drafts. A new profile starts with the other 40 catalog entries available under their usual eligibility rules. Each class has its Founder costume, an 85-coin outfit and a 260-coin mastery outfit. Playing 12 matches to elimination or victory with that class earns the mastery outfit. Every appearance uses the class's combat statistics. Preview its healthy, wounded and critical poses before equipping it for the next lobby.
+The **Outfitter** sells permanent outfits and six unlocks for future reward drafts. A new profile starts with the other 48 catalog entries available under their usual eligibility rules. Each class has its Founder costume, an 85-coin outfit and a 260-coin mastery outfit. Playing 12 matches to elimination or victory with that class earns the mastery outfit. Every appearance uses the class's combat statistics. Preview its healthy, wounded and critical poses before equipping it for the next lobby.
 
 Solo and private rooms share the same profile on one browser and origin. The game server saves profiles in `~/.riftbound/profiles`. Set `RIFT_PROFILE_DIR` to choose another persistent directory. A solo match started online can reconnect and submit verified turns after a network interruption. Sandbox experiments and newly started offline matches run outside the career.
 
