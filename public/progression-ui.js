@@ -1,6 +1,6 @@
 import { CLASSES, REWARDS } from '../src/game/catalog.js';
 import { SHOP, MASTERY_TARGET, MATCH_QUESTS, LIFETIME_QUESTS, newProfile, owns } from '../src/game/progression.js';
-import { readProfile, loadProfile, subscribeProfile, buyItem, equipSkin } from './career-client.js';
+import { readProfile, readCareerStatus, loadProfile, subscribeProfile, buyItem, equipSkin } from './career-client.js';
 import { esc, glyph, rewardIcon } from './art.js';
 import { fighterPortrait, fighterKit } from './fighter-kit.js';
 import { fighterSpriteHTML, playArenaAction, preloadArenaSkins } from './animation.js';
@@ -16,7 +16,7 @@ const icon = id => '<img class="pg-icon" src="/assets/i-' + esc(id) + '.png" alt
 const paid = (profile, item) => item.skinId === 'founder' || owns(profile, item);
 const button = (text, action, value, attrs = '') =>
   '<button type="button" data-pg="' + esc(action) + '" data-value="' + esc(value) + '" ' + attrs + '>' + text + '</button>';
-const chip = (text, active = false) => '<span class="pg-tag' + (active ? ' is-owned' : '') + '">' + esc(text) + '</span>';
+const chip = text => '<span class="pg-tag">' + esc(text) + '</span>';
 const price = amount => coin() + '<span>' + number(amount) + ' coins</span>';
 
 function outfits(classId) {
@@ -69,9 +69,10 @@ function purchase(item, profile, busy) {
   const equipped = item.skinId && (profile.equipped[item.classId] || 'founder') === item.skinId;
   if (owned && !item.skinId) return '<p class="pg-acquired">' + glyph('check') + ' Unlocked for future drafts</p>';
   if (equipped) return '<p class="pg-acquired">' + glyph('check') + ' Equipped</p>';
-  if (owned) return button('Equip outfit','equip',item.skinId, 'class="pg-primary"' + (busy ? ' disabled' : ''));
+  const waiting = busy || readCareerStatus() !== 'online';
+  if (owned) return button('Equip outfit','equip',item.skinId, 'class="pg-primary"' + (waiting ? ' disabled' : ''));
   const short = Math.max(0,item.price - profile.coins);
-  return button('Unlock for ' + price(item.price), 'buy', item.id, 'class="pg-primary"' + (short || busy ? ' disabled' : '')) +
+  return button('Unlock for ' + price(item.price), 'buy', item.id, 'class="pg-primary"' + (short || waiting ? ' disabled' : '')) +
     (short ? '<p class="pg-short">' + number(short) + ' more coins needed</p>' : '');
 }
 
@@ -87,7 +88,6 @@ function skinPage(state, profile) {
   const className = CLASSES[state.classId].name;
   const condition = conditions.find(c => c[0] === state.tier);
   const player = {id:'preview',classId:state.classId,skinId:item.skinId,hp:condition[2],maxHp:100,alive:true};
-  const current = availability(item,profile);
   const matches = Math.min(profile.classes[state.classId]?.matches || 0, item.mastery || MASTERY_TARGET);
   return `<div class="pg-shop-layout">${classRail(state,profile)}
     <section class="pg-showcase pg-panel" aria-label="Costume preview">
@@ -104,8 +104,8 @@ function skinPage(state, profile) {
           '</strong><small>' + esc(availability(outfit,profile)) + '</small></span>' + glyph('right'), 'outfit', outfit.skinId,
           'class="pg-outfit" aria-pressed="' + (outfit.skinId === item.skinId) + '"')).join('')}</div>
       <div class="pg-outfit-order"><div class="pg-section-head"><h3>${esc(item.name)}</h3>${item.mastery ? chip('Mastery') : ''}</div>
-      ${item.mastery ? '<p>Earn by finishing ' + item.mastery + ' matches as ' + esc(className) + ', or unlock with coins.</p><div class="pg-meter-row"><progress aria-label="Class mastery" value="' + matches + '" max="' + item.mastery + '"></progress><span>' + matches + ' / ' + item.mastery + '</span></div>' :
-        '<p>' + (item.skinId === 'founder' ? esc(fighterKit(state.classId).title) + ' · Original class outfit.' : 'A permanent outfit for your ' + esc(className) + '.') + '</p>'}
+      <p>${item.skinId === 'founder' ? esc(fighterKit(state.classId).title) + ' · Original class outfit.' : esc(item.description)}</p>
+      ${item.mastery ? '<p>Earn in ' + item.mastery + ' completed ' + esc(className) + ' matches, or unlock with coins.</p><div class="pg-meter-row"><progress aria-label="Class mastery" value="' + matches + '" max="' + item.mastery + '"></progress><span>' + matches + ' / ' + item.mastery + '</span></div>' : ''}
       ${purchase(item,profile,state.busy)}</div></section></div>`;
 }
 
@@ -136,7 +136,7 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
   let profile = readProfile() || newProfile();
   const state = {tab:tabs.some(t => t[0] === initialTab) ? initialTab : 'quests',classId,
     skinId:initialSkinId || profile.equipped[classId] || 'founder',tier:'healthy',rewardId:rewards[0]?.id,busy:false};
-  let message = '', issue = false, preview, lastPreload = '';
+  let message = '', issue = false, preview, lastPreload = '', followEquipped = !initialSkinId;
   host.replaceChildren(root);
 
   function render() {
@@ -149,6 +149,7 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
       <div class="pg-wallet" aria-label="${number(profile.coins)} coins">${coin()}<span><small>Coins</small><strong>${number(profile.coins)}</strong></span></div></header>
       <nav class="pg-tabs" aria-label="Progression sections">${tabs.map(([id,label,image]) =>
         button(icon(image) + label, 'tab', id, 'aria-current="' + (id === state.tab ? 'page' : 'false') + '"')).join('')}</nav>
+      ${readCareerStatus() === 'offline' ? '<div class="pg-connection" role="status">Offline · Showing saved progress.' + button(state.busy ? 'Connecting…' : 'Reconnect','retry','','class="pg-retry"' + (state.busy ? ' disabled' : '')) + '</div>' : ''}
       <div class="pg-content">${state.tab === 'quests' ? journal(profile,career) : state.tab === 'skins' ? skinPage(state,profile) : rewardPage(state,profile)}</div>
       <p class="pg-feedback${issue ? ' pg-error' : ''}" role="status">${esc(message)}</p></div>`;
     if (openPool && root.querySelector('.pg-pool')) root.querySelector('.pg-pool').open = true;
@@ -161,13 +162,17 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
       preloadArenaSkins([{classId:state.classId,skinId:state.skinId}]);
     }
   }
-  function pickClass(id, skinId = profile.equipped[id] || 'founder') {
-    state.classId = id; state.skinId = skinId;
+  function pickClass(id, skinId) {
+    followEquipped = !skinId;
+    state.classId = id;
+    state.skinId = skinId || profile.equipped[id] || 'founder';
   }
-  const unsubscribe = subscribeProfile(next => {
+  function refreshProfile(next) {
     if (next) profile = next;
+    if (followEquipped) state.skinId = profile.equipped[state.classId] || 'founder';
     render();
-  });
+  }
+  const unsubscribe = subscribeProfile(refreshProfile);
   function destroy() {
     abort.abort();
     unsubscribe?.();
@@ -185,9 +190,16 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
     if (pg === 'back') return back();
     if (state.busy) return;
     message = ''; issue = false;
+    if (pg === 'retry') {
+      state.busy = true;
+      render();
+      await loadProfile();
+      state.busy = false;
+      if (readCareerStatus() === 'offline') { issue = true; message = 'The progression server is still unavailable.'; }
+    }
     if (pg === 'tab') state.tab = value;
     if (pg === 'class') pickClass(value);
-    if (pg === 'outfit') state.skinId = value;
+    if (pg === 'outfit') pickClass(state.classId,value);
     if (pg === 'condition') state.tier = value;
     if (pg === 'reward') state.rewardId = value;
     if (pg === 'mastery') {
@@ -213,7 +225,7 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
   }, {signal});
   render();
   root.querySelector('h1').focus({preventScroll:true});
-  loadProfile().then(next => { if (next && next !== profile) { profile = next; render(); } })
+  loadProfile().then(next => { if (next && next !== profile) refreshProfile(next); })
     .catch(error => { message = error.message; issue = true; render(); });
   return destroy;
 }

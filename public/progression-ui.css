@@ -14,6 +14,7 @@
 .pg-wrap { max-width: 1240px; margin: auto; }
 .pg-screen :is(h1,h2,h3), .pg-objective strong { font-family: var(--display, Georgia, serif); font-weight: 600; }
 .pg-screen h1 { font-size: clamp(34px, 3.2vw, 52px); line-height: 1.05; color: #ffebcc; }
+.pg-header h1:focus { outline: 0; }
 .pg-screen h2 { font-size: clamp(21px, 1.7vw, 28px); line-height: 1.15; color: var(--pg-warm); }
 .pg-screen h3 { font-size: 21px; }
 .pg-screen p { color: var(--pg-soft); }
@@ -139,6 +140,16 @@
 .pg-feedback:empty { display:none; }
 .pg-screen .pg-feedback:not(:empty) { position:fixed; bottom:18px; left:50%; translate:-50% 0; margin:0; padding:9px 16px; border:1px solid #af926e; background:#30252c; box-shadow:0 3px 20px #07050b; color:#ffe1ad; z-index:4; }
 .pg-screen .pg-feedback.pg-error { border-color:#b47869; color:#f1baaf; }
+.pg-connection { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:8px 0 0; padding:6px 12px; background:#35282b; border:1px solid #886954; color:#e8cbad; }
+.pg-connection .pg-retry { padding:3px 9px; color:#ffe3ad; border:1px solid #8b6d50; background:#312528; }
+@media (min-width:960px) and (max-height:780px) {
+  .pg-header { padding-block:13px; }
+  .pg-content { padding-top:12px; }
+  .pg-next, .pg-journal-grid .pg-panel { padding:14px 17px; }
+  .pg-journal-grid { gap:13px; margin-top:12px; }
+  .pg-lifetimes .pg-objective { padding-block:7px; }
+  .pg-mastery-row { padding-block:7px; }
+}
 @media (max-width:1120px) {
   .pg-screen { padding-inline:20px; }
   .pg-shop-layout { grid-template-columns:136px minmax(300px,1.1fr) minmax(255px,.85fr); gap:10px; }
