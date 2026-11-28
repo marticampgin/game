@@ -73,6 +73,23 @@
       }
     },
     {
+      "classId": "guardian",
+      "id": "sunspire-paladin",
+      "name": "Sunspire Paladin",
+      "sheet": "/assets/skins/outfits/sunspire-paladin/standing.webp",
+      "motions": "/assets/skins/outfits/sunspire-paladin/motions.webp",
+      "footwork": "/assets/skins/outfits/sunspire-paladin/footwork.webp",
+      "ambient": "/assets/skins/outfits/sunspire-paladin/ambient.webp",
+      "consume": "/assets/skins/outfits/sunspire-paladin/consume.webp",
+      "portrait": "/assets/skins/outfits/sunspire-paladin/portrait.webp",
+      "model": "/assets/skins/outfits/sunspire-paladin/model.webp",
+      "anchors": {
+        "healthy": {"hand": [101, 82], "mouth": [107, 41], "ground": [145, 149], "belt": [102, 79]},
+        "wounded": {"hand": [101, 83], "mouth": [107, 47], "ground": [144, 149], "belt": [102, 83]},
+        "critical": {"hand": [103, 96], "mouth": [116, 65], "ground": [139, 149], "belt": [108, 95]}
+      }
+    },
+    {
       "classId": "chronomancer",
       "id": "star-cartographer",
       "name": "Star Cartographer",
@@ -87,6 +104,23 @@
         "healthy": {"hand": [100, 79], "mouth": [111, 42], "ground": [145, 149], "belt": [106, 70]},
         "wounded": {"hand": [103, 87], "mouth": [113, 51], "ground": [150, 149], "belt": [107, 81]},
         "critical": {"hand": [99, 93], "mouth": [115, 66], "ground": [145, 149], "belt": [109, 90]}
+      }
+    },
+    {
+      "classId": "chronomancer",
+      "id": "glass-oracle",
+      "name": "Glass Oracle",
+      "sheet": "/assets/skins/outfits/glass-oracle/standing.webp",
+      "motions": "/assets/skins/outfits/glass-oracle/motions.webp",
+      "footwork": "/assets/skins/outfits/glass-oracle/footwork.webp",
+      "ambient": "/assets/skins/outfits/glass-oracle/ambient.webp",
+      "consume": "/assets/skins/outfits/glass-oracle/consume.webp",
+      "portrait": "/assets/skins/outfits/glass-oracle/portrait.webp",
+      "model": "/assets/skins/outfits/glass-oracle/model.webp",
+      "anchors": {
+        "healthy": {"hand": [102, 77], "mouth": [110, 47], "ground": [148, 149], "belt": [105, 74]},
+        "wounded": {"hand": [99, 85], "mouth": [112, 56], "ground": [155, 149], "belt": [104, 80]},
+        "critical": {"hand": [100, 96], "mouth": [116, 70], "ground": [148, 149], "belt": [109, 92]}
       }
     }
   ]
