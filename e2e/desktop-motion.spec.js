@@ -2,8 +2,9 @@ import { expect, test } from '@playwright/test';
 import { createMatch, applyCommand } from '../src/game/index.js';
 
 const roles = ['guardian', 'berserker', 'chronomancer', 'alchemist'];
-function readySeat(role) {
-  const players = roles.map((classId) => ({ id: classId, classId, name: classId, bot: false }));
+const fullRoster = [...roles, 'gambler', 'necromancer', 'trickster', 'artificer'];
+function readySeat(role, seats = roles) {
+  const players = seats.map((classId) => ({ id: classId, classId, name: classId, bot: false }));
   let match;
   for (let seed = 0; seed < 200; seed++) {
     match = createMatch({ seed: 'desktop-choreography-' + seed, players });
@@ -12,8 +13,8 @@ function readySeat(role) {
   return applyCommand(match, role, { type: 'pick', rewardId: match.offers[0] });
 }
 
-async function perform(page, role, action, take = 1) {
-  const state = readySeat(role);
+async function perform(page, role, action, take = 1, seats = roles) {
+  const state = readySeat(role, seats);
   state.players.find((p) => p.id === role).personalTurn = take;
   if (action === 'venom-flask') state.players.find((p) => p.id === 'berserker').shield = 500;
   await page.evaluate((save) => sessionStorage.setItem('rift-solo', JSON.stringify(save)), {
@@ -45,6 +46,7 @@ async function perform(page, role, action, take = 1) {
       minCoverage: 1,
       maxOverlap: 0,
       fx: [],
+      missiles: [],
     });
     let raf;
     function sample() {
@@ -86,6 +88,8 @@ async function perform(page, role, action, take = 1) {
         trace.impactTake = Number(getComputedStyle(actor.querySelector('.arena-cel')).opacity);
       }
       if (world.querySelector('[data-travelling]')) trace.floorLeft = true;
+      for (const el of scene.querySelectorAll('[data-missile]'))
+        if (!trace.missiles.includes(el.dataset.missile)) trace.missiles.push(el.dataset.missile);
       for (const el of scene.querySelectorAll('[data-effect]'))
         if (!trace.fx.includes(el.dataset.effect)) trace.fx.push(el.dataset.effect);
     }
@@ -136,6 +140,27 @@ test('desktop weapon swing, shield drive and bottle throw use different illustra
   }
   expect(errors).toEqual([]);
 });
+
+for (const [role, action, track, missile] of [
+  ['gambler','cut-the-deck','card-flick','gilt-card'],
+  ['necromancer','soul-tithe','soul-thread','soul-thread'],
+  ['trickster','mirror-feint','mirror-feint',null],
+  ['artificer','rivet-drive','rivet-drive',null],
+]) {
+  test(role + ' performs its signature and yields the arena at two and eight seats', async ({page}) => {
+    await page.goto('/');
+    for (const seats of [[role,'berserker'], fullRoster]) {
+      const trace = await perform(page, role, action, 2, seats);
+      expect(trace.score).toBe(track);
+      expect(trace.clip).toBe('signature');
+      expect(trace.impact).toBeGreaterThanOrEqual(6);
+      if (missile) expect(trace.missiles).toContain(missile);
+      else expect(trace.floorLeft).toBe(true);
+      await expect(page.locator('[data-seat] .arena-sprite[data-idles-ready]')).toHaveCount(seats.length);
+      await expect(page.locator('.arena-fx,[data-pickup],[data-travelling]')).toHaveCount(0);
+    }
+  });
+}
 
 test('alternate weapon and signature preparations land on their original contact drawing', async ({ page }) => {
   await page.goto('/');

@@ -405,3 +405,12 @@ body.reduce-motion .arena-sprite[data-pose='idle'] {
 [data-facing='left'] .arena-variation-cel { transform:scaleX(-1); }
 .arena-sprite[data-pickup]:not([data-footwork]) > .arena-cel { opacity:0; }
 .arena-sprite[data-pickup]:not([data-footwork]) > .arena-variation-cel { opacity:1; }
+
+.arena-fx-missile[data-missile='gilt-card'] {
+  background-image:url('/assets/skins/gilt-card.png'); background-size:100% 800%; background-position-x:0;
+}
+.arena-fx-tether {
+  position:absolute; pointer-events:none; transform-origin:0 50%; image-rendering:pixelated;
+  background:url('/assets/skins/soul-thread.png') 0 0 / 36px 800% repeat-x;
+  animation:arena-projectile-cels .26s steps(7,end) infinite;
+}

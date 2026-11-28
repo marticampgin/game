@@ -134,6 +134,8 @@ export function preloadArenaSkins(players = []) {
     missileSheet,
     '/assets/skins/status-effects.png',
     '/assets/skins/status-icons.png',
+    '/assets/skins/gilt-card.png',
+    '/assets/skins/soul-thread.png',
     ...scenePropImages,
     ...players.flatMap((p) => {
       const skin = resolveFighterSkin(p.classId, p.skinId);
@@ -573,9 +575,11 @@ export function playArenaAction(arena, recap, options = {}) {
     const hand = castPoint();
     const dx = centerX(end) - hand.x,
       dy = centerY(end) - hand.y;
+    const card = score.track === 'card-flick';
     const spin = score.track === 'throw';
     const rise = spin
       ? Math.min(126, Math.max(34, Math.abs(dx) * 0.17 + Math.abs(dy) * 0.07))
+      : card ? Math.min(33, Math.abs(dx) * .065)
       : score.track === 'kindle'
         ? Math.min(24, Math.abs(dx) * 0.032)
         : 0;
@@ -583,7 +587,7 @@ export function playArenaAction(arena, recap, options = {}) {
     return {
       x: hand.x + dx * progress,
       y: hand.y + dy * progress - 4 * rise * t * (1 - t),
-      angle: spin ? dir * (-45 + 260 * t) : (Math.atan2(dy - 4 * rise * (1 - 2 * t), dx) * 180) / Math.PI,
+      angle: card ? dir * (-22 + 165 * t) : spin ? dir * (-45 + 260 * t) : (Math.atan2(dy - 4 * rise * (1 - 2 * t), dx) * 180) / Math.PI,
     };
   }
   function launch() {
@@ -591,7 +595,7 @@ export function playArenaAction(arena, recap, options = {}) {
     const travel = score.contact - score.release;
     const el = part(scene, 'arena-fx-missile');
     const size = Math.max(26, Math.min(68, start.h * (score.track === 'throw' ? 0.3 : 0.39)));
-    el.dataset.missile = kind;
+    el.dataset.missile = score.move === 'card-flick' ? 'gilt-card' : kind;
     el.style.setProperty('--projectile-x', (missiles.indexOf(kind) / (missiles.length - 1)) * 100 + '%');
     positioned(el, -size / 2, -size / 2, size, size);
     const keyframes = Array.from({ length: 17 }, (_, i) => {
@@ -601,7 +605,7 @@ export function playArenaAction(arena, recap, options = {}) {
     });
     tween(el, keyframes, travel);
     at(travel, () => el.remove());
-    if (score.track !== 'throw') {
+    if (score.track !== 'throw' && score.track !== 'card-flick') {
       for (const t of [0.23, 0.46, 0.69]) {
         at(travel * t, () => {
           const p = projectilePoint(t);
@@ -624,7 +628,26 @@ export function playArenaAction(arena, recap, options = {}) {
 
   function stageCasting() {
     const hand = castPoint();
-    if (score.move === 'eruption') {
+    if (score.move === 'card-flick') {
+      at(score.release, launch);
+    } else if (score.move === 'soul-thread') {
+      at(score.release, () => {
+        const tendril = part(scene, 'arena-fx-tether');
+        tendril.dataset.missile = 'soul-thread';
+        const dx = centerX(end) - hand.x, dy = centerY(end) - hand.y;
+        const height = Math.max(7, start.h * .085);
+        positioned(tendril, hand.x, hand.y - height / 2, Math.hypot(dx, dy), height);
+        tendril.style.transform = 'rotate(' + Math.atan2(dy,dx) + 'rad)';
+        const travel = score.contact - score.release;
+        tween(tendril, [
+          { clipPath:'inset(0 100% 0 0)', opacity:.6 },
+          { clipPath:'inset(0 0% 0 0)', opacity:1, offset:travel / (travel+210) },
+          { clipPath:'inset(0 8% 0 0)', opacity:.95, offset:.57 },
+          { clipPath:'inset(0 100% 0 0)', opacity:0 },
+        ], travel + 210);
+        at(travel + 210, () => tendril.remove());
+      });
+    } else if (score.move === 'eruption') {
       at(score.release, () => imprint(score.effect, centerX(end), end.y + end.h * 0.75, end.h * 0.58, 300));
     } else if (score.move === 'wave') {
       at(score.release - 205, () => {

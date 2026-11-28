@@ -152,7 +152,7 @@ const score = (family, gesture, effect, track, clip, contact, release = contact)
   Object.freeze({ family, gesture, effect, track, clip, contact, release, path: tracks[track] });
 
 const moves = {
-  'card-flick':   score('cast', 'throw', 'arcane', 'card-flick', 'cast', 608, 308),
+  'card-flick':   score('cast', 'throw', 'slash', 'card-flick', 'cast', 608, 308),
   'soul-thread':  score('cast', 'cast', 'doom', 'soul-thread', 'cast', 610, 420),
   'mirror-feint': score('melee', 'attack', 'slash', 'mirror-feint', 'attack', 455),
   'rivet-drive':  score('melee', 'attack', 'bastion', 'rivet-drive', 'attack', 489),

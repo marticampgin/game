@@ -1,6 +1,6 @@
 # Authoring fighter skins
 
-A skin identifies the same fighter across idle, attacks, reactions and three levels of injury. The four founders have separate head portraits for the command deck, class selection and turn order. Their full-body drawings use the arena’s dusk palette.
+A skin identifies the same fighter across idle, attacks, reactions and three levels of injury. The founders have separate head portraits for the command deck, class selection and turn order. Their full-body drawings use the arena’s dusk palette.
 
 ## Framing and health
 
@@ -16,6 +16,8 @@ All sheets use the same health bands in the same order. Healthy fighters are abo
 | Motion, optional | 2496 × 3486, twelve columns and twenty-one rows | Seven clips per health band |
 | Return footwork, optional | 832 × 498, four columns and three rows | One counterstep sequence per health band |
 | Ambient gesture, optional | 2496 × 498, twelve columns and three rows | One equipment check per health band |
+| Class idles, optional | 2880 × 1350, sixteen columns and nine rows | Rest, equipment check and a second mannerism for each health band. The artwork is cropped to `(14, 0, 194, 150)` in its original cel. |
+| Alternate windups, optional | 1040 × 996, five columns and six rows | Five alternate preparation drawings for basic attack and signature in each band |
 | Drink and use, optional | 2496 × 498, twelve columns and three rows | One reach, raise, hold and return sequence per health band |
 
 Pack cels edge to edge with transparent space inside each cel. PNG and lossless WebP are both supported. Older standing sheets remain usable on their own.
@@ -35,6 +37,21 @@ The footwork sheet has four drawings per band. The fighter faces the rival throu
 The ambient sheet starts and ends in the normal resting pose. Frames 5–7 hold a short, recognizable equipment check, such as the Guardian inspecting a gauntlet or the Alchemist checking a vial. Keep the boot soles planted. An attack can interrupt this short gesture at any time.
 
 The consume strip drives drinks and held items. Start at rest, reach to the belt, raise the empty grip, hold it at the face or chest, then lower it. The runtime adds the bottle or item to the grip. Use each character’s own shoulders, wrists and weight shift. A skin with the motion sheet alone uses its braced pose for this gesture. A standing-only skin uses its guard painting.
+
+### Class idles and alternate windups
+
+The PC renderer plays each fighter's resting breath, first equipment check and second mannerism on its own clock. A single opaque drawing is visible at each exposure. Critical fighters move more slowly and breathe through a shorter arc. Reduced motion holds a single pose. A costume with an ambient sheet can still perform its twelve-frame equipment check.
+
+The outfit's three health boards supply its resting stance, equipment check and combat keys. To add a custom mannerism, paint a transparent three-by-three board for the costume. Each row is one injury band, with the resting pose, a halfway drawing and a held expression in that order. Place objects in the hand at every stage. Keep the same foot line and facing across the gesture.
+
+```sh
+python scripts/build-idle-performances.py --role guardian --skin harbor-warden --import-sequence harbor-warden-focus.png
+python scripts/build-idle-performances.py --role guardian --skin harbor-warden
+```
+
+The builder registers the middle and held paintings once in `scripts/art/idles`. It then packs the idle loops and derives a second attack and signature from the class's preparation poses. The alternate windup joins the original clip on frame six. Both takes therefore share the release, weapon contact and end pose. Include `idles` and `variations` in a founder's layers, or add the two image URLs to an outfit descriptor. Each class's body anchors, timing and chamber choices are defined in the builder. A new class needs those entries only once.
+
+See the [eight-class PC arena](qa/pc-combat/eight-class-ring.webp) and [desktop recording of two signatures](qa/pc-combat/class-signatures.webm) at playing size.
 
 ## Which animation plays
 

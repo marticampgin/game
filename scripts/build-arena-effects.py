@@ -252,8 +252,49 @@ def projectile(kind, f):
             star(d,18,15,4,light)
     return image
 
+def signature_props():
+    # Eight angles of the foil card; compression exposes its narrow gilded edge.
+    card = Image.new('RGBA',(17,24))
+    d = ImageDraw.Draw(card)
+    d.rounded_rectangle((0,0,16,23),radius=2,fill='#38223b')
+    d.rectangle((1,2,15,21),fill='#e2a758')
+    d.rectangle((2,3,14,20),fill='#513550')
+    d.rectangle((3,4,13,19),outline='#ae714a')
+    d.polygon([(8,6),(11,11),(8,16),(5,11)],fill='#ffdc8e',outline='#ce8d53')
+    d.line([(3,4),(5,4),(3,7)],fill='#fff0bc')
+    d.line([(13,19),(11,19),(13,16)],fill='#e3a359')
+    d.point((8,10),fill='#fff9dd')
+    sheet = Image.new('RGBA',(32,32*8))
+    for frame in range(8):
+        width = (16,13,7,3,7,13,16,17)[frame]
+        face = card.copy()
+        if 3 < frame < 7:
+            d = ImageDraw.Draw(face)
+            d.rectangle((3,4,13,19),fill='#923f44',outline='#ffe2a1')
+            d.polygon([(8,6),(12,12),(8,17),(4,12)],outline='#e6a05e')
+        face = face.resize((width,24),Image.Resampling.NEAREST).rotate(-18,expand=True)
+        sheet.alpha_composite(face,((32-face.width)//2,frame*32+(32-face.height)//2))
+    sheet.save(OUT/'gilt-card.png',optimize=True)
+
+    # A seamless native-pixel thread. Light travels back along the braid while
+    # the renderer anchors its ends to the channeler's palm and the target.
+    sheet = Image.new('RGBA',(48,12*8))
+    for frame in range(8):
+        d = ImageDraw.Draw(sheet)
+        for phase,ink in ((.5,'#26373e'),(0,'#467569'),(0,'#99d5b4')):
+            points = []
+            for x in range(48):
+                y = 5 + round((2 if phase else 1.7)*math.sin(TAU*(x/24+frame/8+phase)))
+                points.append((x,frame*12+y))
+            d.line(points,fill=ink,width=3 if ink=='#467569' else 1)
+        for x in ((17-6*frame)%48,(37-6*frame)%48):
+            y = 5+round(1.7*math.sin(TAU*(x/24+frame/8)))
+            d.line((x,frame*12+y,x+2,frame*12+y),fill='#edffe0',width=2)
+    sheet.save(OUT/'soul-thread.png',optimize=True)
+
 
 if __name__ == '__main__':
+    signature_props()
     sheet=Image.new('RGBA',(64*CELLS,64*len(PALETTES)))
     for row,(kind,colors) in enumerate(PALETTES.items()):
         for col in range(CELLS): sheet.paste(impact(kind,col,colors),(col*64,row*64))

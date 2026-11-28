@@ -100,8 +100,8 @@ def feet(image):
     return float((np.percentile(soles, 5) + np.percentile(soles, 95)) / 2), int(floor)
 
 
-def register(board, role, breakdown=False):
-    wardrobe = skins(role)
+def register(board, role, breakdown=False, wardrobe=None):
+    wardrobe = skins(role) if wardrobe is None else wardrobe
     w, h = board.size
     for col, skin in enumerate(wardrobe):
         original = image_asset(skin['sheet'])
@@ -247,10 +247,20 @@ if __name__ == '__main__':
     parser.add_argument('--role',choices=tuple(RIGS))
     parser.add_argument('--skin')
     parser.add_argument('--import-board',type=Path)
+    parser.add_argument('--import-sequence',type=Path,help='one skin, columns rest/middle/focus and health rows')
     parser.add_argument('--breakdown',action='store_true',help='register the middle of a gesture')
     parser.add_argument('--variations-only',action='store_true')
     args=parser.parse_args()
     cv2.setNumThreads(1)
+    if args.import_sequence:
+        if not args.role or not args.skin: parser.error('--import-sequence requires --role and --skin')
+        selected = [skin for skin in skins(args.role) if skin['id'] == args.skin]
+        if len(selected) != 1: parser.error('unknown skin')
+        sequence = Image.open(args.import_sequence).convert('RGBA')
+        w,h = sequence.size
+        for col in (1,2):
+            column = sequence.crop((round(w*col/3),0,round(w*(col+1)/3),h))
+            register(column,args.role,col == 1,selected)
     if args.import_board:
         if not args.role: parser.error('--import-board requires --role')
         register(Image.open(args.import_board).convert('RGBA'),args.role,args.breakdown)
