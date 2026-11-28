@@ -37,6 +37,45 @@ async function bounds(page) {
   });
 }
 
+for (const [width,height] of [[1024,768],[1280,720]]) {
+  test('the eight-seat target selector keeps health and the native choice readable at ' + width + 'px', async ({ page }) => {
+    await page.setViewportSize({width,height});
+    const save = crowdedBuild(8);
+    const [rival,longName] = save.state.players.filter(p => p.id !== save.viewerId);
+    rival.name = 'Sparring rival';
+    longName.name = 'W'.repeat(24);
+    await page.goto('/');
+    await page.evaluate(data => sessionStorage.setItem('rift-solo', JSON.stringify(data)),save);
+    await page.reload();
+    await page.locator('[data-draft-select="iron-shard"]').click();
+    await page.locator('[data-pick="iron-shard"]').click();
+    const select = page.getByRole('combobox',{name:'Target',exact:true});
+    const health = page.locator('.target-caption small');
+    await select.focus();
+    for (const target of [rival,longName]) {
+      await select.selectOption(target.id);
+      await expect(select).toBeFocused();
+      await expect(select.locator('option:checked')).toHaveText(`${target.name} (${target.hp} / ${target.maxHp})`);
+      await expect(select).toHaveAttribute('title',`${target.name} (${target.hp} / ${target.maxHp})`);
+      await expect(health).toHaveText(`${target.hp} / ${target.maxHp} HP`);
+      const geometry = await page.locator('.aim-line').evaluate(line => {
+        const label = line.querySelector('.target-name');
+        const health = line.querySelector('.target-caption small').getBoundingClientRect();
+        const field = line.getBoundingClientRect();
+        const arrow = line.querySelector('.target-picker > svg').getBoundingClientRect();
+        return {healthFits:health.left >= field.left - 1 && health.right <= field.right + 1,
+          nameFits:label.scrollWidth <= label.clientWidth + 1,
+          beforeArrow:label.getBoundingClientRect().right <= arrow.left + 1,
+          ellipsis:getComputedStyle(label).textOverflow};
+      });
+      expect(geometry.healthFits).toBe(true);
+      expect(geometry.beforeArrow).toBe(true);
+      expect(geometry.ellipsis).toBe('ellipsis');
+      expect(geometry.nameFits).toBe(target === rival);
+    }
+  });
+}
+
 for (const seats of [2, 8]) {
   for (const [device, viewport] of Object.entries({
     desktop: { width: 1366, height: 768 },

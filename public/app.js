@@ -313,7 +313,14 @@ function refreshBattle() {
         else if (event.type === 'elimination') value = 0;
         hp.set(p.id, value);
         const option = shell.querySelector('#target-select option[value="' + CSS.escape(p.id) + '"]');
-        if (option) option.textContent = p.name + ' (' + value + ' / ' + p.maxHp + ')';
+        if (option) {
+          const health = value + ' / ' + p.maxHp;
+          option.textContent = p.name + ' (' + health + ')';
+          if (option.selected) {
+            option.parentElement.title = option.textContent;
+            shell.querySelector('.target-caption small').textContent = health + ' HP';
+          }
+        }
         if (p.id === old.activeId) {
           const station = shell.querySelector('.command-player');
           if (station) {

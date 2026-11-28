@@ -73,7 +73,8 @@ test('an actor bleeding on the way in still damages the target on the shield con
       if (scene?.dataset.stage === 'impact') {
         const cel=scene.querySelector('.arena-fx-actor .arena-cel');
         const contactFrame=Math.round(parseFloat(getComputedStyle(cel).backgroundPositionX) * 11 / 100);
-        window.contactRead = { bledDuringWindup, portraitMatches, stalled, contactFrame, targetHP: hp(target) };
+        window.contactRead = { bledDuringWindup, portraitMatches, stalled, contactFrame, targetHP: hp(target),
+          targetReadout: document.querySelector('.target-caption small')?.textContent };
         reactions.disconnect();
       }
     });
@@ -85,5 +86,6 @@ test('an actor bleeding on the way in still damages the target on the shield con
   const after = outcome.players.find(p => p.id === target);
   await expect.poll(() => page.evaluate(() => window.contactRead)).toEqual({
     bledDuringWindup: true, portraitMatches: true, stalled: true, contactFrame: 7, targetHP: after.hp + ' / ' + after.maxHp,
+    targetReadout: after.hp + ' / ' + after.maxHp + ' HP',
   });
 });

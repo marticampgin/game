@@ -55,7 +55,14 @@ export function actionDock(view, player, selection, { actionPage = 0, acquiredRe
       <div class="action-grid" role="group" aria-label="Available actions" style="--command-count:${visible.length};--phone-columns:${visible.length > 4 ? 3 : visible.length}">
         ${visible.map(option => actionButton(option, action.id)).join('')}</div>
     </div><div class="target-panel"><div class="aim-line">${action.target === 'enemy'
-      ? `<label for="target-select">Target</label><span class="command-target">${target ? `<span class="command-target-art">${portrait(target, view)}</span>` : ''}<select id="target-select">${target ? '' : '<option value="" selected>Choose a rival</option>'}${rivals.map(p => `<option value="${esc(p.id)}" ${p.id === target?.id ? 'selected' : ''}>${esc(p.name)} (${p.hp} / ${p.maxHp})</option>`).join('')}</select></span>`
+      ? `<span class="target-caption"><label for="target-select">Target</label>${target ? `<small aria-hidden="true">${target.hp} / ${target.maxHp} HP</small>` : ''}</span>
+        <span class="command-target target-picker">
+          ${target ? `<span class="command-target-art">${portrait(target, view)}</span>` : ''}
+          <span class="target-name" aria-hidden="true">${target ? esc(target.name) : 'Choose a rival'}</span>${glyph('right')}
+          <select id="target-select" title="${target ? esc(target.name + ' (' + target.hp + ' / ' + target.maxHp + ')') : 'Choose a rival'}">
+            ${target ? '' : '<option value="" selected>Choose a rival</option>'}${rivals.map(p => `<option value="${esc(p.id)}" ${p.id === target?.id ? 'selected' : ''}>${esc(p.name)} (${p.hp} / ${p.maxHp})</option>`).join('')}
+          </select>
+        </span>`
       : `<span>Target</span><span class="command-target"><span class="command-target-art">${portrait(player, view)}</span><strong>Yourself</strong></span>`}</div>
       <div class="command-estimate">${preview !== action.description ? `<p class="action-description">${esc(action.description)}</p>` : ''}
       <p class="preview" aria-live="polite">${esc(preview)}</p></div>
