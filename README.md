@@ -2,9 +2,9 @@
 
 A PC turn-based pixel art battle arena for 2–8 contenders. Pick one of three rewards, take one action, and survive the Shattered Ring. Fight friends in a private room or fill the arena with bots.
 
-![Eight contenders on the Shattered Ring at dusk](docs/qa/pc-combat/arena.webp)
+![All eight classes in round three. Sable the Artificer has Rivet Drive aimed at Rook the Guardian.](docs/qa/pc-combat/eight-class-ring.webp)
 
-[Watch nine combat moves](docs/qa/pc-combat/combat.mp4) · [Watch an eight-player turn](docs/qa/pc-combat/turn.mp4)
+[Try on Wolf Tracker and take it into a duel](docs/qa/pc-combat/wolf-tracker-walkthrough.mp4) · [Watch four finishing blows](docs/qa/pc-combat/finishing-blows.mp4) · [Watch an eight-player turn](docs/qa/pc-combat/turn.mp4)
 
 ## Play
 
