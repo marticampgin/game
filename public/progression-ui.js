@@ -3,7 +3,8 @@ import { SHOP, MASTERY_TARGET, MATCH_QUESTS, LIFETIME_QUESTS, newProfile, owns }
 import { readProfile, readCareerStatus, loadProfile, subscribeProfile, buyItem, equipSkin } from './career-client.js';
 import { esc, glyph, rewardIcon } from './art.js';
 import { fighterModel, fighterPortrait, fighterKit } from './fighter-kit.js';
-import { fighterSpriteHTML, playArenaAction, preloadArenaSkins } from './animation.js';
+import { playArenaAction } from './animation.js';
+import { createSkinPreview } from './skin-preview.js';
 import { reconcile } from './arena-render.js';
 import { coin, number, objectiveRows } from './progression-objectives.js';
 export { objectiveRows };
@@ -136,7 +137,7 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
   let profile = readProfile() || newProfile();
   const state = {tab:tabs.some(t => t[0] === initialTab) ? initialTab : 'quests',classId,
     skinId:initialSkinId || profile.equipped[classId] || 'founder',tier:conditions.some(([id]) => id === initialTier) ? initialTier : 'healthy',rewardId:rewards[0]?.id,busy:false};
-  let message = '', issue = false, preview, reveal, fitRevision = 0, queuedGesture = '', followEquipped = !initialSkinId;
+  let message = '', issue = false, preview, fitting, queuedGesture = '', followEquipped = !initialSkinId;
   host.replaceChildren(root);
 
   function render() {
@@ -157,7 +158,7 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
     const next = template.content.firstElementChild;
     if (root.firstElementChild) reconcile(root.firstElementChild,next,(live,wanted) => live.classList?.contains('pg-fitting') && wanted.classList?.contains('pg-fitting'));
     else root.append(next);
-    if (state.tab === 'skins' && root.querySelector('.pg-fitting')?.dataset.failed) root.querySelector('.pg-feedback').insertAdjacentHTML('beforeend',button('Retry preview','retry-fit','','class="pg-retry"'));
+    if (state.tab === 'skins' && issue && root.querySelector('.pg-fitting')?.dataset.failed) root.querySelector('.pg-feedback').insertAdjacentHTML('beforeend',button('Retry preview','retry-fit','','class="pg-retry"'));
     if (openPool && root.querySelector('.pg-pool')) root.querySelector('.pg-pool').open = true;
     if (focus) {
       const same = [...root.querySelectorAll('[data-pg]')].find(el => el.dataset.pg === focus.dataset.pg && el.dataset.value === focus.dataset.value && !el.disabled);
@@ -173,53 +174,23 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
   }
   function updateFitting() {
     const stage = root.querySelector('.pg-fitting');
-    if (!stage) { reveal?.cancel(); fitRevision++; queuedGesture = ''; preview?.cancel(); return; }
+    if (!stage) { fitting?.dispose(); fitting = null; queuedGesture = ''; preview?.cancel(); return; }
     const {classId, skinId, tier} = state;
     const key = classId + '/' + skinId + '/' + tier;
     if (stage.dataset.requested === key) return;
-    const revision = ++fitRevision;
-    delete stage.dataset.failed;
-    stage.dataset.requested = key;
-    stage.setAttribute('aria-busy','true');
     queuedGesture = '';
     preview?.cancel();
     const mannequin = stage.querySelector('.pg-mannequin .fighter-art');
+    fitting ??= createSkinPreview(stage,mannequin,'pg-previous',{withEffects:true});
     const condition = conditions.find(([id]) => id === tier);
     const player = {id:'preview',classId,skinId,hp:condition[2],maxHp:100,alive:true};
-    if (!mannequin.firstElementChild) mannequin.innerHTML = fighterSpriteHTML(player);
-    preloadArenaSkins([player]).then(results => {
-      if (signal.aborted || revision !== fitRevision || !stage.isConnected) return;
-      stage.setAttribute('aria-busy','false');
-      if (!results.every(Boolean)) {
-        stage.dataset.failed = key;
-        message = 'The full gesture set could not load.';
-        issue = true;
-        render();
-        return;
+    const item = outfits(classId).find(item => item.skinId === skinId);
+    const label = (item?.name || 'Founder') + ' ' + CLASSES[classId].name + ', ' + condition[1].toLowerCase();
+    fitting.show(player,key,label,() => !queuedGesture).then(result => {
+      if (result === 'failed') { message = 'The full gesture set could not load.'; issue = true; render(); }
+      if (result === 'ready' && queuedGesture) {
+        const action = queuedGesture; queuedGesture = ''; performGesture(stage,action);
       }
-      delete stage.dataset.failed;
-      const outfitsForClass = outfits(classId);
-      const name = outfitsForClass.find(item => item.skinId === skinId)?.name || 'Founder';
-      stage.setAttribute('aria-label',name + ' ' + CLASSES[classId].name + ', ' + condition[1].toLowerCase());
-      const old = mannequin.firstElementChild;
-      const oldKey = stage.dataset.shown;
-      mannequin.innerHTML = fighterSpriteHTML(player);
-      stage.dataset.shown = key;
-      const reduced = stage.closest('.reduce-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
-      reveal?.cancel();
-      stage.querySelector('.pg-previous')?.remove();
-      if (old && oldKey && oldKey !== key && !reduced && !queuedGesture) {
-        const previous = document.createElement('span');
-        previous.className = 'pg-previous';
-        previous.setAttribute('aria-hidden','true');
-        previous.append(old);
-        stage.append(previous);
-        const time = {duration:150, easing:'ease-out'};
-        const conceal = previous.animate([{clipPath:'inset(-25% -40% -25%)'},{clipPath:'inset(125% -40% -25%)'}],time);
-        conceal.onfinish = () => previous.remove();
-        reveal = mannequin.animate([{clipPath:'inset(-25% -40% 125%)'},{clipPath:'inset(-25% -40% -25%)'}],time);
-      }
-      if (queuedGesture) { const action = queuedGesture; queuedGesture = ''; performGesture(stage,action); }
     });
   }
   function pickClass(id, skinId) {
@@ -236,7 +207,7 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
   function destroy() {
     abort.abort();
     unsubscribe?.();
-    reveal?.cancel();
+    fitting?.dispose();
     preview?.cancel();
     root.remove();
   }

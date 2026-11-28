@@ -127,16 +127,11 @@ async function warmSheet(image) {
   }
 }
 
-export function preloadArenaSkins(players = []) {
+export function preloadArenaSkins(players = [], {withEffects = true} = {}) {
   if (typeof Image === 'undefined') return Promise.resolve([]);
   const urls = new Set([
-    fxSheet,
-    missileSheet,
-    '/assets/skins/status-effects.png',
-    '/assets/skins/status-icons.png',
-    '/assets/skins/gilt-card.png',
-    '/assets/skins/soul-thread.png',
-    ...scenePropImages,
+    ...(withEffects ? [fxSheet, missileSheet, '/assets/skins/status-effects.png', '/assets/skins/status-icons.png',
+      '/assets/skins/gilt-card.png', '/assets/skins/soul-thread.png', ...scenePropImages] : []),
     ...players.flatMap((p) => {
       const skin = resolveFighterSkin(p.classId, p.skinId);
       return Object.keys(fighterLayout.layers).filter(layer => layer !== 'ambient' || !skin.idles)

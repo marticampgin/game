@@ -67,3 +67,21 @@ test('a failed outfit download can be retried in place and its practice round tr
   await expect(stage).toHaveAttribute('data-shown','berserker/wolf-tracker/wounded');
   await expect(page.getByRole('button',{name:'Try in Sandbox'})).toBeFocused();
 });
+
+test('a failed practice outfit keeps the previous fighter and retries from the yard', async ({page}) => {
+  await page.goto('/');
+  await page.getByRole('button',{name:'Sandbox',exact:true}).click();
+  const yard = page.locator('.bench-yard');
+  const fighter = yard.locator('.bench-body .arena-sprite');
+  await expect(yard).toHaveAttribute('aria-busy','false');
+  await expect(fighter).toHaveAttribute('data-skin','founder');
+  await page.route('**/outfits/harbor-warden/motions.webp',route => route.abort('failed'));
+  await page.getByRole('button',{name:'Harbor Warden',exact:true}).click();
+  await expect(page.getByRole('status').filter({hasText:'Harbor Warden could not load.'})).toBeVisible();
+  await expect(fighter).toHaveAttribute('data-skin','founder');
+  await page.unroute('**/outfits/harbor-warden/motions.webp');
+  await page.getByRole('button',{name:'Retry preview'}).click();
+  await expect(yard).toHaveAccessibleName('Harbor Warden outfit, healthy');
+  await expect(fighter).toHaveAttribute('data-skin','harbor-warden');
+  await expect(page.getByRole('button',{name:'Retry preview'})).toBeHidden();
+});

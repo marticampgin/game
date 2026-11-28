@@ -59,7 +59,7 @@ body:has(.rb-sandbox) { background:#19151e; }
   position:relative; height:clamp(228px,31vh,350px); overflow:hidden; isolation:isolate;
   background:#3a2934 url('/assets/practice-yard.webp') center 68% / cover no-repeat; image-rendering:pixelated;
 }
-.rb-sandbox .bench-body { position:absolute; width:clamp(132px,12.5vw,205px); aspect-ratio:1; left:50%; bottom:16%; transform:translateX(-50%); }
+.rb-sandbox .bench-body,.rb-sandbox .bench-previous { position:absolute; width:clamp(132px,12.5vw,205px); aspect-ratio:1; left:50%; bottom:16%; transform:translateX(-50%); }
 .rb-sandbox .bench-body::before { content:''; position:absolute; width:54%; height:8%; bottom:-1%; left:23%; background:#25172699; border-radius:50%; }
 .rb-sandbox .bench-outfits { display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:5px; padding:9px; border-block:1px solid #705644; }
 .rb-sandbox .bench-outfits button { display:flex; align-items:center; gap:8px; padding:5px; text-align:left; background:#281e28; border:1px solid #644c40; }
@@ -99,3 +99,7 @@ body:has(.rb-sandbox) { background:#19151e; }
   .rb-sandbox .bench-seat { grid-template-columns:32px 1fr; }
   .rb-sandbox .bench-seat img { width:32px; height:32px; }
 }
+
+.rb-sandbox .bench-previous { pointer-events:none; }
+.rb-sandbox .bench-art-error:not([hidden]) { display:flex; align-items:center; gap:10px; padding:6px 12px; color:#ffccaa; background:#3a262b; }
+.rb-sandbox .bench-art-error button { padding:4px 10px; border:1px solid #a17958; background:#31242c; color:#f1d7b5; font-family:var(--control-font); }

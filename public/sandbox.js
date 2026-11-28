@@ -1,7 +1,7 @@
 import { applyCommand, botCommand, CLASSES, createMatch, eligible, EVENTS, REWARDS, sandboxEdit, STATUSES, viewMatch } from '../src/game/index.js';
 import { rewardIcon } from './art.js';
 import { fighterPortrait, fighterSkins, healthBand, resolveFighterSkin } from './fighter-kit.js';
-import { fighterSpriteHTML, preloadArenaSkins } from './animation.js';
+import { createSkinPreview } from './skin-preview.js';
 import { wornGear } from './worn-gear.js';
 import { escapeHTML, option, titleCase, toolPage } from './atlas-ui.js';
 
@@ -114,7 +114,7 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
       <section class="bench-stage-panel bench-panel" aria-label="Selected fighter">
         <header class="bench-panel-head"><div><small class="bench-class"></small><h2 class="bench-name"></h2></div>
           <div class="bench-vitals"><strong></strong><span class="bench-life"><i></i></span></div></header>
-        <div class="bench-yard" role="img"><div class="bench-body"></div></div>
+        <div class="bench-yard" role="img"><div class="bench-body"></div></div><div class="bench-art-error" hidden role="status"><span></span> <button type="button" data-retry-skin>Retry preview</button></div>
         <div class="bench-outfits" role="group" aria-label="Practice outfits"></div>
         <div class="bench-vital-controls"><span>Condition</span><div role="group" aria-label="Practice health"></div></div>
         <div class="bench-pilot-controls"><span class="bench-pilot-info"></span><div><button type="button" data-choose-class>Choose class</button><button type="button" data-pilot>Control this fighter</button></div></div>
@@ -135,7 +135,10 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
   preset.elements.preset.value = bench.presetId;
   preset.elements.seed.value = bench.seed;
   preset.elements.count.value = String(bench.count);
-  let selectedField = {}, lastModel = '';
+  let selectedField = {};
+  const yard = get('.bench-yard');
+  const model = createSkinPreview(yard,get('.bench-body'),'bench-previous');
+  signal.addEventListener('abort',() => model.dispose(),{once:true});
   const save = () => {
     bench.subject = subject;
     try { sessionStorage.setItem(saveKey,JSON.stringify(bench)); } catch { /* Play also works without storage. */ }
@@ -205,31 +208,24 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
     fields.innerHTML = html;
     edit.querySelector('[type=submit]').disabled = state.phase === 'finished' || (!player.alive && !['event','round'].includes(op));
   }
-  async function showModel(player) {
-    const key = [player.id,player.classId,player.skinId,healthBand(player),player.alive,wornGear(player)].join('/');
-    if (lastModel === key) return;
-    lastModel = key;
-    await preloadArenaSkins([player]);
-    if (key !== lastModel || signal.aborted) return;
-    const body = get('.bench-body');
-    const previous = body.lastElementChild;
-    body.insertAdjacentHTML('beforeend',fighterSpriteHTML(player));
-    const next = body.lastElementChild;
-    if (previous && next.animate && !document.body.classList.contains('reduce-motion') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const fade = next.animate([{opacity:0},{opacity:1}],{duration:135});
-      fade.finished.then(() => previous.remove()).catch(() => previous.remove());
-    } else previous?.remove();
-    // Rapid selections can start another transition before a prior fade has ended.
-    for (const layer of [...body.children].slice(0,-2)) layer.remove();
+  async function showModel(player, skin, band) {
+    const key = [player.id,player.classId,skin.id,band,player.alive,wornGear(player)].join('/');
+    if (key === yard.dataset.requested) return;
+    const error = get('.bench-art-error');
+    error.hidden = true;
+    const result = await model.show(player,key,skin.name + ' outfit, ' + healthNames[band].toLowerCase());
+    if (result === 'failed') {
+      error.querySelector('span').textContent = skin.name + ' could not load.';
+      error.hidden = false;
+    }
   }
   function paintWardrobe(player) {
     const skin = resolveFighterSkin(player.classId,player.skinId), band = healthBand(player);
     const frozen = state.phase === 'finished' || !player.alive;
-    get('.bench-name').textContent = skin.id === 'founder' ? CLASSES[player.classId].name : skin.name;
+    get('.bench-name').textContent = skin.name;
     get('.bench-class').textContent = player.name + ' · ' + CLASSES[player.classId].name;
     get('.bench-vitals strong').textContent = player.hp + ' / ' + player.maxHp + ' HP';
     get('.bench-life i').style.width = Math.min(100,100*player.hp/player.maxHp) + '%';
-    get('.bench-yard').setAttribute('aria-label', skin.name + ' outfit, ' + healthNames[band].toLowerCase());
     get('.bench-outfits').innerHTML = fighterSkins(player.classId).map(outfit =>
       '<button type="button" data-outfit="' + outfit.id + '" aria-pressed="' + (outfit.id === skin.id) + '"' + (frozen ? ' disabled' : '') +
       '><img src="' + fighterPortrait({classId:player.classId,skinId:outfit.id}) + '" alt=""><span>' + escapeHTML(outfit.name) + '</span></button>').join('');
@@ -239,7 +235,7 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
     get('[data-choose-class]').disabled = frozen;
     get('[data-pilot]').hidden = !player.bot;
     get('[data-pilot]').disabled = frozen;
-    void showModel(player);
+    void showModel(player,skin,band);
   }
   function paint() {
     const player = selectedPlayer();
@@ -295,6 +291,7 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
   root.addEventListener('click', event => {
     const button = event.target.closest('button');
     if (!button) return;
+    if (button.hasAttribute('data-retry-skin')) { delete yard.dataset.requested; paintWardrobe(selectedPlayer()); }
     if (button.dataset.pick) { subject = button.dataset.pick; selectedField = {}; setFeedback(''); paint(); get(`[data-pick="${subject}"]`).focus({ preventScroll: true }); }
     if (button.hasAttribute('data-choose-class')) {
       edit.elements.operation.value = 'class';
@@ -305,6 +302,7 @@ export function mountSandbox(host, {onClose, onPlay, initialFighter} = {}) {
     const skinId = button.dataset.outfit, tier = button.dataset.health;
     if (skinId || tier || button.hasAttribute('data-pilot')) {
       const player = selectedPlayer();
+      if (skinId && yard.dataset.failed) delete yard.dataset.requested;
       if (skinId && resolveFighterSkin(player.classId,skinId).id === skinId) {
         applyEdit({type:'skin',playerId:subject,skinId});
       } else if (Object.hasOwn(healthLevels,tier)) {
