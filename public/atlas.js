@@ -4,9 +4,11 @@ import { rewardIcon } from './art.js';
 import { buildAtlas, MAP_HEIGHT, MAP_WIDTH, matchingRewards, REGIONS } from './atlas-model.js';
 import { escapeHTML, icon, option, titleCase, toolPage } from './atlas-ui.js';
 
+import { getLanguage, translate } from './i18n.js';
+
 const rewards = Object.values(REWARDS);
 const graph = buildAtlas(rewards);
-const byName = (a, b) => a.name.localeCompare(b.name);
+const byName = (a, b) => translate(a.name).localeCompare(translate(b.name),getLanguage());
 const options = (first, values) => option('', first) + values.map(id => option(id, titleCase(id))).join('');
 const tags = [...new Set(rewards.flatMap(reward => reward.tags))].sort();
 const categories = [...new Set(rewards.map(reward => reward.category))].sort();
@@ -198,11 +200,12 @@ export function mountAtlas(host, { onClose, readProfile, subscribeProfile } = {}
   }
   function showHover(button) {
     const reward = REWARDS[button.dataset.node];
-    hover.textContent = `${reward.name} · ${titleCase(reward.rarity)} ${reward.category}`;
+    hover.textContent = `${reward.name} · ${titleCase(reward.rarity)} · ${reward.category}`;
     hover.hidden = false;
   }
   form.addEventListener('submit', event => event.preventDefault(), { signal });
   form.addEventListener('input', filter, { signal });
+  document.addEventListener('rift-language', filter, { signal });
   browse.addEventListener('change', () => select(browse.value, true), { signal });
   root.addEventListener('click', event => {
     const button = event.target.closest('button');

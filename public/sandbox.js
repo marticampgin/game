@@ -91,7 +91,7 @@ function restoreBench(bench, fitting) {
 }
 
 function combatant(player, selected) {
-  return `<button class="bench-seat" type="button" data-pick="${player.id}" aria-pressed="${selected}" aria-label="${escapeHTML(player.name)} · ${CLASSES[player.classId].name}${player.bot ? '' : ' · Your fighter'}">
+  return `<button class="bench-seat" data-person-name="${escapeHTML(player.name)}" type="button" data-pick="${player.id}" aria-pressed="${selected}" aria-label="${escapeHTML(player.name)} · ${CLASSES[player.classId].name}${player.bot ? '' : ' · Your fighter'}">
     <img src="${fighterPortrait(player)}" alt="" draggable="false">
     <span><strong>${escapeHTML(player.name)}</strong><small>${CLASSES[player.classId].name}</small></span>
     ${!player.bot ? '<i class="bench-pilot" aria-hidden="true"></i>' : ''}</button>`;

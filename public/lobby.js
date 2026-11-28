@@ -92,7 +92,7 @@ function roster(view) {
   return '<section class="lobby-roster"><div class="lobby-invite"><div><span>Room code</span><strong data-room-code>' +
     room.code + '</strong></div><button type="button" data-lobby="copy">' + glyph('copy') +
     '<span>Copy invite</span></button></div><div class="lobby-seats" aria-label="Room roster">' +
-    room.seats.map(s => '<div class="lobby-seat"><img src="' + classArt(s) + '" alt=""><span>' + esc(s.name) +
+    room.seats.map(s => '<div class="lobby-seat"><img src="' + classArt(s) + '" alt=""><span><span translate="no">' + esc(s.name) + '</span>' +
       '<small>' + CLASSES[s.classId].name + (s.id === room.hostId ? ' · Host' : '') + (s.id === playerId ? ' · You' : '') +
       '</small></span></div>').join('') + '</div><p>' + room.seats.length + ' / ' + room.capacity + ' seats' +
     (room.fillBots && room.seats.length < room.capacity ? ' · Bots fill open seats at start' : '') + '</p></section>';

@@ -452,12 +452,21 @@ function renderBattle(v) {
       ' used ' +
       resolved.actionName +
       '. ' +
-      (app.querySelector('.recap-outcome p')?.textContent || '') +
+      (app.querySelector('.recap-outcome [data-quantity-line]')?.dataset.quantityLine || '') +
       '. ' +
       handoff
     : handoff;
   const live = document.querySelector('#battle-announcement');
-  if (live.textContent !== announcement) live.textContent = announcement;
+  if (live.dataset.message !== announcement) {
+    live.dataset.message = announcement;
+    const lines = resolved ? [resolved.actorName + ' used ' + resolved.actionName + '.',
+      app.querySelector('.recap-outcome [data-quantity-line]')?.dataset.quantityLine, handoff] : [handoff];
+    live.replaceChildren(...lines.filter(Boolean).map(line => {
+      const part = document.createElement('span');
+      part.textContent = line + ' ';
+      return part;
+    }));
+  }
   if (pendingFocus) {
     const node = app.querySelector(pendingFocus);
     if (node?.tagName === 'H2') node.tabIndex = -1;
@@ -589,6 +598,7 @@ function dialog(html) {
   next.querySelector('.dialog-head').prepend(heading);
   const inspection = next.querySelector('[data-build-seat]')?.closest('.dialog-body');
   if (inspection) {
+    heading.setAttribute('translate','no');
     inspection.tabIndex = 0;
     inspection.setAttribute('role', 'region');
     inspection.setAttribute('aria-label', 'Stats and equipment');

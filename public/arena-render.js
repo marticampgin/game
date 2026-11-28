@@ -2,6 +2,7 @@
 // attached to the document so their idle cycles continue across those updates.
 export function reconcile(live, next, preserve) {
   if (preserve?.(live,next)) return;
+  if (live.hasAttribute?.('data-quantity-line') && live.dataset.quantityLine === next.dataset?.quantityLine) return;
   if (live.isEqualNode(next)) return;
   if (live.nodeName !== next.nodeName || live.namespaceURI !== next.namespaceURI) {
     live.replaceWith(next.cloneNode(true));

@@ -26,7 +26,7 @@ export const ruMessages = `
 {p} lost one stack of Curse.|$1 теряет заряд проклятия.
 {p}’s action was interrupted.|Действие бойца $1 прервано.
 {p} opened an additional reward draft.|$1 открывает дополнительный выбор награды.
-{p} rerolled the draft{t}.|$1 меняет награды$2.
+{p} rerolled the draft and loaded a high card.|$1 меняет награды и готовит старшую карту.
 {p} rerolled the draft.|$1 меняет награды.
 {p} is the last contender standing.|На арене остаётся один боец — $1.
 The arena burns. All living contenders take {n} unavoidable damage.|Арена горит. Все выжившие получают $1 неизбежного урона.
@@ -51,7 +51,6 @@ Defeated by {p}|Победитель дуэли: $1
 {p} chooses an action|$1 выбирает действие
 Preparing {t} against {p}|Готовится «$1». Цель — $2
 Preparing {t}|Подготовка: $1
-{p}’s {t}|$1: $2
 Solo seed · {p}|Зерно матча · $1
 Invite friends with room code {p}.|Код комнаты для друзей: $1.
 Choose which item to replace with {t}.|Выберите предмет, вместо которого взять «$1».
@@ -167,5 +166,30 @@ Cleanse {t}|Снятие: $1
 {t} (low card)|$1 (младшая карта)
 {t} echo|Эхо: $1
 {t} ×{n}|$1 ×$2
+{n} rewards|Наград: $1
+{n} reward|Наград: $1
+{t} outfit, {t}|Облик «$1», состояние: $2
+{t} equipped.|Надето: $1.
+{t} unlocked.|Открыто: $1.
+{t} unlocked|Открыто: $1
+{n} objective coins|Монеты за цели: $1
++{n} lifetime quest coins|Монеты за долгосрочные задания: +$1
+{t} complete|Выполнено: $1
+You need {n} more coins.|Не хватает монет: $1.
+{t} cleansed|Снято: $1
+{t} consumed|Поглощено: $1
+{t} faded|Эффект исчез: $1
+{n} HP|$1 ОЗ
+{n} shield|$1 щита
+{n}st place|$1-е место
+{n}nd place|$1-е место
+{n}rd place|$1-е место
+{n}th place|$1-е место
+Tied for {t}|Разделено $1
+All {n} contenders fell|Выбыли все $1 бойцов
+Round {n} arena event|Событие арены в раунде $1
+Bloodrush adds {n} attack.|Кровавая ярость даёт $1 атаки.
+From {p}|Источник: $1
+{n} sources|Источников: $1
 `.trim().split('\n').map(row => row.split('|'));
 

@@ -12,7 +12,7 @@ export function matchResult(view, viewerId, settlement) {
   const placing = own ? '1st place' : finishPlace(view,view.milestones?.eliminations.find(fall => fall.targetId === viewerId));
   const details = winner
     ? [own && winner.name, CLASSES[winner.classId].name, resolveFighterSkin(winner.classId, winner.skinId).name]
-      .filter(Boolean).map(esc).join(' · ')
+      .filter(Boolean).map((label, index) => own && index === 0 ? '<span translate="no">' + esc(label) + '</span>' : esc(label)).join(' · ')
     : 'Draw · All ' + view.players.length + ' contenders fell';
   const portrait = winner
     ? `<button type="button" class="result-portrait" data-inspect="${esc(winner.id)}" aria-label="Inspect champion ${esc(winner.name)}" title="Inspect ${esc(winner.name)}"><img src="${fighterPortrait(winner)}" alt="">${seatCrest(seat)}</button>`

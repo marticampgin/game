@@ -125,3 +125,16 @@ for (const row of rows) {
   }
 }
 
+// The preview's accessible name combines outfit, class and condition while
+// the previous painter can still be visible during a costume change.
+for (const role of Object.values(CLASSES)) {
+  const outfits = ['Founder', ...SHOP.filter(item => item.classId === role.id).map(item => item.name)];
+  for (const outfit of outfits) {
+    const title = ruContent.get(outfit) || 'Изначальный';
+    for (const [condition, state] of [['healthy','в строю'],['wounded','ранен'],['critical','при смерти']]) {
+      ruContent.set(outfit + ' ' + role.name + ', ' + condition,
+        ruContent.get(role.name) + ' · ' + title + ' · ' + state);
+    }
+  }
+}
+

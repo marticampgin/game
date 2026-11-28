@@ -56,7 +56,7 @@ function combatant(p, index, view, viewerId, selection, intent) {
     .join(' · ');
   return `<article class="combatant ${active ? 'acting' : ''} ${marked ? 'marked' : ''} ${incoming ? 'incoming' : ''} ${champion ? 'champion' : ''} ${p.alive ? '' : 'fallen'}"
     data-seat="${esc(p.id)}" data-facing="${x > 50 ? 'left' : 'right'}" data-status-placement="${y <= 60 ? 'below' : 'side'}" style="--x:${x.toFixed(2)}%;--y:${y.toFixed(2)}%;--depth:${Math.round(y)};--scale:${(0.76 + (y - 35) * 0.0073).toFixed(3)}">
-    <button type="button" class="fighter-main" data-${targetable ? 'aim' : 'inspect'}="${esc(p.id)}" aria-label="${targetable ? 'Target' : 'View'} ${esc(p.name)}" aria-describedby="vitals-${esc(p.id)}" ${targetable ? 'aria-pressed="' + !!marked + '"' : ''}>
+    <button type="button" class="fighter-main" data-person-name="${esc(p.name)}" data-${targetable ? 'aim' : 'inspect'}="${esc(p.id)}" aria-label="${targetable ? 'Target' : 'View'} ${esc(p.name)}" aria-describedby="vitals-${esc(p.id)}" ${targetable ? 'aria-pressed="' + !!marked + '"' : ''}>
       <span class="foot-ring" aria-hidden="true"></span><span class="fighter-art">${fighterSpriteHTML(p, {victory:champion})}</span>
       <span class="fighter-panel" id="vitals-${esc(p.id)}"><strong class="fighter-title">${seatCrest(index)}${esc(p.name)}</strong>
         <span class="vital-bar" aria-hidden="true"><i style="width:${hp}%"></i></span>
@@ -64,7 +64,7 @@ function combatant(p, index, view, viewerId, selection, intent) {
         <span class="seat-conditions" aria-hidden="true">${liveEffects ? statusBankHTML(p.statuses) : ''}</span>
         <span class="sr-turn">${esc(details)}${liveEffects && p.shield ? ' · ' + p.shield + ' shield' : ''}</span>
       </span>
-    </button><button type="button" class="fighter-info" data-inspect="${esc(p.id)}" aria-label="Inspect ${esc(p.name)}" title="${esc(p.name + ' · ' + details)}"><span aria-hidden="true">i</span></button>
+    </button><button type="button" class="fighter-info" data-person-name="${esc(p.name)}" data-inspect="${esc(p.id)}" aria-label="Inspect ${esc(p.name)}" title="${esc(p.name + ' · ' + details)}"><span aria-hidden="true">i</span></button>
   </article>`;
 }
 
@@ -99,7 +99,7 @@ export function turnRail(view, viewerId) {
         const outcome = end ? (id === view.winnerId ? 'Champion' : 'Eliminated') : '';
         const label =
           (end ? outcome + ' · ' : i === 0 ? 'Acting · ' : i === 1 ? 'Up next · ' : 'Turn ' + (i + 1) + ' · ') + p.name + seatHint;
-        return `<li><button data-inspect="${esc(id)}" aria-label="${esc(label)}" title="${esc(label + (id === viewerId ? ' · You' : ''))}" ${end ? 'data-outcome="' + outcome.toLowerCase() + '"' : i === 0 ? 'aria-current="step"' : ''}>
+        return `<li><button data-person-name="${esc(p.name)}" data-inspect="${esc(id)}" aria-label="${esc(label)}" title="${esc(label + (id === viewerId ? ' · You' : ''))}" ${end ? 'data-outcome="' + outcome.toLowerCase() + '"' : i === 0 ? 'aria-current="step"' : ''}>
           <img src="${fighterPortrait(p)}" alt="">${seatCrest(seat)}<span class="rail-name" aria-hidden="true">${esc(shortName)}</span><span class="rail-code" aria-hidden="true">${esc(code)}</span>
         </button></li>`;
       })
