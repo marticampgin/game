@@ -65,9 +65,9 @@
       "weapon": "rapier", "emblem": "dice", "title": "Riverboat cardsharp", "idlePeriodMs": 10300, "layers": ["motions", "footwork", "ambient", "consume", "idles", "variations", "collapse", "celebrate"],
       "endingTimingMs": { "collapse": [108, 220, 425], "celebrate": [170, 445, 765] },
       "anchors": {
-        "healthy": {"hand": [102, 91], "mouth": [106, 53], "ground": [140, 147], "belt": [106, 85]},
-        "wounded": {"hand": [101, 94], "mouth": [105, 59], "ground": [141, 147], "belt": [104, 85]},
-        "critical": {"hand": [104, 102], "mouth": [109, 69], "ground": [145, 147], "belt": [105, 97]}
+        "healthy": {"hand": [133, 89], "mouth": [106, 49], "ground": [140, 147], "belt": [106, 80]},
+        "wounded": {"hand": [111, 93], "mouth": [110, 61], "ground": [157, 146], "belt": [105, 83]},
+        "critical": {"hand": [121, 98], "mouth": [112, 68], "ground": [143, 149], "belt": [108, 95]}
       }
     },
     "necromancer": {
@@ -283,9 +283,9 @@
       "portrait": "/assets/skins/outfits/riverboat-duelist/portrait.webp",
       "model": "/assets/skins/outfits/riverboat-duelist/model.webp",
       "anchors": {
-        "healthy": {"hand": [103, 93], "mouth": [110, 53], "ground": [141, 149], "belt": [104, 82]},
-        "wounded": {"hand": [104, 99], "mouth": [109, 62], "ground": [141, 149], "belt": [103, 87]},
-        "critical": {"hand": [102, 99], "mouth": [102, 62], "ground": [141, 149], "belt": [103, 97]}
+        "healthy": {"hand": [124, 80], "mouth": [106, 49], "ground": [145, 147], "belt": [103, 80]},
+        "wounded": {"hand": [124, 102], "mouth": [109, 60], "ground": [143, 148], "belt": [104, 84]},
+        "critical": {"hand": [109, 91], "mouth": [115, 67], "ground": [142, 149], "belt": [106, 94]}
       }
     },
     {
@@ -304,9 +304,9 @@
       "portrait": "/assets/skins/outfits/gilded-jack/portrait.webp",
       "model": "/assets/skins/outfits/gilded-jack/model.webp",
       "anchors": {
-        "healthy": {"hand": [100, 94], "mouth": [113, 57], "ground": [150, 149], "belt": [108, 84]},
-        "wounded": {"hand": [100, 100], "mouth": [109, 65], "ground": [146, 149], "belt": [104, 85]},
-        "critical": {"hand": [100, 100], "mouth": [105, 67], "ground": [146, 149], "belt": [104, 95]}
+        "healthy": {"hand": [129, 86], "mouth": [110, 52], "ground": [149, 147], "belt": [110, 81]},
+        "wounded": {"hand": [113, 86], "mouth": [105, 59], "ground": [139, 149], "belt": [110, 87]},
+        "critical": {"hand": [99, 93], "mouth": [110, 70], "ground": [143, 149], "belt": [108, 94]}
       }
     },
     {
