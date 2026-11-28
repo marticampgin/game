@@ -270,7 +270,7 @@ Action pages|Страницы действий
 Previous actions|Предыдущие действия
 More actions|Ещё действия
 Choose a living rival to preview this action.|Выберите живого соперника для предварительного расчёта.
-Choose a rival|Выберите соперника
+Choose a rival|Выберите цель
 No action available|Нет доступных действий
 Battle log|Журнал боя
 Search the log|Поиск по журналу

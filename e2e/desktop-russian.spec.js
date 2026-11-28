@@ -88,6 +88,17 @@ for (const [seats, skin, outfit, tier, condition] of [
     await expect(player).toBeVisible();
     await page.locator('.draft-confirm').click();
     await expect(page.locator('[data-execute="attack"]')).toBeVisible();
+    if (seats === 8) {
+      // A duel picks its only rival automatically. A full arena opens with a prompt.
+      const target = page.locator('.target-picker .target-name');
+      await expect(target).toHaveText('Выберите цель');
+      for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720 }]) {
+        await page.setViewportSize(viewport);
+        await expect(target).toBeInViewport();
+        await expect.poll(() => target.evaluate(el => el.scrollWidth - el.clientWidth))
+          .toBeLessThanOrEqual(0);
+      }
+    }
     expect(errors).toEqual([]);
   });
 }
