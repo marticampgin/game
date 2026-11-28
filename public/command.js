@@ -64,7 +64,7 @@ export function actionDock(view, player, selection, { actionPage = 0, acquiredRe
           </select>
         </span>`
       : `<span>Target</span><span class="command-target"><span class="command-target-art">${portrait(player, view)}</span><strong>Yourself</strong></span>`}</div>
-      <div class="command-estimate">${preview !== action.description ? `<p class="action-description">${esc(action.description)}</p>` : ''}
+      <div class="command-estimate">${preview !== action.description ? `<p class="action-description">${esc(action.summary || action.description)}</p>` : ''}
       <p class="preview" aria-live="polite">${esc(preview)}</p></div>
       <button type="button" class="primary confirm-action" data-execute="${esc(action.id)}" data-target="${esc(target?.id)}" ${target ? '' : 'disabled'}>Use ${esc(action.name)} ${glyph('right')}</button>
     </div></section>`;

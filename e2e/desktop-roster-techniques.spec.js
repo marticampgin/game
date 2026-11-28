@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { applyCommand, CLASSES, createMatch, previewAction, REWARDS, sandboxEdit, viewMatch } from '../src/game/index.js';
+import { talentState } from '../src/game/talent-state.js';
 
 function table(classId,count) {
   // Berserker provides a known public Bleed technique for the mirror and
@@ -17,6 +18,27 @@ function table(classId,count) {
   return state;
 }
 
+test('the Gambler can deliberately exchange a draft for a revealed high-card result',async ({page})=>{
+  await page.setViewportSize({width:1366,height:768});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  const state=table('gambler',2);
+  const rolled=applyCommand(state,'p0',{type:'reroll'}), chosen=rolled.offers[0];
+  await page.addInitScript(save=>sessionStorage.setItem('rift-solo',JSON.stringify(save)),{state,viewerId:'p0'});
+  await page.goto('/');
+  await expect(page.locator('.draft-prompt')).toContainText('Reroll to load a high card');
+  await page.locator('[data-ui="reroll"]').click();
+  await expect(page.locator('.draft-prompt')).toContainText('High card loaded');
+  await expect(page.locator('[data-ui="reroll"]')).toBeDisabled();
+  await page.locator('[data-draft-select="'+chosen+'"]').click();
+  await page.locator('[data-pick="'+chosen+'"]').click();
+  await page.locator('[data-action="cut-the-deck"]').click();
+  await expect(page.locator('.command-estimate .preview')).toContainText('guaranteed high card');
+  await page.locator('[data-execute="cut-the-deck"]').click();
+  await expect(page.locator('.recap-who')).toContainText('Cut the Deck');
+  await page.locator('.recap-toggle').click();
+  await expect(page.locator('.recap-events')).toContainText('(high card)');
+});
+
 for (const count of [2,8]) {
   for (const classId of ['gambler','necromancer','trickster','artificer']) {
     test(count+'-seat '+classId+' reads its signature forecast and reaches a public recap at 720p',async ({page},testInfo)=>{
@@ -29,13 +51,18 @@ for (const count of [2,8]) {
       const id=CLASSES[classId].ability, name=REWARDS[id].name;
       const picked=applyCommand(state,'p0',{type:'pick',rewardId:'iron-shard'});
       const preview=previewAction(viewMatch(picked,'p0'),'p0',id,'p1');
+      await page.addInitScript(save=>sessionStorage.setItem('rift-solo',JSON.stringify(save)),{state,viewerId:'p0'});
       await page.goto('/');
-      await page.evaluate(save=>sessionStorage.setItem('rift-solo',JSON.stringify(save)),{state,viewerId:'p0'});
-      await page.reload();
       await page.locator('[data-draft-select="iron-shard"]').click();
       await page.locator('[data-pick="iron-shard"]').click();
       await page.locator('[data-action="'+id+'"]').click();
       if (count>2) await page.locator('#target-select').selectOption('p1');
+      await expect(page.locator('.command-estimate .preview')).toHaveText(preview.text);
+      const ownView=viewMatch(picked,'p0');
+      await page.locator('.command-player').click();
+      const build=page.getByRole('dialog');
+      await expect(build.locator('.talent-state')).toHaveText(talentState(ownView,ownView.players[0]));
+      await build.getByRole('button',{name:'Close dialog'}).click();
       await expect(page.locator('.command-estimate .preview')).toHaveText(preview.text);
       const button=page.getByRole('button',{name:'Use '+name});
       await expect(button).toBeEnabled();

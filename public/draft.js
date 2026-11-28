@@ -1,4 +1,4 @@
-import { previewReward, REWARDS, STATUSES } from '/src/game/index.js';
+import { previewReward, rewardInMatch, STATUSES } from '/src/game/index.js';
 import { esc, glyph, rewardIcon } from './art.js';
 
 const categories = {
@@ -41,17 +41,24 @@ function review(reward, lines, player) {
 
 export function draftHTML(view, player, selectedId) {
   const choices = view.offers.map(id => ({
-    reward: REWARDS[id],
+    reward: rewardInMatch(view,id),
     lines: previewReward(view, player.id, id).lines,
   }));
   const selected = choices.find(choice => choice.reward.id === selectedId);
+  const canThrow = player.classId === 'gambler' && player.abilities.some(a => a.id === 'cut-the-deck' && !a.cooldown) &&
+    !player.statuses.freeze && (!view.bonusDraft || view.remainingActions > 1);
+  const loaded = canThrow && player.stackedDeckTurn === player.personalTurn;
+  const prompt = loaded ? 'High card loaded for this turn. Choose a reward.' :
+    canThrow && player.rerolls ? 'Reroll to load a high card, or inspect a reward from this hand.' : 'Select a reward to inspect it.';
+  const rerollHint = ['Draw three new offers.',canThrow ? 'Guarantees a high card this turn.' : '',
+    player.artifacts.includes('marked-deck') ? 'Marked Deck adds 5 shield.' : ''].filter(Boolean).join(' ');
   return `<div class="loot-draft">
     <header class="dock-heading draft-heading"><h2>${view.bonusDraft ? 'Scavenge · ' : ''}Choose a reward</h2>
-      <button type="button" class="tool-btn draft-reroll" data-ui="reroll" ${player.rerolls > 0 ? '' : 'disabled'}>${glyph('cycle')} Reroll (${player.rerolls})</button></header>
+      <button type="button" class="tool-btn draft-reroll" data-ui="reroll" title="${esc(rerollHint)}" ${player.rerolls > 0 ? '' : 'disabled'}>${glyph('cycle')} Reroll (${player.rerolls})</button></header>
     <div class="draft-options" role="group" aria-label="Reward offers">
       ${choices.map(({reward, lines}) => offerCard(reward, lines[0], reward.id === selected?.reward.id)).join('')}
     </div>
     ${selected ? review(selected.reward, selected.lines, player) :
-      `<div class="draft-review draft-prompt" id="draft-inspection"><p>Select a reward to inspect it.</p><button type="button" class="primary draft-confirm" disabled>Take reward ${glyph('right')}</button></div>`}
+      `<div class="draft-review draft-prompt" id="draft-inspection"><p>${esc(prompt)}</p><button type="button" class="primary draft-confirm" disabled>Take reward ${glyph('right')}</button></div>`}
   </div>`;
 }

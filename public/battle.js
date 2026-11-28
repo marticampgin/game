@@ -1,4 +1,5 @@
-import { CLASSES, REWARDS, STATUSES, currentAttack, getActions } from '/src/game/index.js';
+import { CLASSES, REWARDS, STATUSES, currentAttack, getActions, rewardInMatch } from '/src/game/index.js';
+import { talentState } from '/src/game/talent-state.js';
 import { wornGear } from './worn-gear.js';
 import { fighterModel, fighterPortrait, resolveFighterSkin } from './fighter-kit.js';
 import { actionIcon, modifierName, rewardIcon, seatCrest, glyph, esc, toolButton as tool } from './art.js';
@@ -169,7 +170,7 @@ export function battleHTML(view, viewerId, ui) {
   </div>`;
 }
 
-export function buildHTML(p, own) {
+export function buildHTML(p, own, view) {
   const gear = wornGear(p);
   const outfit = resolveFighterSkin(p.classId,p.skinId);
   const skills = p.abilities.map((a) => [
@@ -189,7 +190,7 @@ export function buildHTML(p, own) {
               '<span><strong>' +
               esc(REWARDS[id]?.name || id) +
               '</strong><small>' +
-              esc(REWARDS[id]?.description) +
+              esc(rewardInMatch(view,id)?.description) +
               '</small></span>' +
               (info.length ? '<em>' + esc(info.join(' · ')) + '</em>' : '') +
               '</li>',
@@ -198,7 +199,8 @@ export function buildHTML(p, own) {
         '</ul>'
       : '<p class="muted">' + empty + '</p>';
   const stats = Object.entries(p.statuses).filter(([, v]) => v);
-  return `<div class="inspect-top"><img src="${fighterModel(p)}" alt=""><div><small>${esc(CLASSES[p.classId].name)}${outfit.id !== 'founder' ? ' · ' + esc(outfit.name) : ''}</small><h2>${esc(p.name)}</h2><p>${esc(CLASSES[p.classId].innate)}</p></div></div>
+  const talent = talentState(view,p);
+  return `<div class="inspect-top"><img src="${fighterModel(p)}" alt=""><div><small>${esc(CLASSES[p.classId].name)}${outfit.id !== 'founder' ? ' · ' + esc(outfit.name) : ''}</small><h2>${esc(p.name)}</h2><p>${esc(CLASSES[p.classId].innate)}</p>${talent ? '<p class="talent-state">' + esc(talent) + '</p>' : ''}</div></div>
   <dl class="stats-row">${[
     ['Health', p.hp + '/' + p.maxHp],
     ['Shield', p.shield],

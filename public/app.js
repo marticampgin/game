@@ -741,8 +741,9 @@ document.addEventListener('click', (event) => {
     app.querySelector('.recap-details h3')?.setAttribute('tabindex', '-1');
     app.querySelector('.recap-details h3')?.focus({ preventScroll: true });
   } else if (d.inspect && screen === 'battle') {
-    const p = current().players.find((x) => x.id === d.inspect);
-    dialog(buildHTML(p, p.id === match.viewerId));
+    const view = current();
+    const p = view.players.find((x) => x.id === d.inspect);
+    dialog(buildHTML(p, p.id === match.viewerId, view));
   } else if (d.pick && screen === 'battle') {
     if (d.replace !== undefined) command({ type: 'pick', rewardId: d.pick, replaceIndex: Number(d.replace) });
     else pick(d.pick);
@@ -796,14 +797,11 @@ document.addEventListener('click', (event) => {
         chime('select');
         openTool(d.ui);
         break;
-      case 'build':
-        dialog(
-          buildHTML(
-            current().players.find((x) => x.id === match.viewerId),
-            true,
-          ),
-        );
+      case 'build': {
+        const view = current();
+        dialog(buildHTML(view.players.find((x) => x.id === match.viewerId), true, view));
         break;
+      }
       case 'toggle-recap':
         pinnedAction = pinnedAction ? null : current().lastAction;
         refreshBattle();
