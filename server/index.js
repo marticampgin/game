@@ -1,6 +1,5 @@
 import { createServer } from 'node:http';
-import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { open } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { pipeline } from 'node:stream/promises';
@@ -56,28 +55,36 @@ async function staticFile(pathname, request, response) {
   const route = isSource ? path.slice(5) : path.slice(1);
   const file = resolve(root, route || 'index.html');
   if (!file.startsWith(root + sep)) throw new RoomError(404, 'File not found.');
-  const info = await stat(file).catch(() => null);
-  if (!info?.isFile()) throw new RoomError(404, 'File not found.');
-  // Art and modules have stable filenames. Check for a new build on return,
-  // while letting an unchanged fighter sheet stay in the browser's cache.
-  const tag = '"' + info.size.toString(16) + '-' + info.mtimeMs.toString(16) + '"';
-  const cache = { 'Cache-Control': 'no-cache', ETag: 'W/' + tag, 'Last-Modified': info.mtime.toUTCString() };
-  const suppliedTags = request.headers['if-none-match'];
-  const unchanged = suppliedTags !== undefined
-    ? suppliedTags.split(',').some(value => value.trim() === '*' || value.trim().replace(/^W\//, '') === tag)
-    : Math.floor(info.mtimeMs / 1000) * 1000 <= Date.parse(request.headers['if-modified-since']);
-  if (unchanged) {
-    response.writeHead(304, cache);
-    response.end();
-    return;
+  // A rebuild can atomically replace this path during a download. Size, tag
+  // and body must describe the same open edition of the bitmap.
+  const handle = await open(file).catch(() => null);
+  if (!handle) throw new RoomError(404, 'File not found.');
+  try {
+    const info = await handle.stat();
+    if (!info.isFile()) throw new RoomError(404, 'File not found.');
+    // Art and modules have stable filenames. Check for a new build on return,
+    // while letting an unchanged fighter sheet stay in the browser's cache.
+    const tag = '"' + info.size.toString(16) + '-' + info.mtimeMs.toString(16) + '"';
+    const cache = { 'Cache-Control': 'no-cache', ETag: 'W/' + tag, 'Last-Modified': info.mtime.toUTCString() };
+    const suppliedTags = request.headers['if-none-match'];
+    const unchanged = suppliedTags !== undefined
+      ? suppliedTags.split(',').some(value => value.trim() === '*' || value.trim().replace(/^W\//, '') === tag)
+      : Math.floor(info.mtimeMs / 1000) * 1000 <= Date.parse(request.headers['if-modified-since']);
+    if (unchanged) {
+      response.writeHead(304, cache);
+      response.end();
+      return;
+    }
+    response.writeHead(200, {
+      ...cache,
+      'Content-Type': mime[extname(file).toLowerCase()] ?? 'application/octet-stream',
+      'Content-Length': info.size, 'X-Content-Type-Options': 'nosniff',
+    });
+    if (request.method === 'HEAD') response.end();
+    else await pipeline(handle.createReadStream(), response);
+  } finally {
+    await handle.close();
   }
-  response.writeHead(200, {
-    ...cache,
-    'Content-Type': mime[extname(file).toLowerCase()] ?? 'application/octet-stream',
-    'Content-Length': info.size, 'X-Content-Type-Options': 'nosniff',
-  });
-  if (request.method === 'HEAD') response.end();
-  else await pipeline(createReadStream(file), response);
 }
 
 export function createArenaServer(options) {
