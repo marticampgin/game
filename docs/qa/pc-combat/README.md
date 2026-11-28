@@ -46,14 +46,14 @@ The 22-second PC walkthrough follows a new profile from the main menu to the loc
 
 ## The last blow
 
-Four normal-speed finishes show the loser falling, the champion settling into their own gesture, and the result appearing over the ring. Each pair keeps the outfit and injury it had at contact. The clips alternate between duels and eight-seat Sandbox matches at 1440 × 900 with game audio. [Watch the 15-second film](finishing-blows.mp4) · [See the eight-seat result](champion.webp)
+Four normal-speed finishes show the attack forecast, contact, recoil and both contenders’ final poses. The builds came from ordinary drafts in rounds 16–35. In Sandbox, the two fighters’ starting health and the target’s shield were set for the final exchange. Both eight-seat matches had already lost six contenders to attacks. Each clip runs from the player’s command through the result at 1440 × 900 with game audio. [Watch the 18-second film](finishing-blows.mp4) · [See the eight-seat result](champion.webp)
 
-| Champion | Final blow | What to watch |
-| --- | --- | --- |
-| Harbor Warden | Bastion Bash | The wounded Guardian settles behind the shield as Carnival Fox falls. |
-| Ossuary Queen | Soul Tithe | The critical Necromancer leans into the lantern after the last opponent falls. |
-| Mirror Regent | Mirror Feint | A court bow follows the strike against Gilded Jack. |
-| Railway Smith | Rivet Drive | The wounded Artificer shoulders the wrench after defeating Glass Oracle. |
+| Champion | Final blow | Health damage | What to watch |
+| --- | --- | ---: | --- |
+| Harbor Warden | Bastion Bash | 30 | Rook takes a Bleed tick during the windup, then drives the shield into Carnival Fox. |
+| Ossuary Queen | Soul Tithe | 48 | The critical Necromancer draws the thread from Stormglass Engineer and finishes at 140 of 557 HP. |
+| Mirror Regent | Mirror Feint | 37 | The duelist crosses the ring, strikes Gilded Jack and returns to a court bow. |
+| Railway Smith | Rivet Drive | 67 | Four fittings strengthen the piston blow. The wounded Artificer shoulders the wrench as Glass Oracle falls. |
 
 In the Outfitter, **Poses** can replay Fallen or Victory at each health band. At the end of a live match the winner performs the gesture once. Reopening a finished match, or playing with reduced motion, shows its held drawing.
 
