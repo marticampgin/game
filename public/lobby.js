@@ -1,6 +1,8 @@
 import { CLASSES, REWARDS } from '/src/game/index.js';
 import { fighterKit, fighterPortrait, fighterSkins } from './fighter-kit.js';
 import { classArt, esc, glyph, rewardIcon } from './art.js';
+import { preloadArenaSkins } from './animation.js';
+import { revealPainting } from './skin-preview.js';
 
 import { seedNumber, shuffled } from '/src/game/draft.js';
 import { SHOP, owns } from '/src/game/progression.js';
@@ -103,11 +105,60 @@ function lobbyController(host, callbacks, initialSession, initialView) {
   let disposed = false, busy = false, polling = false, timer;
   let connectionError = '', formError = '';
   let choseSkin = false;
+  let paintedModel, curtain, warmTimer, warmKey;
+
+  async function showModel(player) {
+    const identity = host.querySelector('.lobby-identity');
+    const next = identity.querySelector('img');
+    const previous = paintedModel;
+    const key = next.getAttribute('src');
+    const still = () => document.body.classList.contains('reduce-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const look = player.classId + '/' + (player.skinId || 'founder');
+    if (look !== warmKey) {
+      warmKey = look;
+      clearTimeout(warmTimer);
+      if (!still()) warmTimer = setTimeout(() => {
+        if (!document.hidden) void preloadArenaSkins([player],{withEffects:false,layers:['motions'],priority:'low'});
+      },750);
+    }
+    curtain?.cancel();
+    if (previous?.dataset.model === key) {
+      next.replaceWith(previous);
+      return;
+    }
+    let hold;
+    if (previous) {
+      hold = document.createElement('span');
+      hold.className = 'lobby-model-hold';
+      hold.setAttribute('aria-hidden','true');
+      hold.append(previous);
+      next.after(hold);
+    }
+    identity.setAttribute('aria-busy','true');
+    next.style.visibility = 'hidden';
+    try { await next.decode(); }
+    catch {
+      if (!next.isConnected || disposed) return;
+      next.src = fighterPortrait(player);
+      next.classList.add('lobby-portrait-fallback');
+      try { await next.decode(); } catch { /* The selected class details also work without artwork. */ }
+    }
+    if (!next.isConnected || disposed) return;
+    identity.removeAttribute('aria-busy');
+    if (next.naturalWidth === 0) { hold?.remove(); return; }
+    paintedModel = next;
+    next.dataset.model = key;
+    next.style.removeProperty('visibility');
+    if (hold && !still()) curtain = revealPainting(next,hold);
+    else hold?.remove();
+  }
 
   function cleanup() {
     if (disposed) return;
     disposed = true;
     clearInterval(timer);
+    clearTimeout(warmTimer);
+    curtain?.cancel();
     host.removeEventListener('click', click);
     host.removeEventListener('input', input);
     host.removeEventListener('change', input);
@@ -172,6 +223,7 @@ function lobbyController(host, callbacks, initialSession, initialView) {
         open + '">' + glyph('settings') + 'Match setup<span> · ' + model.capacity + ' contenders</span></button>' : '') +
       (canPickSkin ? skinPicker(activeClass, model.skinId, busy) : '') + action + '</div>' + (waiting && isHost && !canStart ? '<p class="lobby-wait">Invite another contender to start.</p>' : '') +
       '<p class="lobby-error" role="status">' + esc(feedback) + '</p></form></div></div>';
+    void showModel({classId:activeClass,skinId:previewSkin});
   }
 
   async function input(event) {

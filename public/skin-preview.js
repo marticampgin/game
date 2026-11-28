@@ -1,5 +1,13 @@
 import { fighterSpriteHTML, preloadArenaSkins } from './animation.js';
 
+// Both edges meet at the same scanline throughout the change of costume.
+export function revealPainting(incoming, outgoing) {
+  const time = {duration:150, easing:'ease-out'};
+  const conceal = outgoing.animate([{clipPath:'inset(-25% -40% -25%)'},{clipPath:'inset(125% -40% -25%)'}],time);
+  conceal.onfinish = () => outgoing.remove();
+  return incoming.animate([{clipPath:'inset(-25% -40% 125%)'},{clipPath:'inset(-25% -40% -25%)'}],time);
+}
+
 // The Outfitter and practice yard share the same handover. A painted fighter
 // stays on the plinth until every required layer of the selected look is ready.
 export function createSkinPreview(stage, body, previousClass, {withEffects = false} = {}) {
@@ -36,11 +44,7 @@ export function createSkinPreview(stage, body, previousClass, {withEffects = fal
       lower.setAttribute('aria-hidden','true');
       lower.append(old);
       stage.append(lower);
-      const time = {duration:150, easing:'ease-out'};
-      // The two mask edges meet at the same scanline throughout the wipe.
-      const conceal = lower.animate([{clipPath:'inset(-25% -40% -25%)'},{clipPath:'inset(125% -40% -25%)'}],time);
-      conceal.onfinish = () => lower.remove();
-      reveal = body.animate([{clipPath:'inset(-25% -40% 125%)'},{clipPath:'inset(-25% -40% -25%)'}],time);
+      reveal = revealPainting(body,lower);
     }
     return 'ready';
   }
