@@ -4,6 +4,7 @@ import { stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { pipeline } from 'node:stream/promises';
+import { createProfiles, profileKey, ProfileError } from './profiles.js';
 import { createRooms, RoomError } from './rooms.js';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
@@ -66,7 +67,8 @@ async function staticFile(pathname, request, response) {
 }
 
 export function createArenaServer(options) {
-  const rooms = createRooms(options);
+  const profiles = createProfiles(options);
+  const rooms = createRooms({...options,profiles});
   const server = createServer(async (request, response) => {
     try {
       const { pathname } = new URL(request.url, 'http://localhost');
@@ -75,8 +77,24 @@ export function createArenaServer(options) {
         await staticFile(pathname, request, response);
         return;
       }
+      const key = profileKey(request.headers['x-rift-profile']);
+      if (pathname.startsWith('/api/profile')) {
+        if (!key) throw new ProfileError(401,'This device needs a player profile.');
+        const route = /^\/api\/profile(?:\/(buy|equip|solo)(?:\/([0-9a-f-]{36}))?)?$/.exec(pathname);
+        if (!route) throw new ProfileError(404,'Unknown profile endpoint.');
+        const [, operation, runId] = route;
+        if (request.method !== (operation ? 'POST' : 'GET')) throw new ProfileError(405,'Method not supported.');
+        if (!operation) json(response,200,profiles.view(key));
+        else {
+          const input=await readInput(request);
+          if (operation === 'solo') json(response,runId?200:201,runId ? profiles.syncSolo(key,runId,input) : profiles.startSolo(key,input));
+          else if (!runId) json(response,200,profiles.change(key,operation,input));
+          else throw new ProfileError(404,'Unknown profile endpoint.');
+        }
+        return;
+      }
       if (pathname === '/api/rooms' && request.method === 'POST') {
-        json(response, 201, rooms.create(await readInput(request)));
+        json(response, 201, rooms.create(await readInput(request),key));
         return;
       }
       const route = /^\/api\/rooms\/([a-z2-9]{6})(?:\/(join|class|start|command|leave))?$/i.exec(pathname);
@@ -84,16 +102,17 @@ export function createArenaServer(options) {
       const [, code, operation = 'view'] = route;
       if (request.method !== (operation === 'view' ? 'GET' : 'POST')) throw new RoomError(405, 'Method not supported.');
       const input = operation === 'view' ? {} : await readInput(request);
-      if (operation === 'join') json(response, 201, rooms.join(code, input));
+      if (operation === 'join') json(response, 201, rooms.join(code, input,key));
       else {
         const token = /^Bearer ([A-Za-z0-9_-]+)$/.exec(request.headers.authorization ?? '')?.[1];
         json(response, 200, rooms.interact(code, token, operation, input));
       }
     } catch (error) {
       if (response.headersSent || response.destroyed) return;
-      if (!(error instanceof RoomError)) console.error('Arena request failed', error);
-      json(response, error instanceof RoomError ? error.status : 500, {
-        error: error instanceof RoomError ? error.message : 'The server could not complete this request.',
+      const known = error instanceof RoomError || error instanceof ProfileError;
+      if (!known) console.error('Arena request failed', error);
+      json(response, known ? error.status : 500, {
+        error: known ? error.message : 'The server could not complete this request.',
       });
     }
   });

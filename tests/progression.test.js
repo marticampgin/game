@@ -23,6 +23,8 @@ test('two private objectives for each seat survive reloads and consume no combat
   assert.equal(viewMatch(after,who).career.metrics.drafts,1);
   const sandbox=sandboxEdit(game,{type:'stat',playerId:who,stat:'armor',value:30});
   assert.equal(viewMatch(sandbox,who).career,undefined);
+  assert.equal(viewMatch({...game,careerUnavailable:true},who).career,undefined);
+  assert.equal(viewMatch(game,'__proto__').career,undefined);
 });
 
 test('career health damage excludes shield, overkill, self damage and environmental damage', () => {
@@ -83,4 +85,19 @@ test('repeated/out-of-order receipts pay once, lifetime and class awards grant o
   assert.equal(profile.unlocks.includes('glass-oracle'),false);
   const fresh=newProfile(); assert.throws(()=>buy(fresh,'echo-rune'),/more coins/);
   assert.deepEqual(fresh,newProfile());
+});
+
+test('end-of-match settlement includes lifetime coins earned earlier in the same match and a new mastery outfit', () => {
+  const p=newProfile(), receipt={}, game=tracked();
+  p.classes.guardian={matches:MASTERY_TARGET-1,damage:995,wins:0};
+  p.totals={...p.classes.guardian};
+  p.claimed=['first-steps'];
+  game.players[0].personalTurn=1;
+  game.career.seats.a.metrics.damage=7;
+  credit(p,receipt,game,'a');
+  assert.equal(p.lastSettlement,undefined);
+  assert.equal(receipt.lifetimeCoins,75);
+  game.phase='finished';
+  credit(p,receipt,game,'a');
+  assert.deepEqual(p.lastSettlement,{runId:'unique-run',classId:'guardian',lifetimeCoins:75,objectiveCoins:0,masterySkinId:'sunspire-paladin'});
 });

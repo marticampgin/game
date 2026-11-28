@@ -2,19 +2,19 @@ import { CLASSES, REWARDS } from './catalog.js';
 
 export const MASTERY_TARGET = 12;
 const outfits = {
-  guardian: [['harbor-warden', 'Harbor Warden'], ['sunspire-paladin', 'Sunspire Paladin']],
-  berserker: [['wolf-tracker', 'Wolf Tracker'], ['ash-dragon', 'Ash Dragon']],
-  chronomancer: [['star-cartographer', 'Star Cartographer'], ['glass-oracle', 'Glass Oracle']],
-  alchemist: [['apiarist', 'Apiarist'], ['nightshade-apothecary', 'Nightshade Apothecary']],
+  guardian: [['harbor-warden', 'Harbor Warden', 'Rope-bound tide plate and brass anchor fittings.'], ['sunspire-paladin', 'Sunspire Paladin', 'A winged helm and a radiant sun shield.']],
+  berserker: [['wolf-tracker', 'Wolf Tracker', 'A wolf pelt and fang-laced hunting leathers.'], ['ash-dragon', 'Ash Dragon', 'Obsidian scales and ember-tipped horns.']],
+  chronomancer: [['star-cartographer', 'Star Cartographer', 'Midnight robes and a brass sextant.'], ['glass-oracle', 'Glass Oracle', 'Lilac crystal and faceted clockglass.']],
+  alchemist: [['apiarist', 'Apiarist', 'A straw brim and a field kit of honeycomb.'], ['nightshade-apothecary', 'Nightshade Apothecary', 'A mushroom mantle and a glowing distillery.']],
 };
 const rewardPrices = {
   'glass-orchard': 65, 'phoenix-heart': 75, 'starfall-cache': 90,
   'echo-rune': 95, 'pocket-eclipse': 110, 'borrowed-time': 125,
 };
 export const SHOP = [
-  ...Object.entries(outfits).flatMap(([classId, skins]) => skins.map(([skinId, name], i) => ({
+  ...Object.entries(outfits).flatMap(([classId, skins]) => skins.map(([skinId, name, description], i) => ({
     id:skinId, kind:'skin', classId, skinId, name, price:i ? 260 : 85,
-    description:i ? 'Earn this outfit through class mastery or purchase it with coins.' : 'An alternate outfit for the ' + CLASSES[classId].name + '.',
+    description,
     ...(i ? {mastery:MASTERY_TARGET} : {}),
   }))),
   ...Object.entries(rewardPrices).map(([id, price]) => ({
@@ -54,8 +54,9 @@ export function careerSeat(runId, seatIndex, unlocks) {
     objectives:[MATCH_QUESTS[first].id, MATCH_QUESTS[(first + 1 + Math.floor(seatIndex / MATCH_QUESTS.length)) % MATCH_QUESTS.length].id]};
 }
 export function careerView(state, playerId) {
-  const data = state.career?.seats[playerId];
-  if (!data) return undefined;
+  const seats = state.career?.seats;
+  if (!seats || state.careerUnavailable || !Object.hasOwn(seats, playerId)) return undefined;
+  const data = seats[playerId];
   const objectives = data.objectives.map(id => {
     const q = MATCH_QUESTS.find(def => def.id === id);
     const value = Math.min(q.target, data.metrics[q.metric]);
@@ -65,8 +66,8 @@ export function careerView(state, playerId) {
     earnedCoins:objectives.reduce((sum, q) => sum + (q.complete ? q.coins : 0), 0)};
 }
 export function countCareer(state, playerId, metric, amount = 1) {
-  const seat = playerId && state.career?.seats[playerId];
-  if (seat) seat.metrics[metric] += amount;
+  const seats = state.career?.seats;
+  if (seats && Object.hasOwn(seats, playerId)) seats[playerId].metrics[metric] += amount;
 }
 
 export function buy(profile, id) {
@@ -109,14 +110,25 @@ export function credit(profile, receipt, state, playerId) {
     stats.matches++;
     profile.totals.matches++;
     if (state.winnerId === playerId) { stats.wins++; profile.totals.wins++; }
-    for (const skin of SHOP.filter(i => i.classId === player.classId && i.mastery && stats.matches >= i.mastery))
-      if (!owns(profile, skin)) profile.unlocks.push(skin.id);
+    const masterySkin = SHOP.find(i => i.classId === player.classId && i.mastery && stats.matches >= i.mastery);
+    if (masterySkin && !owns(profile, masterySkin)) {
+      profile.unlocks.push(masterySkin.id);
+      receipt.masterySkinId = masterySkin.skinId;
+    }
   }
   for (const q of LIFETIME_QUESTS) {
     if (!profile.claimed.includes(q.id) && profile.totals[q.metric] >= q.target) {
       profile.claimed.push(q.id);
       profile.coins += q.coins;
+      receipt.lifetimeCoins = (receipt.lifetimeCoins || 0) + q.coins;
     }
+  }
+  if (receipt.finished && (finished || profile.lastSettlement?.runId === progress.runId)) {
+    profile.lastSettlement = {
+      runId:progress.runId, classId:player.classId, objectiveCoins:receipt.coins,
+      lifetimeCoins:receipt.lifetimeCoins || 0,
+      ...(receipt.masterySkinId ? {masterySkinId:receipt.masterySkinId} : {}),
+    };
   }
   return true;
 }
