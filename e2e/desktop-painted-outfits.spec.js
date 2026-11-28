@@ -26,7 +26,10 @@ function reviewTurn(group) {
   return { state, viewerId: actorId };
 }
 
-for (const [label, group] of [['duel', gallery.slice(0, 2)], ['full ring', gallery], ['expanded ring', newGallery]]) {
+for (const [label, group] of [
+  ['duel', gallery.slice(0, 2)], ['full ring', gallery],
+  ['expanded duel', newGallery.slice(0, 2)], ['expanded ring', newGallery],
+]) {
   const count = group.length;
   test('painted outfits keep their portraits, injuries and drink gesture in the desktop ' + label, async ({ page }, info) => {
     await page.setViewportSize(count === 2 ? { width: 1280, height: 720 } : { width: 1440, height: 900 });

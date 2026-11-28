@@ -30,7 +30,13 @@ The browser suite exercises two- and eight-seat turns with mouse and keyboard, a
 
 In a local Chromium run at 1440 × 900, the median frame interval was 16.7 ms for a two-seat bash, an eight-seat bash and an eight-seat flask throw. The 95th percentile was 16.7–16.8 ms. These timings cover the visible action after the sheets loaded. The fighter illustrations use twelve ordered cels per main motion, with separate countersteps and continuous movement between seats. A separate browser test blocks the main thread for 180 ms across a shield hit and verifies that HP changes on contact drawing 7. A sustained slow-frame test checks that six specific wind-up, contact and recovery drawings still appear.
 
-The four founders can appear more than once in a match. Crests identify individual seats, while duplicate characters still share their founder's face and costume. In the final recording, the Berserker still straightens quickly after the low cleave. The reviews here were internal. Readability for first-time players is an open playtest question.
+In the original four-class recording, crests distinguish seats that share a face and costume. The Berserker still straightens quickly after the low cleave in that recording. Readability for first-time players is an open playtest question.
+
+## Eight-class wardrobe
+
+The reference pairs all 24 portraits with their healthy, wounded and critical stances. The full desktop arena shows the eight founders at playing size with their matching turn-order portraits. [Compare the wardrobe](class-outfits.webp) · [Open the eight-class arena](eight-class-ring.webp)
+
+The 1440 × 900 capture shows four playable signatures at normal speed. Riverboat Duelist throws Cut the Deck in a duel, wounded Ossuary Queen casts Soul Tithe in an eight-seat match, critical Carnival Fox uses Mirror Feint in a duel, and Stormglass Engineer closes for Rivet Drive in the full ring. The captures use the normal game controls and frame timings. [Watch the four signatures](class-signatures.webm)
 
 ## Outfitter rehearsal
 

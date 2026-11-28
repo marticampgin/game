@@ -51,7 +51,7 @@ python scripts/build-idle-performances.py --role guardian --skin harbor-warden
 
 The builder registers the middle and held paintings once in `scripts/art/idles`. It then packs the idle loops and derives a second attack and signature from the class's preparation poses. The alternate windup joins the original clip on frame six. Both takes therefore share the release, weapon contact and end pose. Include `idles` and `variations` in a founder's layers, or add the two image URLs to an outfit descriptor. Each class's body anchors, timing and chamber choices are defined in the builder. A new class needs those entries only once.
 
-See the [eight-class PC arena](qa/pc-combat/eight-class-ring.webp) and [desktop recording of two signatures](qa/pc-combat/class-signatures.webm) at playing size.
+See the [eight-class PC arena](qa/pc-combat/eight-class-ring.webp) and [four signatures in play](qa/pc-combat/class-signatures.webm) at playing size.
 
 ## Which animation plays
 
