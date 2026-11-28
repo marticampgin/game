@@ -2,6 +2,7 @@ import { CLASSES, DEFAULT_CONFIG, EVENTS, REWARDS, STATUSES } from './catalog.js
 import { drawOffers, eligible, sample, seedNumber, shuffled } from './draft.js';
 import { addStat, assessHit, capacity, castCooldown, deal, executeEffects, findPlayer, fittingCount, grantReward, highCardReady, imitatedStatus, previewSelfSupport, rawHit, receivedHealing, record, resolveDefend, restore, setStatus, spendConsumable, tickStatus, trigger } from './combat.js';
 import { beginRecap, finishRecap, markBoundary, publicEvent, publicRecap, resumeRecap } from './recap.js';
+import { matchMilestones } from './match-history.js';
 import { careerSeat, careerView, countCareer } from './progression.js';
 import { isSkinId } from './skin-id.js';
 
@@ -315,7 +316,7 @@ export function viewMatch(state,viewerId=null) {
   const recentActions = (state.recentActions || []).map(publicRecap);
   const career = careerView(state, viewerId);
   return structuredClone({...(career ? {career} : {}),round,age,phase,activeId,winnerId,globalTurn,globalAction,remainingActions,bonusDraft,order,upcoming,players,
-    log:log.map(publicEvent),recentActions,lastAction:recentActions.at(-1) || null,nextEvent,config:{abilitySlots:state.config.abilitySlots,consumableSlots:state.config.consumableSlots,
+    log:log.map(publicEvent),milestones:matchMilestones(state),recentActions,lastAction:recentActions.at(-1) || null,nextEvent,config:{abilitySlots:state.config.abilitySlots,consumableSlots:state.config.consumableSlots,
       armorConstant:state.config.armorConstant,rounding:state.config.rounding},offers:viewerId && viewerId === activeId ? state.offers : []});
 }
 

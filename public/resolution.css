@@ -111,6 +111,7 @@
 .journal-turn ol { list-style: none; margin: 0; padding: 0; }
 .battle-journal .journal-row { display: flex; gap: 7px; border: 0; padding: 3px 0; color: #e9ddce; font: 400 15px/1.35 var(--journal-serif); overflow-wrap: anywhere; }
 .battle-journal .journal-row[hidden] { display: none; }
+.battle-journal .journal-standing { display: block; color: var(--journal-gold); font: 500 13px/1.3 var(--body,sans-serif); text-transform: none; }
 .journal-row::before { content: ''; width: 4px; height: 4px; margin-top: 8px; flex: none; background: #947759; }
 .journal-row.main-action { color: #ffe2af; font-weight: 600; }
 .journal-row[data-kind="damage"]::before { background: #dd9a81; }

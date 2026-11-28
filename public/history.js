@@ -1,6 +1,7 @@
 import { esc, seatCrest } from './art.js';
 import { statusCue, statusIcon } from './status-effects.js';
 import { effectTextHTML } from './resolution.js';
+import { finishPlace } from './finish-place.js';
 
 function liveTurn(view) {
   const active = view.players.find(p => p.id === view.activeId);
@@ -12,10 +13,26 @@ function liveTurn(view) {
   return active.name + ' ' + step;
 }
 
+function journalEvents(view) {
+  const entries = new Map(view.log.map(event => [event.id,event]));
+  const add = (event,notes) => entries.set(event.id,{...event,earlier:!entries.has(event.id),notes});
+  for (const fall of view.milestones?.eliminations || []) {
+    const rival = view.players.find(p => p.id === fall.actorId && p.id !== fall.targetId);
+    add(fall,[finishPlace(view,fall),rival && 'Defeated by ' + rival.name].filter(Boolean).join(' · '));
+  }
+  for (const life of view.milestones?.revivals || []) {
+    add(life.first,life.count > 1 ? 'First recorded revival' : '');
+    if (life.last) add(life.last,life.count + ' recorded revivals');
+  }
+  const victory = view.winnerId && view.log.find(event => event.type === 'victory');
+  if (victory) add(victory,'Champion · 1st place');
+  return [...entries.values()].sort((a,b) => a.id - b.id);
+}
+
 function logRounds(view) {
   const names = new Map(view.players.map(p => [p.id, p.name]));
   const rounds = [];
-  for (const event of view.log) {
+  for (const event of journalEvents(view)) {
     let round = rounds.at(-1);
     if (round?.number !== event.round) {
       round = { number: event.round, groups: [] };
@@ -28,8 +45,9 @@ function logRounds(view) {
       round.groups.push(group);
       continue;
     }
-    if (!group || (event.type === 'event' && !group.arena)) {
-      group = {title:event.type === 'event' ? 'Arena effects' : 'Earlier effects', arena:event.type === 'event', rows:[]};
+    if (!group || !!group.earlier !== !!event.earlier || (event.type === 'event' && !group.arena)) {
+      group = {title:event.earlier ? 'Match milestones' : event.type === 'event' ? 'Arena effects' : 'Earlier effects',
+        arena:event.type === 'event',earlier:event.earlier,rows:[]};
       round.groups.push(group);
     }
     group.rows.push(event);
@@ -41,7 +59,8 @@ function eventRow(event, group, view) {
   const primary = event.type === 'action' && event.targetId != null;
   const cue = statusCue(event);
   return '<li class="journal-row' + (primary ? ' main-action' : '') + '" data-kind="' + esc(event.type) +
-    '" data-event-id="' + esc(event.id) + '">' + (cue ? statusIcon(cue.id) : '') + '<span>' + effectTextHTML(event,view,group.actorId) + '</span></li>';
+    '" data-event-id="' + esc(event.id) + '">' + (cue ? statusIcon(cue.id) : '') + '<span>' + effectTextHTML(event,view,group.actorId) +
+    (event.notes ? '<small class="journal-standing">' + esc(event.notes) + '</small>' : '') + '</span></li>';
 }
 
 function roundsHTML(view) {
@@ -58,7 +77,11 @@ function signature(view) {
 
 function retainedNote(view) {
   const first = view.log[0];
-  return first && first.id > 1 ? 'Showing the latest ' + view.log.length + ' events, starting in round ' + first.round + '.' : '';
+  if (!first || first.id === 1) return '';
+  const recent = 'Action detail starts in round ' + first.round + ' (latest ' + view.log.length + ' events).';
+  if (!view.milestones) return recent;
+  return recent + (view.milestones.complete ? ' All eliminations and each contender’s first and latest revival are searchable.'
+    : ' Earlier eliminations and revivals from before this save may be missing.');
 }
 
 export function historyHTML(view, soloSeed) {

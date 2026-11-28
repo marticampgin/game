@@ -2,6 +2,7 @@ import { countCareer } from './progression.js';
 import { REWARDS, STATUSES } from './catalog.js';
 import { eligible, modifiedSlot, random, sample } from './draft.js';
 import { captureOutcome, settleStatusTick } from './recap.js';
+import { retainMatchEvent } from './match-history.js';
 
 export const findPlayer = (state,id) => state.players.find(p => p.id === id);
 const shards = Object.values(REWARDS).filter(r => r.category === 'shard' && r.id !== 'fortune-chip');
@@ -18,6 +19,7 @@ export function record(state,type,text,details={}) {
     if (value !== undefined) entry[key] = value;
   }
   state.log.push(entry);
+  retainMatchEvent(state,entry);
   captureOutcome(state,entry);
   if (state.log.length > state.config.logLimit) state.log.shift();
   return entry;
@@ -179,7 +181,8 @@ export function deal(state,source,target,raw,label,flags={}) {
   if (target.hp <= 0) {
     if (!react(state,target,'lethal')) {
       target.alive = false;
-      record(state,'elimination',target.name + ' fell to ' + label + '.',{actorId:source?.id,targetId:target.id});
+      record(state,'elimination',target.name + ' fell to ' + label + '.',{actorId:source?.id,targetId:target.id,
+        sharedFall:flags.cause === 'arena-fire' || undefined});
       for (const witness of state.players) {
         if (witness.alive && witness.classId === 'necromancer') addStat(state,witness,'spellPower',1,'Last Rites');
       }
