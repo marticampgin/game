@@ -156,6 +156,8 @@ python scripts/build-idle-performances.py --role gambler --skin founder
 
 Measure the occupied waist in the rest pose, the hand and mouth in the two empty-grip poses, and the cache beside the reaching hand. Register those four points for each health band. A painted weapon remains with its outfit through every take. Acquired trinkets and held consumables use the shared renderer at the measured sockets.
 
+For a long reach from belt to lips, add `consume-lift.webp` beside the costume masters. Use 208 × 166 cels with one row per health band. A single column holds the empty grip halfway between that band's hand and mouth sockets. For a longer lift, paint three columns with the grip at one-quarter, one-half and three-quarters of the reach. Plant the boots on their idle marks. The builder uses the middle drawing on the rise at exposure 4 and again on the return at exposure 9.
+
 ### Registering the art
 
 The runtime and atlas builder read the frame layout, artistic defaults and skin registrations in [fighter-kit.json](../public/fighter-kit.json). Place alternate artwork under `public/assets/skins/` and append a descriptor to the manifest’s `skins` array. IDs start with a lowercase letter and support lowercase letters and digits separated by single hyphens, up to 40 characters total.

@@ -58,6 +58,26 @@ def check(skin):
     for layer in LAYOUT['layers']:
         if layer in skin:
             total += check_layer(PUBLIC / skin[layer].lstrip('/'), layer)
+    look = skin['classId'] if skin['id'] == 'founder' else skin['id']
+    lift = PUBLIC.parent / 'scripts' / 'art' / 'costumes' / look / 'consume-lift.webp'
+    if lift.is_file():
+        # The smooth planting pass affects only the hips and boots. The
+        # upper-body silhouette must match the artist's grip on both passes.
+        w, h = CELL
+        with Image.open(lift) as master, Image.open(PUBLIC / skin['consume'].lstrip('/')) as strip:
+            if master.size not in [(w, BANDS * h), (3 * w, BANDS * h)]:
+                raise ValueError(f'{look}: wrong consume lift dimensions {master.size}')
+            reference = master.convert('RGBA').getchannel('A')
+            packed = strip.convert('RGBA').getchannel('A')
+            cols = master.width // w
+            holds = [(4, 0), (9, 0)] if cols == 1 else [(3, 0), (4, 1), (5, 2), (9, 1)]
+            for band in range(BANDS):
+                y = band * h
+                for frame, col in holds:
+                    upper = reference.crop((col * w, y, (col + 1) * w, y + 96))
+                    pose = packed.crop((frame * w, y, (frame + 1) * w, y + 96))
+                    if ImageChops.difference(upper, pose).getbbox():
+                        raise ValueError(f'{look}: consume frame {frame} misses the painted lift in band {band}')
     for layer, pose in [('collapse','fallen'), ('celebrate','victory')]:
         if layer not in skin:
             continue

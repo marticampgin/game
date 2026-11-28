@@ -264,6 +264,13 @@ def build(id, founder=False):
 
     details_path = pack / 'details.webp'
     details = Image.open(details_path).convert('RGBA') if details_path.is_file() else None
+    lift_path = pack / 'consume-lift.webp'
+    lift = Image.open(lift_path).convert('RGBA') if lift_path.is_file() else None
+    if lift is not None and lift.size not in [(n * CELL[0], len(BANDS) * CELL[1]) for n in (1, 3)]:
+        raise ValueError('A consume lift master must have one or three columns and a row per health band')
+    band_sheets = {'ambient': ambient, 'consume': consume}
+    if lift is not None:
+        band_sheets['consume-lift'] = sheet(layers['consume']['columns'], len(BANDS))
     tracks = TRACKS | DETAILED_TRACKS if details is not None else TRACKS
     for band, name in enumerate(BANDS):
         keys = skin_cels(Image.open(pack / (name + '.webp')).convert('RGBA'))
@@ -275,6 +282,17 @@ def build(id, founder=False):
             # on their marks from the belt pickup through the last exposure.
             keys[16:18] = [founders.planted(keys[0], cel) for cel in drawings[:2]]
             keys.extend(drawings[2:])
+        band_tracks = tracks
+        if lift is not None:
+            start = len(keys)
+            cols = lift.width // CELL[0]
+            keys.extend(founders.planted(keys[0], tile(lift, col, band)) for col in range(cols))
+            # The prop rises over four exposures and returns in two. It passes
+            # the middle grip twice, whichever number of breakdowns was painted.
+            rise = ((4, start),) if cols == 1 else ((3, start), (4, start + 1), (5, start + 2))
+            middle = start + cols // 2
+            band_tracks = tracks | {'consume-lift': ((0, 0), (2, 16), *rise, (6, 17), (8, 17),
+                                                     (9, middle), (10, 16), (11, 0))}
         solver = founders.Inbetweens(keys)
         between = lru_cache(maxsize=None)(solver.between)
         stills = [keys[0], keys[1], keys[2], between(0, 1, .5), keys[5], keys[6], keys[12], keys[13],
@@ -282,9 +300,9 @@ def build(id, founder=False):
         for index, cel in enumerate(stills):
             place(standing, cel, index % 4, band * 3 + index // 4)
         track_rows = layers['motions']['rows']
-        for track, script in tracks.items():
-            dest_sheet = ambient if track == 'ambient' else consume if track == 'consume' else motion
-            row = band if track in ('ambient', 'consume') else band * len(track_rows) + track_rows.index(track)
+        for track, script in band_tracks.items():
+            dest_sheet = band_sheets.get(track, motion)
+            row = band if track in band_sheets else band * len(track_rows) + track_rows.index(track)
             for frame in range(12):
                 (left, a), (right, b) = next((l, r) for l, r in zip(script, script[1:]) if l[0] <= frame <= r[0])
                 cel = between(a, b, (frame - left) / (right - left))
@@ -303,6 +321,10 @@ def build(id, founder=False):
         pixels = np.asarray(image)
         samples.append(pixels[pixels[:, :, 3] > 0, :3][::4])
     palette = Image.fromarray(np.concatenate(samples).reshape((-1, 1, 3))).quantize(colors=250)
+    if lift is not None:
+        # The extra grip uses the established costume palette, so adjusting a
+        # support gesture cannot change the colors of the other packed layers.
+        sheets['consume'] = band_sheets['consume-lift']
     for name, image in sheets.items():
         packed = image.convert('RGB').quantize(palette=palette, dither=Image.Dither.NONE).convert('RGBA')
         packed.putalpha(image.getchannel('A'))

@@ -89,13 +89,20 @@ function carried({ ghost, box, frames, duration, score, dir, at, tween }, { hand
   item.style.transformOrigin = (u*100) + '% ' + (v*100) + '%';
   const dx = release.x - grip.x, dy = release.y - grip.y;
   const reaching = [0, 0, 0, .25, .5, .75, 1, 1, 1, .5, 0, 0];
+  if (drinking) {
+    // The fingers hold still until the next illustrated exposure. Let the
+    // bottle rotate around its neck while its grip stays on that drawing.
+    frames.forEach((time, i) => at(time, () => {
+      item.style.translate = dx * reaching[i] + 'px ' + dy * reaching[i] + 'px';
+    }));
+  }
   tween(item, frames.map((time, i) => {
     const reach = reaching[score.gesture === 'use' ? useExposures[i] : i];
     const ring = icon === 'bell' ? [0,0,-3,-4,-5,-3,4,12,-9,4,-2,0][i] : 0;
     const angle = dir * ((drinking ? -104 : -10) * reach + ring);
     return {
       offset: time / duration, opacity: i === 0 || i === 11 ? 0 : i === 1 ? .55 : 1,
-      transform: 'translate(' + dx * reach + 'px,' + dy * reach + 'px) rotate(' + angle + 'deg)',
+      transform: (drinking ? '' : 'translate(' + dx * reach + 'px,' + dy * reach + 'px) ') + 'rotate(' + angle + 'deg)',
     };
   }), duration);
   at(duration, () => item.remove());

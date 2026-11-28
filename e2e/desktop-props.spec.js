@@ -3,7 +3,7 @@ import { applyCommand, createMatch, sandboxEdit } from '../src/game/index.js';
 
 const classes = ['guardian', 'berserker', 'chronomancer', 'alchemist'];
 
-function turn(count, index, role, action, band) {
+function turn(count, index, role, action, band, skinId) {
   const players = Array.from({ length: count }, (_, i) => ({
     id: 'seat-' + i, name: 'Fighter ' + i, classId: i === index ? role : classes[i % 4], bot: false,
   }));
@@ -14,6 +14,7 @@ function turn(count, index, role, action, band) {
     if (state.activeId === viewerId) break;
   }
   if (action !== 'scavenge') state = sandboxEdit(state, { type: 'grant', playerId: viewerId, rewardId: action });
+  if (skinId) state = sandboxEdit(state, { type: 'skin', playerId: viewerId, skinId });
   const fighter = state.players.find(p => p.id === viewerId);
   const hp = Math.round(fighter.maxHp * ({ healthy: 1, wounded: .49, critical: .2 })[band]);
   state = sandboxEdit(state, { type: 'stat', playerId: viewerId, stat: 'hp', value: hp });
@@ -33,9 +34,31 @@ async function play(page, save, action) {
     return (await preloadArenaSkins([actor],{layers,withEffects:true})).every(Boolean);
   },{actor,layers});
   expect(loaded).toBe(true);
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    const {fighterAnchors, resolveFighterSkin} = await import('/fighter-kit.js');
     const world = document.querySelector('.arena-world');
-    const data = window.propSample = { lid: [], pickedUp: false, legacyProps: false };
+    const data = window.propSample = { lid: [], pickedUp: false, legacyProps: false, gripFrames: [], gripError: 0 };
+    function sampleGrip() {
+      const bottle = world.querySelector('.arena-fx [data-prop="bottle"]');
+      if (bottle) {
+        const actor = bottle.parentElement, sprite = actor.querySelector('.arena-sprite');
+        const cel = getComputedStyle(sprite.querySelector('.arena-cel'));
+        const frame = Math.round(parseFloat(cel.backgroundPositionX) * .11);
+        const style = getComputedStyle(bottle), matrix = new DOMMatrix(style.transform);
+        const [shiftX, shiftY] = style.translate.split(' ').map(parseFloat);
+        const {class: role, skin, tier} = sprite.dataset;
+        const {hand, mouth} = fighterAnchors(role, tier, resolveFighterSkin(role, skin).anchors);
+        const reach = [0,0,0,.25,.5,.75,1,1,1,.5,0,0][frame];
+        const dir = actor.dataset.facing === 'left' ? -1 : 1;
+        const x = ((shiftX || 0) + matrix.e) * dir * 120 / parseFloat(actor.style.width);
+        const y = ((shiftY || 0) + matrix.f) * 120 / parseFloat(actor.style.height);
+        if (!data.gripFrames.includes(frame)) data.gripFrames.push(frame);
+        data.gripError = Math.max(data.gripError, Math.abs(x - (mouth[0]-hand[0])*reach),
+          Math.abs(y - (mouth[1]-hand[1])*reach));
+      }
+      if (!data.done) requestAnimationFrame(sampleGrip);
+    }
+    requestAnimationFrame(sampleGrip);
     const observer = new MutationObserver(() => {
       const scene = world.querySelector('.arena-fx');
       if (!scene) {
@@ -91,21 +114,26 @@ for (const [count, index, role, band] of [[2, 0, 'guardian', 'healthy'], [8, 6, 
   });
 }
 
-for (const [role,band,seat,action,icon] of [
+for (const [role,band,seat,action,icon,skin] of [
   ['guardian','healthy',0,'red-tonic','tonic'],
   ['berserker','critical',1,'antidote','antidote'],
   ['chronomancer','wounded',0,'red-tonic','tonic'],
   ['alchemist','critical',1,'antidote','antidote'],
+  ['artificer','healthy',0,'red-tonic','tonic'],
+  ['artificer','critical',1,'red-tonic','tonic','stormglass-engineer'],
 ]) {
-  test(role + ' lifts and tips its ' + action + ' bottle', async ({page}) => {
-    const sample = (await play(page, turn(2, seat, role, action, band), action)).impact;
+  test((skin || role) + ' lifts and tips its ' + action + ' bottle', async ({page}) => {
+    const trace = await play(page, turn(2, seat, role, action, band, skin), action);
+    const sample = trace.impact;
     expect(sample).toMatchObject({ kind: 'bottle', icon, clip: 'consume', inHand: true, band });
-    expect(sample.sheet).toContain(role + '-consume.webp');
+    expect(sample.sheet).toContain(skin ? skin + '/consume.webp' : role + '-consume.webp');
     expect(sample.cellY).toBe(({ healthy: 0, wounded: 50, critical: 100 })[band]);
     expect(sample.exposure).toBeGreaterThanOrEqual(6);
     expect(sample.bottom).toBeLessThan(.48);
     expect(sample.size).toBeLessThan(.22);
     expect(sample.rotation * (seat === 0 ? -1 : 1)).toBeGreaterThan(.85);
+    expect(trace.gripFrames).toEqual(expect.arrayContaining([4, 6, 9, 10]));
+    expect(trace.gripError).toBeLessThan(1);
   });
 }
 
