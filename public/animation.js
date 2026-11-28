@@ -414,11 +414,7 @@ export function playArenaAction(arena, recap, options = {}) {
     if (rehearsal) rehearsalTakes.set(key, turn % 2);
   }
   const variation = alternate ? part(art, 'arena-variation-cel') : null;
-  if (variation) {
-    const row = fighterLayout.health.findIndex(band => band.id === art.dataset.tier) * 2 + Number(clip === 'signature');
-    variation.style.backgroundPositionY = row * 20 + '%';
-    art.dataset.take = 'alternate';
-  }
+  if (variation) art.dataset.take = 'alternate';
   const duration = score.path.at(-1)[0];
   const lead = score.family === 'cast' ? score.release : score.contact;
   const actorFrames = [0, 0.2, 0.37, 0.53, 0.67, 0.8, 0.91, 1].map((fraction) => fraction * lead);

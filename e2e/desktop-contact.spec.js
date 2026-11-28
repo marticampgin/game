@@ -2,6 +2,41 @@ import { expect, test } from '@playwright/test';
 import { combatTiming } from '../public/combat-timing.js';
 import { applyCommand, createMatch, sandboxEdit, viewMatch } from '../src/game/index.js';
 
+test('an alternate windup shows the new injury band after its attacker bleeds', async ({page}) => {
+  const players = ['Rook','Cedar'].map(id => ({id,name:id,classId:'guardian',skinId:'sunspire-paladin',bot:false}));
+  let state = createMatch({seed:'injury-crossover',players});
+  // Second personal turns use the alternate painted preparation.
+  while (state.round < 2) {
+    const command = state.phase === 'acquire' ? {type:'pick',rewardId:state.offers[0]} : {type:'act',actionId:'defend'};
+    state = applyCommand(state,state.activeId,command);
+  }
+  const actor = state.activeId;
+  state = applyCommand(state,actor,{type:'pick',rewardId:state.offers[0]});
+  const hp = Math.floor(state.players.find(p => p.id === actor).maxHp * .65) + 1;
+  state = sandboxEdit(state,{type:'stat',playerId:actor,stat:'shield',value:0});
+  state = sandboxEdit(state,{type:'stat',playerId:actor,stat:'hp',value:hp});
+  state = sandboxEdit(state,{type:'status',playerId:actor,status:'bleed',value:7});
+  await page.goto('/');
+  await page.evaluate(save => sessionStorage.setItem('rift-solo',JSON.stringify(save)),{state,viewerId:actor});
+  await page.reload();
+  await page.evaluate(async players => (await import('/animation.js')).preloadArenaSkins(players),state.players);
+  await expect(page.locator('[data-seat="' + actor + '"] .arena-sprite')).toHaveAttribute('data-tier','healthy');
+  await page.locator('[data-action="bastion-bash"]').click();
+  await page.evaluate(() => {
+    const observer = new MutationObserver(() => {
+      const sprite = document.querySelector('.arena-fx-actor .arena-sprite[data-pickup][data-tier="wounded"]:not([data-footwork])');
+      if (!sprite) return;
+      const painted = sprite.querySelector('.arena-variation-cel');
+      window.injuredWindup = {skin:sprite.dataset.skin, visible:getComputedStyle(painted).opacity,
+        row:getComputedStyle(painted).backgroundPositionY};
+      observer.disconnect();
+    });
+    observer.observe(document.querySelector('.arena-world'),{subtree:true,attributes:true,attributeFilter:['data-pickup','data-tier','data-footwork']});
+  });
+  await page.locator('[data-execute="bastion-bash"]').click();
+  await expect.poll(() => page.evaluate(() => window.injuredWindup)).toEqual({skin:'sunspire-paladin',visible:'1',row:'60%'});
+});
+
 test('an actor bleeding on the way in still damages the target on the shield contact frame', async ({page}) => {
   const players = ['Moss', 'Rowan'].map(name => ({ id: name, name, classId: 'guardian', bot: false }));
   let state = createMatch({ seed: 'bleeding-bash', players });

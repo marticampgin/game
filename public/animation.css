@@ -23,9 +23,11 @@
 }
 .arena-sprite[data-tier='wounded'] {
   --skin-band: 37.5%;
+  --variation-band: 40%;
 }
 .arena-sprite[data-tier='critical'] {
   --skin-band: 75%;
+  --variation-band: 80%;
 }
 .arena-cel {
   display: block;
@@ -400,8 +402,11 @@ body.reduce-motion .arena-sprite[data-pose='idle'] {
    pickup drawings need packing. Both layers are ready before the swap. */
 .arena-variation-cel {
   display:block; position:absolute; inset:0; opacity:0; pointer-events:none;
-  image-rendering:pixelated; background:var(--variation-skin) 0 0 / 500% 600% no-repeat;
+  image-rendering:pixelated;
+  background:var(--variation-skin) 0 var(--variation-band,0%) / 500% 600% no-repeat;
 }
+/* A condition can injure the attacker before the weapon reaches its target. */
+.arena-sprite[data-track='signature'] > .arena-variation-cel { background-position-y:calc(var(--variation-band,0%) + 20%); }
 [data-facing='left'] .arena-variation-cel { transform:scaleX(-1); }
 .arena-sprite[data-pickup]:not([data-footwork]) > .arena-cel { opacity:0; }
 .arena-sprite[data-pickup]:not([data-footwork]) > .arena-variation-cel { opacity:1; }
