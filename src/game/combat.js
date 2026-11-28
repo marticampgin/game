@@ -1,8 +1,9 @@
 import { countCareer } from './progression.js';
-import { REWARDS, STATUSES } from './catalog.js';
+import { CLASSES, REWARDS, STATUSES } from './catalog.js';
 import { eligible, modifiedSlot, random, sample } from './draft.js';
 import { captureOutcome, settleStatusTick } from './recap.js';
 import { retainMatchEvent } from './match-history.js';
+import { currentRulesEdition, rewardInMatch, rulesEdition } from './rules-edition.js';
 
 export const findPlayer = (state,id) => state.players.find(p => p.id === id);
 const shards = Object.values(REWARDS).filter(r => r.category === 'shard' && r.id !== 'fortune-chip');
@@ -10,7 +11,8 @@ const eventBudget = new WeakMap();
 const statLabels = {armor:'armor',attack:'attack',spellPower:'spell power',maxHp:'maximum health',regen:'regeneration',rerolls:'reroll'};
 export const statGain = (p,key,amount) => amount + Number(key === 'armor' && p.classId === 'guardian' && amount > 0);
 export const receivedHealing = (p,amount) => Math.round(amount * (1 - Math.min(0.8,(p.statuses.curse || 0) * 0.2)));
-export const defendShield = p => 6 + Math.floor(p.armor / 2);
+export const defendShield = (p,edition=currentRulesEdition) =>
+  6 + Math.min(edition < 3 ? Infinity : 12,Math.floor(p.armor / 2));
 export const castCooldown = (reward,slot) => Math.max(1,reward.cooldown - Number(slot?.modifiers.includes('accelerate') || false));
 export const echoDamage = raw => Math.round(raw * 0.4);
 export function record(state,type,text,details={}) {
@@ -40,18 +42,22 @@ export const fittingCount = p => p.artifacts.length + p.abilities.reduce((count,
 
 // Mirroring reads printed enemy techniques in public slot order. Generated
 // effects (including another mirror) have no printed status to recurse into.
-export function imitatedStatus(target,effect) {
+export function imitatedStatus(state,target,effect) {
   for (const slot of target.abilities) {
-    const ability = REWARDS[slot.id];
+    const ability = rewardInMatch(state,slot.id);
     const printed = ability.target === 'enemy' && ability.effects.find(e => e.kind === 'status' && e.target === 'enemy');
     if (printed) return {key:printed.key,amount:Math.min(printed.amount,effect.limit)};
   }
   return null;
 }
+export function imitatedShield(target,effect) {
+  return effect.shield + (effect.armorStep ? Math.min(effect.maxBonus,Math.floor(target.armor/effect.armorStep)) : 0);
+}
 
 export function rawHit(player,target,effect,slot,highCard=highCardReady(player)) {
   let value = effect.kind === 'consumeHit' ? effect.base + effect.factor * (target.statuses[effect.key] || 0)
     : scaled(player,effect.base,effect.scale,effect.factor);
+  if (effect.maxScaleBonus !== undefined) value = Math.min(value,effect.base + effect.maxScaleBonus);
   if (effect.cardBonus && highCard) value += effect.cardBonus;
   if (effect.cursedBonus && target.statuses.curse) value += effect.cursedBonus;
   if (effect.fittingBonus) value += effect.fittingBonus * Math.min(effect.maxFittings,fittingCount(player));
@@ -73,20 +79,27 @@ function matches(condition,p,context) {
   return context.key === condition;
 }
 
+function applyRules(state,player,source,event,context,announce) {
+  for (const rule of source.rules || []) {
+    if (rule.on !== event || !matches(rule.condition,player,context)) continue;
+    if (rule.rivalOnly && (!context.target || context.target === player)) continue;
+    if (rule.every && player.personalTurn % rule.every !== 0) continue;
+    if (rule.once && player[rule.once] === player.personalTurn) continue;
+    // Bound expansion of a future trigger cycle. Ordinary chains spend just
+    // a handful of entries. Mark the turn before resolving a nested effect.
+    const spent = eventBudget.get(state) || 0;
+    if (spent >= 256) return;
+    eventBudget.set(state,spent + 1);
+    if (rule.once) player[rule.once] = player.personalTurn;
+    if (announce) record(state,'synergy',player.name + ' triggered ' + source.name + '.', {actorId:player.id});
+    executeEffects(state,player,context.target || player,rule.effects,{label:source.name});
+  }
+}
 export function trigger(state,player,event,context={}) {
   if (!player?.alive) return;
-  for (const id of player.artifacts) {
-    for (const rule of REWARDS[id].rules || []) {
-      if (rule.on !== event || !matches(rule.condition,player,context)) continue;
-      // A generous per-command ceiling prevents future declarative trigger cycles
-      // from hanging the server. Ordinary chains only spend a handful of entries.
-      const spent = eventBudget.get(state) || 0;
-      if (spent >= 256) return;
-      eventBudget.set(state,spent + 1);
-      record(state,'synergy',player.name + ' triggered ' + REWARDS[id].name + '.', {actorId:player.id});
-      executeEffects(state,player,context.target || player,rule.effects,{label:REWARDS[id].name});
-    }
-  }
+  const talent = CLASSES[player.classId].talent;
+  if (talent) applyRules(state,player,talent,event,context,false);
+  for (const id of player.artifacts) applyRules(state,player,rewardInMatch(state,id),event,context,true);
 }
 export function restore(state,p,amount,label) {
   if (!p?.alive || amount <= 0) return;
@@ -127,16 +140,13 @@ function addStatus(state,p,target,key,amount,label) {
     setStatus(target,'freeze',1);
     record(state,'status',target.name + ' is frozen.',{actorId:p?.id,targetId:target.id,cause:'freeze',statusChange:'frozen',statusRemaining:1,chillRemaining:target.statuses.chill || 0});
   }
-  if (key === 'curse' && p !== target && p?.classId === 'necromancer' && p.lastRitesTurn !== p.personalTurn) {
-    p.lastRitesTurn = p.personalTurn;
-    restore(state,p,5,'Last Rites');
-  }
   trigger(state,p,'applyStatus',{key,target});
 }
 export function addStat(state,p,key,amount,label) {
   amount = statGain(p,key,amount);
   p[key] += amount;
-  record(state,'stat',p.name + ' gained ' + amount + ' ' + statLabels[key] + ' from ' + label + '.',{targetId:p.id,amount});
+  const stat = key === 'rerolls' && amount !== 1 ? 'rerolls' : statLabels[key];
+  record(state,'stat',p.name + ' gained ' + amount + ' ' + stat + ' from ' + label + '.',{targetId:p.id,amount});
   if (key === 'maxHp') restore(state,p,amount,label);
 }
 function absorbShard(state, p, shard, source) {
@@ -184,7 +194,7 @@ export function deal(state,source,target,raw,label,flags={}) {
       record(state,'elimination',target.name + ' fell to ' + label + '.',{actorId:source?.id,targetId:target.id,
         sharedFall:flags.cause === 'arena-fire' || undefined});
       for (const witness of state.players) {
-        if (witness.alive && witness.classId === 'necromancer') addStat(state,witness,'spellPower',1,'Last Rites');
+        if (witness.alive) trigger(state,witness,'witnessFall',{target});
       }
       if (source?.alive && source !== target) restore(state,source,Math.ceil(source.maxHp * state.config.killHeal),'elimination');
     }
@@ -194,10 +204,7 @@ export function deal(state,source,target,raw,label,flags={}) {
   if (target.alive && healthDamage && target.hp <= target.maxHp * 0.35) react(state,target,'wounded');
   if (flags.direct && source && source !== target) {
     trigger(state,source,'hit',{key:flags.flavor,target});
-    if (shieldDamage && target.alive && target.classId === 'trickster' && target.falseGuardTurn !== target.personalTurn) {
-      target.falseGuardTurn = target.personalTurn;
-      executeEffects(state,target,target,[{kind:'shield',amount:5}],{label:'False Guard'});
-    }
+    if (shieldDamage) trigger(state,target,'shieldStruck',{target:source});
     trigger(state,target,'struck',{target:source});
   }
   return hit;
@@ -231,10 +238,7 @@ export function grantReward(state,p,id,replaceIndex) {
     slot.modifiers.push(reward.modifier);
     record(state,'synergy',p.name + ' etched ' + reward.name + ' onto ' + REWARDS[slot.id].name + '.',{actorId:p.id});
   } else executeEffects(state,p,p,reward.effects,{label:reward.name});
-  if (['item','artifact','modifier'].includes(category)) {
-    if (p.classId === 'artificer') executeEffects(state,p,p,[{kind:'shield',amount:6}],{label:'Workshop'});
-    trigger(state,p,'fitted');
-  }
+  if (['item','artifact','modifier'].includes(category)) trigger(state,p,'fitted');
   record(state,'reward',p.name + ' acquired ' + (category === 'consumable' ? 'a concealed consumable' : reward.name) + '.',{actorId:p.id});
 }
 
@@ -261,11 +265,11 @@ export function executeEffects(state,p,target,effects,context={}) {
       case 'status': addStatus(state,p,e.target === 'self' ? p : target,e.key,e.amount,label); break;
       case 'imitate': {
         if (!target.alive) break;
-        const copied = imitatedStatus(target,e);
+        const copied = imitatedStatus(state,target,e);
         if (copied) {
           addStatus(state,p,target,copied.key,copied.amount,label);
           trigger(state,p,'imitation',{key:copied.key,target});
-        } else executeEffects(state,p,p,[{kind:'shield',amount:e.shield}],{label});
+        } else executeEffects(state,p,p,[{kind:'shield',amount:imitatedShield(target,e)}],{label});
         break;
       }
       case 'stat': addStat(state,p,e.key,e.amount,label); break;
@@ -314,15 +318,15 @@ export function executeEffects(state,p,target,effects,context={}) {
 }
 
 export function resolveDefend(state,p) {
-  executeEffects(state,p,p,[{kind:'shield',amount:defendShield(p)}],{label:'Defend'});
+  executeEffects(state,p,p,[{kind:'shield',amount:defendShield(p,rulesEdition(state))}],{label:'Defend'});
   trigger(state,p,'defend');
 }
 
 // Forecast one self-targeted support action through the same effect handlers
 // as combat. The isolated subject has no next-turn ticks, rivals or live RNG.
-function supportOutcome(player,reward,effects,shard) {
+function supportOutcome(player,reward,effects,shard,edition) {
   const p = structuredClone({...player,sources:{}});
-  const state = {activeId:p.id,phase:'action',round:0,logSequence:0,log:[],config:{logLimit:64},remainingActions:1};
+  const state = {activeId:p.id,phase:'action',round:0,logSequence:0,log:[],config:{logLimit:64,rulesEdition:edition},remainingActions:1};
   if (reward.category === 'consumable') {
     p.consumables.splice(p.consumables.indexOf(reward.id),1);
     usedConsumable(state,p,shard);
@@ -341,7 +345,7 @@ function supportOutcome(player,reward,effects,shard) {
   };
 }
 
-export function previewSelfSupport(player,reward) {
+export function previewSelfSupport(player,reward,edition=currentRulesEdition) {
   if (reward.target !== 'self' || reward.reaction) return null;
   const defending = reward.id === 'defend';
   const effects = reward.effects || [];
@@ -349,7 +353,7 @@ export function previewSelfSupport(player,reward) {
   if (!defending && !healing && !effects.some(e => e.kind === 'shield')) return null;
   const distills = player.classId === 'alchemist' && reward.category === 'consumable';
   const options = distills ? shards : [null];
-  const outcomes = options.map(shard => supportOutcome(player,reward,effects,shard));
+  const outcomes = options.map(shard => supportOutcome(player,reward,effects,shard,edition));
   const [first] = outcomes;
   const possibleHealing = [...new Set(outcomes.map(o=>o.healing))].sort((a,b)=>a-b);
   const parts = [];

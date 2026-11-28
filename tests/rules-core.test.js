@@ -223,8 +223,8 @@ test('armor → Burn → healing and Burn consumption → one extra action compo
   p.hp-=25;
   s.remainingActions=2;
   s=act(s,'bastion-bash',t.id); p=active(s); t=s.players.find(x => x.id === t.id);
-  assert.equal(t.statuses.burn,6);
-  tickStatus(s,t,'burn'); assert.equal(p.hp,p.maxHp-21); assert.equal(t.statuses.burn,5);
+  assert.equal(t.statuses.burn,4);
+  tickStatus(s,t,'burn'); assert.equal(p.hp,p.maxHp-21); assert.equal(t.statuses.burn,3);
   s=act(s,'combustion',t.id);
   assert.equal(s.phase,'action'); assert.equal(s.remainingActions,1);
   assert.equal(s.players.find(x => x.id === t.id).statuses.burn,undefined);

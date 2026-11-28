@@ -34,7 +34,7 @@ test('one ordered public recap captures damage, shield break, revival, hidden wa
   assert.deepEqual(r.events.map(e=>e.type),['damage','revival','action','shield','synergy','damage']);
   const [hit,revive,reveal,shield,trigger,retaliation]=r.events;
   assert.deepEqual([hit.healthDamage,hit.shieldDamage,hit.shieldBroken],[1,4,true]);
-  assert.equal(revive.amount,125);assert.match(reveal.text,/Emergency Ward/);assert.equal(shield.amount,18);
+  assert.equal(revive.amount,Math.ceil(rival.maxHp/4));assert.match(reveal.text,/Emergency Ward/);assert.equal(shield.amount,18);
   assert.match(trigger.text,/Briar Crown/);assert.equal(retaliation.healthDamage,3);
   assert.ok(r.events.every(e=>e.timing==='action'));
   assert.deepEqual(r.next,{activeId:'b',phase:'acquire',remainingActions:1,round:1,globalTurn:2,bonusDraft:false,winnerId:null});

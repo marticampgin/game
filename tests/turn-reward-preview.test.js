@@ -22,8 +22,8 @@ test('Guardian shard preview uses actual class gains, equipped modifiers, mitiga
   const result=preview(s,'iron-shard');
   const next=pick(s,'iron-shard');
   const after=previewAction(viewMatch(next,p.id),p.id,'bastion-bash',rival.id).damage;
-  assert.deepEqual(result.lines,['Armor 10 → 15 (+5)','Bastion Bash '+before+' → '+after+' base damage','Defend 11 → 13 shield']);
-  assert.equal(hero(next).armor,15);
+  assert.deepEqual(result.lines,['Armor 8 → 13 (+5)','Bastion Bash '+before+' → '+after+' base damage','Defend 10 → 12 shield']);
+  assert.equal(hero(next).armor,13);
   assert.equal(result.text,result.lines.join(' · '));
   const nonGuardian=draft('berserker');
   assert.match(preview(nonGuardian,'iron-shard').text,/Armor 4 → 8 \(\+4\)/);
@@ -37,8 +37,8 @@ test('shard consequences reflect Curse, missing health, spell scaling and healin
   assert.equal(hero(pick(s,'heartwood')).hp,35);
   grantReward(s,p,'menders-bell');
   const spell=preview(s,'astral-shard');
-  assert.ok(spell.lines.includes('Time Bolt 12 → 14 base damage'));
-  assert.ok(spell.lines.includes('Mender’s Bell 6 → 7 healing before the health cap'));
+  assert.ok(spell.lines.includes('Time Bolt 14 → 16 base damage'));
+  assert.ok(spell.lines.includes('Mender’s Bell 7 → 8 healing before the health cap'));
   const b=draft('berserker');hero(b).hp=48;
   assert.match(preview(b,'fang-shard').text,/Basic Attack 18 → 20 base damage/);
 });
@@ -49,14 +49,14 @@ test('modifier previews identify the actual first compatible slot, its cooldown 
   grantReward(s,p,'amplify');
   assert.deepEqual(preview(s,'amplify').lines,['Applies to Cinder Orb','Cinder Orb 9 → 13 base damage']);
   const haste=preview(s,'accelerate');
-  assert.match(haste.text,/Applies to Bastion Bash.*Cooldown 2 → 1 personal turn.*24 → 20 base damage/);
+  assert.match(haste.text,/Applies to Bastion Bash.*Cooldown 2 → 1 personal turn.*13 → 11 base damage/);
   const next=pick(s,'accelerate');
   assert.ok(hero(next).abilities[0].modifiers.includes('accelerate'));
   const echo=preview(next,'echo-rune');
   // Already in action phase, even a supplied offer cannot expose a preview.
   assert.deepEqual(echo.lines,[]);
   const isolated=draft();
-  assert.match(preview(isolated,'echo-rune').text,/Bastion Bash.*7 base damage as an echo/);
+  assert.match(preview(isolated,'echo-rune').text,/Bastion Bash.*4 base damage as an echo/);
 });
 
 test('slot and replacement previews respect private inventory, capacity-changing artifacts, and fresh ability cooldowns',()=>{
@@ -72,9 +72,9 @@ test('slot and replacement previews respect private inventory, capacity-changing
 
 test('artifact hints require an actual compatible action or the correct owner of a status',()=>{
   const s=draft(),p=hero(s);
-  assert.equal(preview(s,'molten-mail').text,'Bastion Bash will apply 3 Burn');
+  assert.equal(preview(s,'molten-mail').text,'Bastion Bash will apply 2 Burn');
   grantReward(s,p,'phoenix-feather');
-  assert.equal(preview(s,'molten-mail').text,'Bastion Bash will apply 6 Burn');
+  assert.equal(preview(s,'molten-mail').text,'Bastion Bash will apply 4 Burn');
   assert.match(preview(s,'stillwater-ring').text,/Defend adds 2 permanent armor/);
   assert.match(preview(s,'golden-shell').text,/0% rarity promotion/);
   p.armor=60;

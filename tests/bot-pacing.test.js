@@ -38,6 +38,27 @@ test('bot planning uses the same command at both speeds and keeps the private dr
   assert.equal(planBotStep(next),null);
 });
 
+test('a Gambler bot can spend one chip on an ordinary draft without revealing offers or looping on loaded cards',()=>{
+  const players=['a','b'].map(id=>({id,name:id,classId:'gambler',bot:true}));
+  const game=createMatch({seed:'one-loaded-hand',players});
+  const p=active(game);
+  p.rerolls=4;
+  game.offers=['heartwood','spring-seed','astral-shard'];
+  const roll=planBotStep(game);
+  assert.deepEqual(roll.command,{type:'reroll'});
+  assert.equal(roll.intent.actionName,null);
+  assert.equal(roll.intent.targetId,null);
+  assert.equal(game.offers.some(id=>JSON.stringify(roll.intent).includes(id)),false);
+  const next=applyCommand(game,p.id,roll.command);
+  assert.equal(active(next).rerolls,3);
+  assert.match(next.log.at(-1).text,/loaded a high card/);
+  const purchase=planBotStep(next);
+  assert.equal(purchase.command.type,'pick');
+  const action=applyCommand(next,p.id,purchase.command);
+  assert.equal(action.phase,'action');
+  assert.equal(planBotStep(action).command.type,'act');
+});
+
 test('a prepared reactive or carried item never discloses the hidden item identity or target in advance', () => {
   let state = initial();
   state = applyCommand(state,state.activeId,planBotStep(state).command);

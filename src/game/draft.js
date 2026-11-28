@@ -1,5 +1,6 @@
 import { isDraftUnlocked } from './progression.js';
-import { CLASSES, RARITIES, REWARDS } from './catalog.js';
+import { RARITIES, REWARDS } from './catalog.js';
+import { favoredTags } from './rules-edition.js';
 
 export function seedNumber(seed) {
   let value = 2166136261;
@@ -88,6 +89,7 @@ export function drawOffers(state, player) {
   const result = [];
   const { config } = state;
   const unlocks = state.career?.seats[player.id]?.unlocks ?? [];
+  const favored = favoredTags(state,player.classId);
   const candidates = (state.rewardPool ?? originalPool).map(id => REWARDS[id])
     .filter(r => eligible(player,r) && (!state.career || isDraftUnlocked(r.id, unlocks)));
   for (let i = 0; i < 3; i++) {
@@ -104,7 +106,7 @@ export function drawOffers(state, player) {
     let pool = universal;
     if (roll < config.exclusiveChance) pool = eligibleTier.filter(r => r.exclusive === player.classId);
     else if (roll < config.exclusiveChance + config.favoredChance) {
-      pool = universal.filter(r => r.tags.some(tag => CLASSES[player.classId].favored.includes(tag)));
+      pool = universal.filter(r => r.tags.some(tag => favored.includes(tag)));
     }
     if (!pool.length) pool = universal.length ? universal : eligibleTier;
     const adaptive = i >= 3 - config.adaptiveSlots;

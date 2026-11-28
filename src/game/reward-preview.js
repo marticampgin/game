@@ -1,14 +1,22 @@
 import { REWARDS, STATUSES } from './catalog.js';
 import { armorPromotionChance, eligible, modifiedSlot } from './draft.js';
+import { rewardInMatch, rulesEdition } from './rules-edition.js';
 import { capacity, castCooldown, currentAttack, defendShield, echoDamage, findPlayer, fittingCount, highCardReady, rawHit, receivedHealing, scaled, statGain } from './combat.js';
 
 const statNames = {armor:'Armor',attack:'Attack',spellPower:'Spell power',maxHp:'Maximum health',regen:'Regeneration',rerolls:'Rerolls'};
 const noStatuses = {statuses:{}};
 const change = (name,from,to) => name + ' ' + from + ' → ' + to;
 const hitEffect = reward => reward.effects?.find(e => e.kind === 'hit' || e.kind === 'consumeHit');
-const baseDamageLabel = (player,hit) => hit.cardBonus && !highCardReady(player) ? ' low card base damage' : ' base damage';
+function baseHits(player,hit,slot) {
+  const low=rawHit(player,noStatuses,hit,slot);
+  return hit.cardBonus && !highCardReady(player) ? [low,rawHit(player,noStatuses,hit,slot,true)] : [low];
+}
+function range(values) {
+  const low=Math.min(...values), high=Math.max(...values);
+  return low===high ? String(low) : low+'–'+high;
+}
 
-function statPreview(player,reward) {
+function statPreview(state,player,reward) {
   const after = {...player};
   const lines = [];
   for (const e of reward.effects) {
@@ -22,12 +30,12 @@ function statPreview(player,reward) {
     }
   }
   for (const slot of player.abilities) {
-    const ability = REWARDS[slot.id];
+    const ability = rewardInMatch(state,slot.id);
     const hit = hitEffect(ability);
     if (hit) {
-      const beforeHit = rawHit(player,noStatuses,hit,slot);
-      const afterHit = rawHit(after,noStatuses,hit,slot);
-      if (beforeHit !== afterHit) lines.push(change(ability.name,beforeHit,afterHit) + baseDamageLabel(player,hit));
+      const beforeHit = range(baseHits(player,hit,slot));
+      const afterHit = range(baseHits(after,hit,slot));
+      if (beforeHit !== afterHit) lines.push(change(ability.name,beforeHit,afterHit) + ' base damage');
     }
     const heal = ability.effects.find(e => e.kind === 'heal' && e.scale);
     if (heal) {
@@ -37,27 +45,29 @@ function statPreview(player,reward) {
     }
   }
   if (currentAttack(player) !== currentAttack(after)) lines.push(change('Basic Attack',currentAttack(player),currentAttack(after)) + ' base damage');
-  if (defendShield(player) !== defendShield(after)) lines.push(change('Defend',defendShield(player),defendShield(after)) + ' shield');
+  const edition=rulesEdition(state), beforeShield=defendShield(player,edition), afterShield=defendShield(after,edition);
+  if (beforeShield !== afterShield) lines.push(change('Defend',beforeShield,afterShield) + ' shield');
   return lines;
 }
 
-function modifierPreview(p,r) {
+function modifierPreview(state,p,r) {
   const slot = modifiedSlot(p,r.modifier);
   if (!slot) return [];
-  const ability = REWARDS[slot.id];
+  const ability = rewardInMatch(state,slot.id);
   const next = {...slot,modifiers:[...slot.modifiers,r.modifier]};
   const e = hitEffect(ability);
-  const before = rawHit(p,noStatuses,e,slot);
+  const before = range(baseHits(p,e,slot));
   const fitted = {...p,abilities:p.abilities.map(a => a === slot ? next : a)};
-  const after = rawHit(fitted,noStatuses,e,next);
-  const suffix = e.kind === 'consumeHit' ? ' base damage at 0 stacks' : baseDamageLabel(fitted,e);
+  const afterHits = baseHits(fitted,e,next);
+  const after = range(afterHits);
+  const suffix = e.kind === 'consumeHit' ? ' base damage at 0 stacks' : ' base damage';
   const lines = ['Applies to ' + ability.name];
   if (castCooldown(ability,slot) !== castCooldown(ability,next)) {
     const cooldown = castCooldown(ability,next);
     lines.push(change('Cooldown',castCooldown(ability,slot),cooldown) + (cooldown === 1 ? ' personal turn' : ' personal turns'));
   }
   if (before !== after) lines.push(change(ability.name,before,after) + suffix);
-  if (r.modifier === 'echo') lines.push('Next global turn: ' + echoDamage(after) + suffix + ' as an echo');
+  if (r.modifier === 'echo') lines.push('Next global turn: ' + range(afterHits.map(echoDamage)) + suffix + ' as an echo');
   return lines;
 }
 
@@ -77,7 +87,13 @@ function inventoryPreview(state,p,r,replaceIndex) {
     lines.push(r.reaction ? 'Hidden until its automatic reaction triggers' : 'Hidden until you use it');
   } else {
     const hit = hitEffect(r);
-    const value = hit ? rawHit(p,noStatuses,hit) + baseDamageLabel(p,hit) + (hit.kind === 'consumeHit' ? ' at 0 stacks' : '') + ' · ' : '';
+    let loadouts = [p];
+    if (hit?.fittingBonus && items.length >= limit) {
+      const replaced = Number.isInteger(replaceIndex) && items[replaceIndex] ? [replaceIndex] : items.map((_,i)=>i);
+      loadouts = replaced.map(index=>({...p,abilities:items.map((slot,i)=>i===index ? {id:r.id,modifiers:[]} : slot)}));
+    }
+    const value = hit ? range(loadouts.flatMap(owner=>baseHits(owner,hit))) + ' base damage' +
+      (hit.kind === 'consumeHit' ? ' at 0 stacks' : '') + ' · ' : '';
     const cooldown = castCooldown(r);
     lines.push(value + 'ready immediately · cooldown ' + cooldown + (cooldown === 1 ? ' personal turn' : ' personal turns'));
   }
@@ -85,7 +101,7 @@ function inventoryPreview(state,p,r,replaceIndex) {
 }
 
 function artifactPreview(state,p,r) {
-  const owned = [...p.abilities.map(a => REWARDS[a.id]),...p.consumables.map(id => REWARDS[id])];
+  const owned = [...p.abilities.map(a => rewardInMatch(state,a.id)),...p.consumables.map(id => rewardInMatch(state,id))];
   if (r.consumableCapacity) {
     const count = capacity(state,p,'consumables');
     return [change('Consumable capacity',count,count*r.consumableCapacity)];
@@ -121,13 +137,13 @@ function artifactPreview(state,p,r) {
 // count; no forecast, private rival inventory, or mutable random stream is read.
 export function previewReward(view,viewerId,rewardId,replaceIndex) {
   const p = findPlayer(view,viewerId);
-  const r = Object.hasOwn(REWARDS,rewardId) && REWARDS[rewardId];
+  const r = Object.hasOwn(REWARDS,rewardId) && rewardInMatch(view,rewardId);
   if (!r || !p?.consumables || view.phase !== 'acquire' || view.activeId !== viewerId ||
       !view.offers.includes(rewardId) || !eligible(p,r)) return {text:'',lines:[]};
   let lines;
   switch (r.category) {
-    case 'shard': lines=statPreview(p,r); break;
-    case 'modifier': lines=modifierPreview(p,r); break;
+    case 'shard': lines=statPreview(view,p,r); break;
+    case 'modifier': lines=modifierPreview(view,p,r); break;
     case 'artifact': lines=artifactPreview(view,p,r); break;
     case 'chest': {
       const draws = r.effects.find(e => e.kind === 'shards');
