@@ -70,7 +70,7 @@ The packer connects the existing recoil with the three paintings and applies the
 
 ### Victory performances and injury overrides
 
-The winner’s gesture has its own three paintings. Guardian plants the shield and salutes with the hammer. Trickster bows with the mirror at the chest. Artificer checks the gauntlet and rests the hammer on one shoulder. In a live finish the winning outfit performs once. Reopening a finished match shows the held pose. Restorative effects in combat use the fighter’s recovery poses.
+The winner’s gesture has its own paintings. Guardian plants the shield and salutes with the hammer. Trickster bows with the mirror at the chest. Artificer checks the gauntlet and rests the hammer on one shoulder. In a live finish the winning outfit performs once. Reopening a finished match shows the held pose. Restorative effects in combat use the fighter’s recovery poses.
 
 Register a complete costume family as columns, or pass `--skin` and supply one vertical strip of three drawings. `--injury wounded` and `--injury critical` register independent paintings under `scripts/art/victories` or `scripts/art/defeats`. Each outfit can supply these independently. The builder uses the ordinary paintings with the band’s own palette wherever an override is absent.
 
@@ -78,6 +78,8 @@ Register a complete costume family as columns, or pass `--skin` and supply one v
 python scripts/fighter_endings.py --layer celebrate --role guardian --skin harbor-warden --import-board harbor-salute.png
 python scripts/fighter_endings.py --layer celebrate --role guardian --skin harbor-warden --injury critical --import-board harbor-injured-salute.png
 ```
+
+For a fast-moving weapon or prop, an outfit can supply all nine exposures. Pass `--exposures 9` with an import board arranged in nine rows, from opening stance to final hold. Artists working at native size can also save nine registered 208 × 166 cels side by side at the usual source path. The packer takes the opening frame from the live standing sheet and copies the last exposure back to its held pose. Each outfit and injury band can independently use three key paintings or the full strip.
 
 `endingTimingMs` in the class manifest sets three times in milliseconds for each performance. They mark the first pose, the accent and the final hold. The remaining exposures fall between these landmarks. Both the arena and Outfitter read the same timing and drawings. Packs that supply only a standing sheet use its victory and fallen paintings directly.
 

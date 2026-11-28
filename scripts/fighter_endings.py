@@ -52,11 +52,11 @@ def paste_cel(sheet, cel, column, row):
     sheet.paste(cel, (column * CELL[0], row * CELL[1]))
 
 
-def register(path, selected, layer, injury):
+def register(path, selected, layer, injury, exposures=3):
     art = Image.open(path).convert('RGBA')
     alpha = np.asarray(art.getchannel('A')) > 110
     xs = grid_edges(alpha.sum(axis=0) > 2, len(selected))
-    ys = grid_edges(alpha.sum(axis=1) > 2, 3)
+    ys = grid_edges(alpha.sum(axis=1) > 2, exposures)
     directory, _, _, relative_height = PERFORMANCES[layer]
     masters = SCRIPTS / 'art' / directory
     masters.mkdir(parents=True, exist_ok=True)
@@ -72,11 +72,11 @@ def register(path, selected, layer, injury):
         # One head scale across the take, including raised blades and long hems.
         scale = min(relative_height * (rest[3] - rest[1]) / poses[0].height,
                     (CELL[0] - 12) / max(p.width for p in poses), (GROUND - 2) / max(p.height for p in poses))
-        master = Image.new('RGBA', (CELL[0] * 3, CELL[1]))
+        master = Image.new('RGBA', (CELL[0] * exposures, CELL[1]))
         for index, cel in enumerate(poses):
             cel = cel.resize((round(cel.width * scale), round(cel.height * scale)), Image.Resampling.LANCZOS)
             cel.putalpha(cel.getchannel('A').point(lambda a: 255 if a >= 110 else 0))
-            travel = index * 3 if layer == 'collapse' else 0
+            travel = round(index * 6 / (exposures-1)) if layer == 'collapse' else 0
             left = min(CELL[0] - cel.width - 3, (CELL[0] - cel.width) // 2 + travel)
             master.paste(cel, (index * CELL[0] + left, GROUND - cel.height))
         suffix = '-' + injury if injury else ''
@@ -126,18 +126,23 @@ def install(standing, standing_path, look, layer):
     for band, condition in enumerate(BANDS):
         custom = master.with_name(f'{look}-{condition["id"]}.webp')
         poses = Image.open(custom if custom.exists() else master).convert('RGBA')
-        if poses.size != (CELL[0]*3, CELL[1]):
-            raise ValueError(f'{master.name}: supply three full-size registered poses')
+        if poses.size not in [(CELL[0]*3, CELL[1]), (CELL[0]*9, CELL[1])]:
+            raise ValueError(f'{master.name}: supply three registered key poses or nine registered exposures')
         palette = outfit_palette(standing, band)
         painted = poses.convert('RGB').quantize(palette=palette, dither=Image.Dither.NONE).convert('RGBA')
         painted.putalpha(poses.getchannel('A'))
-        first, accent, end = [tile(painted,i,0) for i in range(3)]
         start = tile(standing, *pose_tile(opening, band))
-        frames = [start, bridge(start,first,.50), first, bridge(first,accent,.50), accent,
-                  bridge(accent,end,.35), bridge(accent,end,.66), bridge(accent,end,.88), end]
+        if poses.width == CELL[0]*9:
+            # A long, thin blade can cross many pixels between adjacent poses.
+            # Let an artist draw its arc and keep the opening on the live fighter.
+            frames = [start, *(tile(painted,i,0) for i in range(1,9))]
+        else:
+            first, accent, end = [tile(painted,i,0) for i in range(3)]
+            frames = [start, bridge(start,first,.50), first, bridge(first,accent,.50), accent,
+                      bridge(accent,end,.35), bridge(accent,end,.66), bridge(accent,end,.88), end]
         for i, frame in enumerate(frames):
             paste_cel(strip, frame, i, band)
-        paste_cel(standing, end, *pose_tile(final, band))
+        paste_cel(standing, frames[-1], *pose_tile(final, band))
     prefix = look + '-' if standing_path.name.endswith('-founder.png') else ''
     destination = standing_path.with_name(prefix + layer + '.webp')
     publish(strip, destination, lossless=True, method=5)
@@ -150,11 +155,15 @@ def main(default_layer=None):
     parser.add_argument('--layer', choices=PERFORMANCES, default=default_layer)
     parser.add_argument('--skin', help='restrict import or rebuild to one outfit')
     parser.add_argument('--injury', choices=[b['id'] for b in BANDS], help='import an override for this condition')
-    parser.add_argument('--import-board', type=Path, help='outfits across, three consecutive poses down')
+    parser.add_argument('--import-board', type=Path, help='outfits across, consecutive poses down')
+    parser.add_argument('--exposures', type=int, choices=(3,9), default=3,
+                        help='import three key poses or all nine exposures')
     args = parser.parse_args()
     cv2.setNumThreads(1)
     if args.import_board and not (args.role and args.layer):
         parser.error('--import-board needs --role and --layer')
+    if args.exposures == 9 and not args.import_board:
+        parser.error('--exposures sets the number of rows in an --import-board')
     if args.skin and not args.role:
         parser.error('--skin needs --role')
     for role in ([args.role] if args.role else LAYOUT['founders']):
@@ -163,7 +172,7 @@ def main(default_layer=None):
         if not selected:
             parser.error('Unknown costume for ' + role)
         if args.import_board:
-            register(args.import_board, selected, args.layer, args.injury)
+            register(args.import_board, selected, args.layer, args.injury, args.exposures)
         for look, path in selected:
             standing = Image.open(path).convert('RGBA')
             layers = [args.layer] if args.layer else PERFORMANCES
