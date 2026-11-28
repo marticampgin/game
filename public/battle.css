@@ -750,6 +750,12 @@ body[data-screen='battle'] > .topbar {
   .battle-shell .turn-board.drafting:not(.shop-hidden) .arena-world:not([data-count='2']) {
     --unit: clamp(88px, min(10.6vw, 16svh), 169px);
   }
+  /* Perspective steepens along the near edge of the ring. Scaling the same
+     foot-anchored box keeps its click target, weapons and impact sockets together. */
+  .arena-world .combatant {
+    --near-depth:clamp(0,calc((var(--depth) - 60) / 25),1);
+    --sprite-size:calc(var(--unit) * (var(--scale) + .14 * var(--near-depth) * var(--near-depth)));
+  }
   .battle-shell .turn-board.drafting:not(.shop-hidden) .draft-stage {
     padding: 0 clamp(10px, 1.6vw, 30px) 5px;
     background:
