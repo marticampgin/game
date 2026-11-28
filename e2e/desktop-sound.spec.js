@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { applyCommand, createMatch } from '../src/game/index.js';
 
-test('the shield, hammer, and glass contacts render different audible waveforms', async ({ page }) => {
+test('class signatures and wooden, metal and glass impacts render distinct audible waveforms', async ({ page }) => {
   await page.goto('/');
   test.skip(
     await page.evaluate(() => typeof OfflineAudioContext !== 'function'),
@@ -14,6 +14,10 @@ test('the shield, hammer, and glass contacts render different audible waveforms'
       ['bastion-bash', 'guardian', 'bastion'],
       ['attack', 'guardian', 'slash'],
       ['venom-flask', 'alchemist', 'venom'],
+      ['cut-the-deck', 'gambler', 'slash'],
+      ['soul-tithe', 'necromancer', 'doom'],
+      ['mirror-feint', 'trickster', 'slash'],
+      ['rivet-drive', 'artificer', 'bastion'],
     ]) {
       const audio = new OfflineAudioContext(1, 20000, 48000);
       playContactSound(audio, { action, role, effect, event: { type: 'damage', amount: 21 }, first: true });
@@ -34,6 +38,7 @@ test('the shield, hammer, and glass contacts render different audible waveforms'
     expect(sample.peak).toBeGreaterThan(0.012);
     expect(sample.peak).toBeLessThan(0.65);
   }
+  expect(new Set(samples.map(sample => sample.brightness.toFixed(5))).size).toBe(samples.length);
   expect(samples[2].brightness).toBeGreaterThan(samples[0].brightness * 2);
   expect(samples[1].brightness).toBeGreaterThan(samples[0].brightness * 1.1);
 });

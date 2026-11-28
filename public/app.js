@@ -587,7 +587,7 @@ async function openProgression(tab, origin = screen, fitting) {
     const {mountProgression} = await import('./progression-ui.js');
     if (epoch === start) dispose = mountProgression(app,{
       initialTab:tab, initialClassId:fitting?.classId || fighter?.classId, initialSkinId:fitting?.skinId || masterySkinId,
-      initialTier:fitting?.tier, returnToPractice:!!fitting, career, onBack:back,
+      initialTier:fitting?.tier, returnToPractice:!!fitting, career, onBack:back, onCue:impactSound,
       onPractice: initialFighter => openTool('sandbox',{
         initialFighter, onClose:() => openProgression('skins',origin,initialFighter),
       }),

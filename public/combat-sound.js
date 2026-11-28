@@ -10,6 +10,13 @@ function noise(filter, from, to, length, gain, delay = 0) {
   return { filter, from, to, length, gain, delay };
 }
 const cues = {
+  'card-flick': [noise('highpass', 4600, 2400, .055, .1), tone('triangle', 1230, 680, .075, .029), noise('bandpass', 2000, 770, .045, .055, .048)],
+  'soul-thread': [tone('sine', 142, 292, .32, .066), noise('bandpass', 460, 1380, .23, .09, .027), tone('sine', 390, 533, .26, .028, .046)],
+  'mirror-feint': [noise('highpass', 2700, 850, .085, .09), tone('triangle', 702, 331, .11, .038), tone('sine', 1511, 1134, .085, .029, .073)],
+  'rivet-drive': [noise('lowpass', 1610, 160, .1, .19), tone('triangle', 183, 52, .16, .085), noise('bandpass', 2100, 720, .055, .105, .045), tone('sine', 632, 418, .12, .028, .049)],
+  swish: [noise('bandpass', 810, 2850, .1, .085), noise('highpass', 2600, 1250, .064, .046, .075)],
+  belt: [noise('bandpass', 810, 275, .072, .11), tone('triangle', 458, 282, .065, .035, .045)],
+  sip: [tone('sine', 360, 252, .085, .034), tone('sine', 298, 386, .075, .029, .09)],
   bash: [
     noise('lowpass', 800, 90, 0.13, 0.19),
     tone('triangle', 112, 40, 0.21, 0.095),
@@ -54,17 +61,22 @@ const cues = {
   revival: [tone('sine', 392, 523, 0.2, 0.044), tone('sine', 587, 784, 0.26, 0.033, 0.065)],
 };
 
-function instrument({ action, role, effect, event, first }) {
+function instrument({ action, role, effect, event, first, rehearsal }) {
+  const move = first ? motionScore(action, role) : undefined;
+  if (rehearsal) {
+    if (move?.gesture === 'scavenge') return 'belt';
+    if (move?.gesture === 'drink') return 'sip';
+    if (move?.family === 'melee') return 'swish';
+  }
   if (!first && event?.type === 'status') return null;
   if (effect === 'fracture') return 'glass';
   if (effect === 'dust') return 'pulse';
   if (effect === 'guard' || effect === 'ward') return 'ward';
   if (effect === 'miasma') return 'venom';
-  const move = first ? motionScore(action, role) : undefined;
   if (move?.prop === 'bell') return 'bell';
   if (effect === 'heal' || effect === 'revival') return effect;
   if (event?.type === 'elimination') return 'fall';
-  if (move?.track === 'bash') return 'bash';
+  if (move && Object.hasOwn(cues,move.track)) return move.track;
   if (move?.track === 'swing' && fighterKit(role).weapon === 'hammer') return 'hammer';
   if (move?.gesture === 'throw') return 'glass';
   if (effect === 'arcane' || effect === 'echo' || effect === 'shock') return 'clock';

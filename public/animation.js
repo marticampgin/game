@@ -885,9 +885,9 @@ export function playArenaAction(arena, recap, options = {}) {
   }
   at(timing.contact, () => {
     scene.dataset.stage = 'impact';
-    if (!effectsOnly && !timing.primary && !rehearsal) {
-      if (score.gesture !== 'scavenge') contactBurst(target, score.effect, 0);
-      options.onCue?.({ action, role, effect: score.effect, event: null, first: true });
+    if (!effectsOnly && !timing.primary) {
+      if (!rehearsal && score.gesture !== 'scavenge') contactBurst(target, score.effect, 0);
+      options.onCue?.({ action, role, effect: score.effect, event: null, first: true, rehearsal });
     }
   });
   timing.beats.forEach((beat, index) => {

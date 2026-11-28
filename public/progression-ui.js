@@ -44,7 +44,7 @@ function masteryRow(role, profile) {
   const prize = outfit && (owns(profile, outfit) ? outfit.name + ' owned' : outfit.name);
   return `<button type="button" class="pg-mastery-row" data-pg="mastery" data-value="${esc(role.id)}" title="View ${esc(prize || role.name)}">
     <img class="pg-portrait" src="${esc(portrait)}" alt=""><span class="pg-mastery-body">
-    <span><strong>${esc(role.name)}</strong><small>${number(tally)} / ${number(goal)} matches</small></span>
+    <span><strong>${esc(role.name)}</strong><small>${number(tally)} / ${number(goal)}<span class="sr-turn"> matches</span></small></span>
     <progress aria-label="${esc(role.name)} mastery" max="${goal}" value="${tally}"></progress>
     <span class="pg-prize">${esc(prize || '')}</span></span>${glyph('right')}</button>`;
 }
@@ -126,7 +126,7 @@ function rewardPage(state, profile) {
 }
 
 /** Full-screen journal and shop. The live match displays objectiveRows directly. */
-export function mountProgression(host, {initialTab='quests', initialClassId, initialSkinId, initialTier, returnToPractice=false, career, onPractice, onBack} = {}) {
+export function mountProgression(host, {initialTab='quests', initialClassId, initialSkinId, initialTier, returnToPractice=false, career, onPractice, onCue, onBack} = {}) {
   const abort = new AbortController();
   const {signal} = abort;
   const root = document.createElement('section');
@@ -169,7 +169,7 @@ export function mountProgression(host, {initialTab='quests', initialClassId, ini
   }
   function performGesture(stage, actionId) {
     preview?.cancel();
-    preview = playArenaAction(stage,{actorId:'preview',targetId:'preview',actionId,events:[]},{rehearsal:true});
+    preview = playArenaAction(stage,{actorId:'preview',targetId:'preview',actionId,events:[]},{rehearsal:true,onCue});
   }
   function updateFitting() {
     const stage = root.querySelector('.pg-fitting');

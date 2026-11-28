@@ -56,7 +56,9 @@ test('a fresh journal explains objectives and lets the player inspect their mast
   await page.goto(address);
   await page.getByRole('button',{name:'Quest journal',exact:true}).click();
   const lastMastery = page.getByRole('button',{name:/Alchemist.*Nightshade Apothecary/});
-  const box = await lastMastery.boundingBox();
+  const lastRow = page.locator('.pg-mastery-row').last();
+  await expect(lastRow).toBeVisible();
+  const box = await lastRow.boundingBox();
   expect(box.y + box.height).toBeLessThanOrEqual(720);
   const pool = page.getByText('View objective pool');
   await pool.click();
