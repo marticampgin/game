@@ -2,6 +2,7 @@ import { CLASSES, DEFAULT_CONFIG, EVENTS, REWARDS, STATUSES } from './catalog.js
 import { drawOffers, eligible, sample, seedNumber, shuffled } from './draft.js';
 import { assessHit, capacity, castCooldown, deal, executeEffects, findPlayer, grantReward, previewSelfSupport, rawHit, record, resolveDefend, restore, setStatus, spendConsumable, tickStatus } from './combat.js';
 import { beginRecap, finishRecap, markBoundary, publicEvent, publicRecap, resumeRecap } from './recap.js';
+import { careerSeat, careerView, countCareer } from './progression.js';
 import { isSkinId } from './skin-id.js';
 
 export { CLASSES, DEFAULT_CONFIG, EVENTS, RARITIES, REWARDS, STATUSES } from './catalog.js';
@@ -49,13 +50,18 @@ function announceEvent(state) {
   const {id,name,description} = sample(state,pool);
   state.nextEvent = {id,name,description,round};
 }
-export function createMatch({seed,players,config}={}) {
+export function createMatch({seed,players,config,career}={}) {
   requireValue(Array.isArray(players) && players.length >= 2 && players.length <= 8,'A match needs 2–8 contenders.');
   requireValue(new Set(players.map(p => p.id)).size === players.length,'Each contender needs a unique ID.');
   seed ??= globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
   const state = {version:1,seed:String(seed),rng:seedNumber(seed),config:configuration(config),players:players.map(makePlayer),
     round:1,age:ageNames[0],globalTurn:0,globalAction:0,phase:'acquire',activeId:null,winnerId:null,offers:[],
     remainingActions:1,extraTurnId:null,bonusDraft:false,order:[],queue:[],delayed:[],log:[],logSequence:0,nextEvent:null,recentActions:[]};
+  if (career) {
+    const seats = Object.fromEntries(players.flatMap((p, i) => Object.hasOwn(career.seats, p.id)
+      ? [[p.id, careerSeat(career.runId, i, career.seats[p.id])]] : []));
+    state.career = {runId:career.runId,seats};
+  }
   state.order = shuffled(state,state.players.map(p => p.id));
   state.queue = [...state.order];
   announceEvent(state);
@@ -217,7 +223,10 @@ function act(state,p,command) {
     finishAction(state,p);
     return;
   }
+  if (def.category === 'ability') countCareer(state, p.id, 'abilities');
+  if (def.id === 'defend') countCareer(state, p.id, 'defends');
   if (def.id === 'scavenge') {
+    countCareer(state, p.id, 'scavenges');
     state.offers = drawOffers(state,p);
     state.bonusDraft = true;
     state.phase = 'acquire';
@@ -254,12 +263,14 @@ export function applyCommand(previous,playerId,command) {
       requireValue(command.type === 'pick' && state.offers.includes(command.rewardId),'Choose one of the offered rewards.');
       if (state.bonusDraft && state.recentActions?.at(-1)?.actionId === 'scavenge') resumeRecap(state);
       grantReward(state,p,command.rewardId,command.replaceIndex);
+      countCareer(state,p.id,'drafts');
       state.offers = [];
       if (state.bonusDraft) finishAction(state,p);
       else state.phase = 'action';
     }
   }
   finishRecap(state);
+  if (state.careerJournal) state.careerJournal.push(structuredClone(command));
   return state;
 }
 
@@ -279,7 +290,8 @@ export function viewMatch(state,viewerId=null) {
   }));
   const upcoming = phase === 'finished' ? [] : [activeId,state.extraTurnId,...state.queue,...order].filter(id => id && findPlayer(state,id)?.alive);
   const recentActions = (state.recentActions || []).map(publicRecap);
-  return structuredClone({round,age,phase,activeId,winnerId,globalTurn,globalAction,remainingActions,bonusDraft,order,upcoming,players,
+  const career = careerView(state, viewerId);
+  return structuredClone({...(career ? {career} : {}),round,age,phase,activeId,winnerId,globalTurn,globalAction,remainingActions,bonusDraft,order,upcoming,players,
     log:log.map(publicEvent),recentActions,lastAction:recentActions.at(-1) || null,nextEvent,config:{abilitySlots:state.config.abilitySlots,consumableSlots:state.config.consumableSlots,
       armorConstant:state.config.armorConstant,rounding:state.config.rounding},offers:viewerId && viewerId === activeId ? state.offers : []});
 }
@@ -287,6 +299,8 @@ export function viewMatch(state,viewerId=null) {
 export function sandboxEdit(previous,edit) {
   requireValue(previous.phase !== 'finished','Start a new experiment after a match ends.');
   const state = structuredClone(previous);
+  delete state.career;
+  delete state.careerJournal;
   const p = findPlayer(state,edit.playerId);
   if (!['event','round'].includes(edit.type)) requireValue(p?.alive,'Select a living contender.');
   switch (edit.type) {

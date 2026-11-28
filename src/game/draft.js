@@ -1,3 +1,4 @@
+import { isDraftUnlocked } from './progression.js';
 import { CLASSES, RARITIES, REWARDS } from './catalog.js';
 
 export function seedNumber(seed) {
@@ -75,7 +76,8 @@ export const armorPromotionChance = armor => Math.min(0.35,Math.floor(armor / 20
 export function drawOffers(state, player) {
   const result = [];
   const { config } = state;
-  const candidates = Object.values(REWARDS).filter(r => eligible(player,r));
+  const unlocks = state.career?.seats[player.id]?.unlocks ?? [];
+  const candidates = Object.values(REWARDS).filter(r => eligible(player,r) && (!state.career || isDraftUnlocked(r.id, unlocks)));
   for (let i = 0; i < 3; i++) {
     const left = candidates.filter(r => !result.includes(r.id));
     let tier = weighted(state, RARITIES, rarityWeights(config,state.round));

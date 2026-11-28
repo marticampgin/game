@@ -1,3 +1,4 @@
+import { countCareer } from './progression.js';
 import { REWARDS, STATUSES } from './catalog.js';
 import { eligible, modifiedSlot, sample } from './draft.js';
 import { captureOutcome, settleStatusTick } from './recap.js';
@@ -114,8 +115,12 @@ export function addStat(state,p,key,amount,label) {
   record(state,'stat',p.name + ' gained ' + amount + ' ' + statLabels[key] + ' from ' + label + '.',{targetId:p.id,amount});
   if (key === 'maxHp') restore(state,p,amount,label);
 }
+function absorbShard(state, p, shard, source) {
+  if (shard.id === 'iron-shard') countCareer(state, p.id, 'ironShards');
+  executeEffects(state, p, p, shard.effects, {label:source + ' / ' + shard.name});
+}
 function usedConsumable(state,p,shard) {
-  if (shard) executeEffects(state,p,p,shard.effects,{label:'Distillation / ' + shard.name});
+  if (shard) absorbShard(state, p, shard, 'Distillation');
   trigger(state,p,'usedConsumable');
 }
 export function spendConsumable(state,p,id) {
@@ -144,6 +149,7 @@ export function deal(state,source,target,raw,label,flags={}) {
   if (discharged) setStatus(target,'shock',0);
   target.shield -= shieldDamage;
   target.hp -= healthDamage;
+  if (source && source.id !== target.id) countCareer(state,source.id,'damage',healthDamage);
   const split = shieldDamage ? ' (' + shieldDamage + ' to shield)' : '';
   const hit = record(state,'damage',label + ' dealt ' + damage + ' to ' + target.name + split + '.',{actorId:source?.id,targetId:target.id,amount:damage,shieldDamage,healthDamage,cause:flags.cause,
     shieldBroken:shieldDamage > 0 && target.shield === 0});
@@ -177,6 +183,7 @@ function removeStatus(state,p,target,key,change='consumed') {
 export function grantReward(state,p,id,replaceIndex) {
   const reward = Object.hasOwn(REWARDS,id) && REWARDS[id];
   if (!reward || !eligible(p,reward)) throw Error('This reward is ineligible.');
+  if (id === 'iron-shard') countCareer(state,p.id,'ironShards');
   const {category} = reward;
   if (['ability','item','consumable'].includes(category)) {
     const key = category === 'consumable' ? 'consumables' : 'abilities';
@@ -219,7 +226,7 @@ export function executeEffects(state,p,target,effects,context={}) {
       case 'shards':
         for (let i=0; i<e.amount; i++) {
           const shard = sample(state,shards);
-          executeEffects(state,p,p,shard.effects,{label:label + ' / ' + shard.name});
+          absorbShard(state,p,shard,label);
         }
         break;
       case 'cleanse':
