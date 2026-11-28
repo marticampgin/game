@@ -4,21 +4,18 @@ import { applyCommand, createMatch } from '../src/game/index.js';
 const names = ['Aria Northwind', 'Aria Nightfall', 'Ari', 'Ari', 'Contender 1', 'Contender 2', 'Lark', 'Linden'];
 const players = names.map((name, index) => ({ id: 'p' + index, name, classId: 'guardian', bot: false }));
 
-async function restore(page, state) {
-  await page.evaluate(data => sessionStorage.setItem('rift-solo', JSON.stringify(data)), { state, viewerId: state.activeId });
-  await page.reload();
-  await expect(page.getByRole('navigation', { name: 'Turn order' }).getByRole('button')).toHaveCount(players.length);
-}
-
-test('identical class portraits retain distinct and readable player labels as order changes', async ({ page }, info) => {
-  const initial = createMatch({ seed: 'rail-names', players });
-  const afterDraft = applyCommand(initial, initial.activeId, { type: 'pick', rewardId: initial.offers[0] });
-  const next = applyCommand(afterDraft, initial.activeId, { type: 'act', actionId: 'defend' });
-  await page.goto('/');
-  for (const [width, height] of [[1280,720], [1440,900], [1920,1080]]) {
+for (const [width, height] of [[1280,720], [1440,900], [1920,1080]]) {
+  test('identical portraits retain readable player labels as order changes at ' + width + 'px', async ({page}, info) => {
+    const initial = createMatch({ seed: 'rail-names', players });
+    const afterDraft = applyCommand(initial, initial.activeId, { type: 'pick', rewardId: initial.offers[0] });
+    const next = applyCommand(afterDraft, initial.activeId, { type: 'act', actionId: 'defend' });
     await page.setViewportSize({ width, height });
-    await restore(page, initial);
+    await page.addInitScript(state => {
+      if (!sessionStorage.getItem('rift-solo')) sessionStorage.setItem('rift-solo', JSON.stringify({state,viewerId:state.activeId}));
+    }, initial);
+    await page.goto('/', {waitUntil:'domcontentloaded'});
     const rail = page.getByRole('navigation', { name: 'Turn order' });
+    await expect(rail.getByRole('button')).toHaveCount(players.length);
     const readLabels = () => rail.getByRole('button').evaluateAll(buttons => Object.fromEntries(buttons.map(button => {
       const label = [...button.querySelectorAll('.rail-name, .rail-code')].find(span => span.getBoundingClientRect().width > 0);
       return [button.dataset.inspect, label.textContent];
@@ -42,8 +39,10 @@ test('identical class portraits retain distinct and readable player labels as or
     await expect(page.getByRole('dialog')).toContainText('Aria Nightfall');
     await page.getByRole('button', { name: 'Close dialog' }).click();
     await info.attach('Turn rail at ' + width + 'px', { body: await rail.screenshot(), contentType: 'image/png' });
-    await restore(page, next);
+    await page.evaluate(state => sessionStorage.setItem('rift-solo',JSON.stringify({state,viewerId:state.activeId})),next);
+    await page.reload({waitUntil:'domcontentloaded'});
+    await expect(rail.getByRole('button')).toHaveCount(players.length);
     expect(await readLabels()).toEqual(labels);
     await expect(rail.getByRole('button').first()).toHaveAttribute('data-inspect', next.activeId);
-  }
-});
+  });
+}

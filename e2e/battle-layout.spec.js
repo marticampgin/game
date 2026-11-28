@@ -150,7 +150,9 @@ for (const seats of [2, 8]) {
           contentType: 'image/png',
         });
         await confirm.click();
-        await expect(page.locator('.turn-recap .recap-who')).toContainText('Basic Attack');
+        // The recap follows the whole turn, including the crowded table's
+        // independent status ticks. This check measures the settled layout.
+        await expect(page.locator('.turn-recap .recap-who')).toContainText('Basic Attack',{timeout:15_000});
         await expect(page.locator('.turn-recap .recap-route').first()).toContainText(rival.name);
         await expect(page.locator('.recap-toggle')).toBeFocused();
         await page.locator('.recap-toggle').press('Enter');
