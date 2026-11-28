@@ -304,6 +304,27 @@ export function sandboxEdit(previous,edit) {
   const p = findPlayer(state,edit.playerId);
   if (!['event','round'].includes(edit.type)) requireValue(p?.alive,'Select a living contender.');
   switch (edit.type) {
+    case 'skin':
+      requireValue(isSkinId(edit.skinId),'Choose a valid skin.');
+      if (edit.skinId === 'founder') delete p.skinId;
+      else p.skinId = edit.skinId;
+      break;
+    case 'class': {
+      requireValue(Object.hasOwn(CLASSES,edit.classId),'Choose a valid class.');
+      if (edit.classId === p.classId) return state;
+      const replacement = makePlayer({id:p.id,name:p.name,bot:p.bot,classId:edit.classId});
+      replacement.personalTurn = p.personalTurn;
+      state.players[state.players.indexOf(p)] = replacement;
+      if (p.id === state.activeId) {
+        state.remainingActions = 1;
+        if (state.phase === 'acquire') state.offers = drawOffers(state,replacement);
+      }
+      if (state.extraTurnId === p.id) state.extraTurnId = null;
+      break;
+    }
+    case 'pilot':
+      for (const seat of state.players) seat.bot = seat.id !== p.id;
+      break;
     case 'grant':
       grantReward(state,p,edit.rewardId,edit.replaceIndex);
       break;

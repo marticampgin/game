@@ -5,7 +5,7 @@ import { escapeHTML, option, titleCase, toolPage } from './atlas-ui.js';
 const heroId = 'experimenter';
 const rivalId = 'rival';
 const stats = { hp: 'Health', maxHp: 'Maximum health', armor: 'Armor', attack: 'Attack', spellPower: 'Spell power', shield: 'Shield', regen: 'Regeneration', rerolls: 'Rerolls' };
-const operations = { grant: 'Grant reward', stat: 'Set attribute', status: 'Apply status', cooldown: 'Set cooldown', round: 'Set round', event: 'Trigger event' };
+const operations = { grant: 'Grant reward', stat: 'Set attribute', status: 'Apply status', cooldown: 'Set cooldown', round: 'Set round', event: 'Trigger event', class: 'Change class' };
 const experiments = {
   fresh: { name: 'Fresh match', classId: 'guardian', rival: 'alchemist', edits: [] },
   molten: { name: 'Molten bulwark', classId: 'guardian', rival: 'berserker', edits: [
@@ -26,12 +26,20 @@ const select = (name, label, markup) => `<label>${label}<select name="${name}" a
 const numeric = (label, value, min, max) => `<label>${label}<input type="number" name="value" value="${value}" min="${min}" max="${max}" step="1" required></label>`;
 const itemNames = list => list.map(id => REWARDS[id].name).join(', ');
 
-export function makeExperiment(presetId, seed) {
+export function makeExperiment(presetId, seed, count = 2) {
   const preset = experiments[presetId];
-  let state = createMatch({ seed, players: [
+  if (!preset) throw Error('Choose a starting build.');
+  if (!Number.isInteger(count) || count < 2 || count > 8) throw Error('Choose 2–8 contenders.');
+  const roster = [
     { id: heroId, name: 'Aster', classId: preset.classId, bot: false },
     { id: rivalId, name: 'Sparring rival', classId: preset.rival, bot: true },
-  ] });
+  ];
+  const names = ['Finch', 'Iris', 'Flint', 'Rowan', 'Moss', 'Vale'];
+  const roles = [...Object.keys(CLASSES).filter(id => ![preset.classId,preset.rival].includes(id)),preset.classId,preset.rival];
+  for (let index = 0; index < count - 2; index++) {
+    roster.push({id:'sparring-' + index, name:names[index], classId:roles[index % roles.length], bot:true});
+  }
+  let state = createMatch({seed, players:roster});
   for (const edit of preset.edits) state = sandboxEdit(state, { playerId: heroId, ...edit });
   return state;
 }
